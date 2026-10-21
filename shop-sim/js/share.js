@@ -121,7 +121,6 @@ function shareBox() {
     const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     return '<div class="share"><b>📣 結果をシェア</b>' +
         '<div class="row"><button data-a="share">📤 結果をシェア</button><button class="alt" data-a="shimg">🖼 画像を保存</button></div>' +
-        '<div class="meta">スマホでは画像付きで共有できます。共有メニューが出ないときはXの投稿画面が開くので、保存した画像を添付してください。</div>' +
         '<textarea id="shtx" readonly rows="4">' + esc(shareText()) + '</textarea>' +
         '<button class="alt" data-a="shcopy" style="width:100%">📋 文面をコピー</button></div>';
 }
