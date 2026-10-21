@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ちいさなお店 - 商品販売シミュレーター</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="dfc" style="display:none;position:fixed;inset:0;z-index:50;background:var(--bg);padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px;overflow:auto"><div style="max-width:560px;margin:0 auto"><h2>難易度を選んでください</h2><button class="big" data-a="diff" data-v="easy" style="text-align:left">イージー<div class="meta" style="color:inherit">病気なし・月収不要。資金に余裕あり、イベントも少なめ。融資・粗利率の調整はできません。</div></button><button class="big" data-a="diff" data-v="normal" style="text-align:left">ノーマル<div class="meta" style="color:inherit">病気あり・自分の月収あり。やや優しめ。融資・粗利率の調整はできません。</div></button><button class="big" data-a="diff" data-v="hard" style="text-align:left">ハード<div class="meta" style="color:inherit">全機能解放（融資・粗利率の調整も可）。標準の難しさ。</div></button><button class="big" data-a="diff" data-v="inferno" style="text-align:left">インフェルノ<div class="meta" style="color:inherit">全機能解放。より厳しく、イベント発生率が約15倍。融資の利子も高め。</div></button></div></div>
+<div class="awning"></div>
+<div class="money" id="m"></div>
+<div class="meta" id="dt"></div>
+<details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span></summary><canvas id="px" width="192" height="92" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
+<div id="sp" style="display:none"></div>
+<div class="sd" id="sd"></div>
+<div class="card"><div class="gr"><b>購買欲</b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ</b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度</b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><details><summary>ゲージの説明 ▼</summary><div class="meta" id="pw"></div><div class="meta">購買欲：販売で上昇、取り逃がしで減少。MAXで10秒間、来店数2倍。</div><div class="meta">ノルマ：今月の売上の目標（損益分岐点）。2ヶ月目以降は前月比+3%も必要。<br><span id="fe"></span> / <span id="qd"></span></div><div class="meta">幸福度：休業で回復、長時間営業や赤字で低下。低いほど病気になりやすく、低迷が続くと深刻な状態に。</div></details></div>
+
+
+<div id="act"></div>
+<div class="log" id="lg"></div>
+<div id="pn"></div><div id="mg"></div><details class="card" id="mny" style="padding:6px 10px"><summary style="margin:0">💰 お金の管理（融資・預金・粗利率・月収）</summary><div id="mnyA"></div><div id="mnyB"></div></details>
+<h2>陳列棚</h2>
+<div class="grid" id="sh"></div>
+<h2>投資</h2>
+<div id="up"></div>
+<div class="foot"><button data-a="reset">最初からやり直す</button></div>
+<script src="js/data.js"></script>
+<script src="js/util.js"></script>
+<script src="js/state.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/events.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/pixel.js"></script>
+<script src="js/share.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
