@@ -1,5 +1,5 @@
 /**
- * share.js — 倒産時のSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
+ * share.js — 倒産時のポップアップとSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
  */
 
 /** 共有する文面とハッシュタグ */
@@ -116,15 +116,50 @@ function prepShare() {
     }, 0);
 }
 
-/** 倒産カードの下に出す共有欄 */
+/** 共有欄（ポップアップの中に出す） */
 function shareBox() {
-    prepShare();
     const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    return '<div class="card share"><b>📣 結果をシェア</b>' +
+    return '<div class="share"><b>📣 結果をシェア</b>' +
         '<div class="row"><button data-a="share">📤 結果をシェア</button><button class="alt" data-a="shimg">🖼 画像を保存</button></div>' +
         '<div class="meta">スマホでは画像付きで共有できます。共有メニューが出ないときはXの投稿画面が開くので、保存した画像を添付してください。</div>' +
         '<textarea id="shtx" readonly rows="4">' + esc(shareText()) + '</textarea>' +
         '<button class="alt" data-a="shcopy" style="width:100%">📋 文面をコピー</button></div>';
+}
+
+/** 表示中のポップアップがどのゲームのものか（作り直しの判定） */
+let ovFor = null;
+
+/** 倒産ポップアップの表示・非表示を状態に合わせる（render のたびに呼ぶ。中身は1回だけ作る） */
+function syncOver() {
+    let o = byId('ovm');
+    const show = state.over && !state.ovx;
+    if (!show) {
+        if (o)
+            o.hidden = true;
+        return;
+    }
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'ovm';
+        o.setAttribute('role', 'dialog');
+        o.setAttribute('aria-modal', 'true');
+        document.body.append(o);
+    }
+    if (ovFor !== state || o.hidden) {
+        ovFor = state;
+        prepShare();
+        let img = '';
+        try {
+            img = '<img class="ovimg" alt="リザルト画像" src="' + resultImage().toDataURL('image/png') + '">';
+        }
+        catch (e) { }
+        o.innerHTML = '<div class="ovbox"><div class="ovhd">💸 倒産しました…</div>' +
+            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + shareBox() +
+            '<button class="big" data-a="restart">🔄 最初からやり直す</button>' +
+            '<button class="alt" data-a="ovclose" style="width:100%">閉じる（お店の様子を見る）</button></div>';
+        o.hidden = false;
+        o.scrollTop = 0;
+    }
 }
 
 /** Xの投稿画面を開く（画像は添付できない） */

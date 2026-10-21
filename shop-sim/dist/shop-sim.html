@@ -375,6 +375,74 @@ button:focus-visible {
   font-weight:700;
 }
 
+/* 倒産ポップアップ */
+#ovm {
+  position:fixed;
+  inset:0;
+  z-index:40;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+#ovm[hidden] {
+  display:none;
+}
+
+.ovbox {
+  width:100%;
+  max-width:440px;
+  max-height:100%;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  background:var(--card);
+  color:var(--ink);
+  border-radius:14px;
+  border-top:6px solid var(--red);
+  padding:16px;
+  box-shadow:0 12px 40px rgba(0,0,0,.4);
+  animation:ovpop .3s cubic-bezier(.2,1.4,.4,1);
+}
+
+.ovhd {
+  font-size:24px;
+  font-weight:900;
+  color:var(--red);
+  text-align:center;
+}
+
+.ovmsg {
+  margin:6px 0 10px;
+  text-align:center;
+  font-weight:700;
+}
+
+.ovimg {
+  display:block;
+  width:100%;
+  border-radius:8px;
+  margin-bottom:12px;
+}
+
+.ovbox .share {
+  margin-bottom:12px;
+}
+
+@keyframes ovin {
+  from { opacity:0; }
+}
+
+@keyframes ovpop {
+  from { transform:scale(.85); opacity:0; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #ovm, .ovbox { animation:none; }
+}
+
 .share textarea {
   display:block;
   width:100%;
@@ -711,6 +779,7 @@ const fresh = () => ({
     dMiss: 0,
     rep: '',
     over: false,
+    ovx: false,
     margin: 40,
     feeMul: 1,
     spd: 1,
@@ -1890,7 +1959,7 @@ function drawPx() {
 </script>
 <script>
 /**
- * share.js — 倒産時のSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
+ * share.js — 倒産時のポップアップとSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
  */
 
 /** 共有する文面とハッシュタグ */
@@ -2007,15 +2076,50 @@ function prepShare() {
     }, 0);
 }
 
-/** 倒産カードの下に出す共有欄 */
+/** 共有欄（ポップアップの中に出す） */
 function shareBox() {
-    prepShare();
     const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    return '<div class="card share"><b>📣 結果をシェア</b>' +
+    return '<div class="share"><b>📣 結果をシェア</b>' +
         '<div class="row"><button data-a="share">📤 結果をシェア</button><button class="alt" data-a="shimg">🖼 画像を保存</button></div>' +
         '<div class="meta">スマホでは画像付きで共有できます。共有メニューが出ないときはXの投稿画面が開くので、保存した画像を添付してください。</div>' +
         '<textarea id="shtx" readonly rows="4">' + esc(shareText()) + '</textarea>' +
         '<button class="alt" data-a="shcopy" style="width:100%">📋 文面をコピー</button></div>';
+}
+
+/** 表示中のポップアップがどのゲームのものか（作り直しの判定） */
+let ovFor = null;
+
+/** 倒産ポップアップの表示・非表示を状態に合わせる（render のたびに呼ぶ。中身は1回だけ作る） */
+function syncOver() {
+    let o = byId('ovm');
+    const show = state.over && !state.ovx;
+    if (!show) {
+        if (o)
+            o.hidden = true;
+        return;
+    }
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'ovm';
+        o.setAttribute('role', 'dialog');
+        o.setAttribute('aria-modal', 'true');
+        document.body.append(o);
+    }
+    if (ovFor !== state || o.hidden) {
+        ovFor = state;
+        prepShare();
+        let img = '';
+        try {
+            img = '<img class="ovimg" alt="リザルト画像" src="' + resultImage().toDataURL('image/png') + '">';
+        }
+        catch (e) { }
+        o.innerHTML = '<div class="ovbox"><div class="ovhd">💸 倒産しました…</div>' +
+            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + shareBox() +
+            '<button class="big" data-a="restart">🔄 最初からやり直す</button>' +
+            '<button class="alt" data-a="ovclose" style="width:100%">閉じる（お店の様子を見る）</button></div>';
+        o.hidden = false;
+        o.scrollTop = 0;
+    }
 }
 
 /** Xの投稿画面を開く（画像は添付できない） */
@@ -2083,6 +2187,17 @@ const hrs = (a, b, v) => Array.from({ length: b - a + 1 }, (_, i) => {
     return '<option' + (h === v ? ' selected' : '') + ' value="' + h + '">' + h + ':00</option>';
 }).join('');
 
+/** 最初からやり直す（難易度選択へ戻る） */
+function restart() {
+    state = fresh();
+    applyUp();
+    state.next = roll(1);
+    state.weather = state.next;
+    dragMg = false;
+    render();
+    save();
+}
+
 /** 画面全体の描画 */
 function render() {
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
@@ -2103,7 +2218,7 @@ function render() {
     byId('qd').textContent = (left === 0 ? '本日が月末' : '月末まであと' + left + '日') + ' / 棚増設チェック' + (state.slotQ > 0 ? '済' : 'あと' + (3 - (Math.floor((d - 1) / MD) % 3)) + 'ヶ月');
     let a = '';
     if (state.over)
-        a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '「設定」タブの「最初からやり直す」で再挑戦できます。</div>' + shareBox();
+        a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '</div><button class="big" data-a="ovshow">📣 結果を見る・シェアする</button>';
     else if (state.phase === 'prep')
         a = '<div class="hint">棚の「補充」で在庫を整えて、開店しましょう。</div><button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
@@ -2111,6 +2226,7 @@ function render() {
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
+    syncOver();
     byId('lg').innerHTML = state.log.map(l => '<div>' + l + '</div>').join('');
     let pn = '';
     if (state.evs.length)
@@ -2265,6 +2381,13 @@ document.addEventListener('click', e => {
     }
     if (a === 'fillall')
         fillAll();
+    if (a === 'ovshow' || a === 'ovclose') {
+        state.ovx = a === 'ovclose';
+        render();
+        save();
+    }
+    if (a === 'restart')
+        restart();
     if (a === 'share')
         shareResult();
     if (a === 'shimg')
@@ -2299,13 +2422,7 @@ document.addEventListener('click', e => {
         else {
             window.rs = 0;
             b.textContent = '最初からやり直す';
-            state = fresh();
-            applyUp();
-            state.next = roll(1);
-            state.weather = state.next;
-            dragMg = false;
-            render();
-            save();
+            restart();
         }
     }
 });

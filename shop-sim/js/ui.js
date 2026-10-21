@@ -8,6 +8,17 @@ const hrs = (a, b, v) => Array.from({ length: b - a + 1 }, (_, i) => {
     return '<option' + (h === v ? ' selected' : '') + ' value="' + h + '">' + h + ':00</option>';
 }).join('');
 
+/** 最初からやり直す（難易度選択へ戻る） */
+function restart() {
+    state = fresh();
+    applyUp();
+    state.next = roll(1);
+    state.weather = state.next;
+    dragMg = false;
+    render();
+    save();
+}
+
 /** 画面全体の描画 */
 function render() {
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
@@ -28,7 +39,7 @@ function render() {
     byId('qd').textContent = (left === 0 ? '本日が月末' : '月末まであと' + left + '日') + ' / 棚増設チェック' + (state.slotQ > 0 ? '済' : 'あと' + (3 - (Math.floor((d - 1) / MD) % 3)) + 'ヶ月');
     let a = '';
     if (state.over)
-        a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '「設定」タブの「最初からやり直す」で再挑戦できます。</div>' + shareBox();
+        a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '</div><button class="big" data-a="ovshow">📣 結果を見る・シェアする</button>';
     else if (state.phase === 'prep')
         a = '<div class="hint">棚の「補充」で在庫を整えて、開店しましょう。</div><button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
@@ -36,6 +47,7 @@ function render() {
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
+    syncOver();
     byId('lg').innerHTML = state.log.map(l => '<div>' + l + '</div>').join('');
     let pn = '';
     if (state.evs.length)
@@ -190,6 +202,13 @@ document.addEventListener('click', e => {
     }
     if (a === 'fillall')
         fillAll();
+    if (a === 'ovshow' || a === 'ovclose') {
+        state.ovx = a === 'ovclose';
+        render();
+        save();
+    }
+    if (a === 'restart')
+        restart();
     if (a === 'share')
         shareResult();
     if (a === 'shimg')
@@ -224,13 +243,7 @@ document.addEventListener('click', e => {
         else {
             window.rs = 0;
             b.textContent = '最初からやり直す';
-            state = fresh();
-            applyUp();
-            state.next = roll(1);
-            state.weather = state.next;
-            dragMg = false;
-            render();
-            save();
+            restart();
         }
     }
 });
