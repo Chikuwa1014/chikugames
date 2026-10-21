@@ -244,6 +244,8 @@ function drawPx() {
     Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
     pxLights(op, night);
     pxSec();
+    if (state.kama)
+        pxKama();
     const k = op ? (state.spd || 1) : 1;
     for (const c of PXC) {
         if (c.st === 0) {
@@ -293,6 +295,23 @@ function drawPx() {
         pxDk = true;
         pxPeople(op);
         pxDk = false;
+    }
+}
+
+/** かまくらボーナスの日：店の前のかまくらと甘酒の鍋 */
+function pxKama() {
+    Rc(150, 46, 26, 16, '#ffffff');
+    Rc(153, 42, 20, 4, '#ffffff');
+    Rc(157, 39, 12, 3, '#ffffff');
+    Rc(150, 61, 26, 1, '#cfd8e0');
+    Rc(158, 51, 10, 11, '#3b4a5a');
+    Rc(159, 53, 8, 9, '#ffb347');
+    if (state.kama === 1)
+        pp(144 + (fr % 8 < 4 ? 0 : 1), 52, '#ffd23f');
+    else {
+        Rc(130, 57, 8, 5, '#555');
+        Rc(131, 54 - (fr % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
+        Rc(135, 53 - (fr % 6 < 3 ? 0 : 1), 1, 3, 'rgba(255,255,255,.8)');
     }
 }
 

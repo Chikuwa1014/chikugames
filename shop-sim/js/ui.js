@@ -32,7 +32,8 @@ function render() {
     byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
     byId('gb').style.width = state.gauge + '%';
     const pw = pwr(state.day);
-    byId('pw').textContent = state.day === 0 ? '' : '購買力 ×' + (Math.round(pw * 1000) / 1000) + '（季節×' + sea.p + ' 天気×' + we.p + '）';
+    byId('pw').textContent = state.day === 0 ? '' : '購買力×' + (Math.round(pw * 1000) / 1000);
+    byId('pw').title = '季節×' + sea.p + ' 天気×' + we.p;
     const q = quota();
     byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
     byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
@@ -46,12 +47,13 @@ function render() {
     else if (state.phase === 'prep')
         a = '<button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
-        a = '<div class="hint">営業中 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）</div>';
+        a = '<div class="hint">' + (state.kama ? '⛄ かまくら作り中（12:00から甘酒ボーナス） ' : '営業中 ') + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）</div>';
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
     syncOver();
     syncSave();
+    syncAma();
     byId('lg').innerHTML = (state.phase === 'open' && lastSale ? '<div class="sale">🛒 ' + lastSale + '</div>' : '') + state.log.map(l => '<div>' + l + '</div>').join('');
     let pn = '';
     if (state.evs.length)
@@ -66,6 +68,10 @@ function render() {
         if (state.day > 0)
             pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ¥' + fmt(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : '') + '</div></div>';
         pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料¥' + fmt(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
+        if (state.warn && (state.warn.typ || state.warn.snow)) {
+            const k = state.warn.typ ? 'typ' : 'snow', on = state.prep && state.prep[k];
+            pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
+        }
         pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
         pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ¥' + fmt(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
     }
@@ -78,6 +84,8 @@ function render() {
         const e = eff();
         if (state.clerk > 0 && e < 0)
             byId('hs').textContent += ' 😡負の感情モード（店員Lv' + e + '・盗難中）休業か投資で回復';
+        else if (state.mbDay && state.day === state.mbDay && state.clerk > 0)
+            byId('hs').textContent += ' 💪士気アップ（店員+1Lv・本日のみ）';
         else if ((state.dn || 0) > 0)
             byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
     }
@@ -255,6 +263,14 @@ document.addEventListener('click', e => {
         openShop();
     if (a === 'next')
         nextDay();
+    if (a === 'prep') {
+        state.prep = state.prep || { typ: false, snow: false };
+        state.prep[b.dataset.v] = !state.prep[b.dataset.v];
+        render();
+        save();
+    }
+    if (a === 'amaclose')
+        amaClose();
     if (a === 'hol') {
         state.hol = !state.hol;
         render();

@@ -153,7 +153,17 @@ function rollEvents() {
         state.happy = clamp100(state.happy - 5);
         addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000');
     }
-    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05)) {
+    const pr = state.prep || {}, ok = () => Math.random() < 0.55;
+    let typ = false, sn = false;
+    state.prep = { typ: false, snow: false };
+    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05) && (typ = true) && pr.typ && ok()) {
+        state.happy = clamp100(state.happy + 25);
+        state.mbDay = state.day + 1;
+        addEvent('🧱 土嚢で台風に耐えました！被害なし（幸福度+25、明日は店員の士気アップ）');
+    }
+    else if (typ) {
+        if (pr.typ)
+            addEvent('🧱 土嚢を積みましたが、耐えきれませんでした…');
         lose();
         state.happy = clamp100(state.happy - 5);
         state.shelf.forEach(s => {
@@ -162,11 +172,24 @@ function rollEvents() {
         });
         addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に');
     }
-    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1)) {
+    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
+        state.kama = 1;
+        state.hol = false;
+        state.weather = 3;
+        addEvent('⛄ 大雪！休業してかまくらで遊んでいたら、お客さんが集まってきました（12:00から甘酒ボーナス）');
+    }
+    else if (sn) {
+        if (pr.snow)
+            addEvent('⛄ かまくらを作りましたが、崩れてしまいました…');
         snow = true;
         state.hol = false;
         state.weather = 3;
         addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）');
+    }
+    if ((pr.typ && !typ) || (pr.snow && !sn)) {
+        snow = true;
+        state.hol = false;
+        addEvent((pr.typ ? '🧱 台風' : '⛄ 大雪') + 'の予報は外れました。備えのため休業しました');
     }
     if (r() < 0.05) {
         state.boom = 3;
