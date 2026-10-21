@@ -368,6 +368,13 @@ button:focus-visible {
   font-weight:700;
 }
 
+.ver {
+  margin-top:16px;
+  color:var(--sub);
+  font-size:11px;
+  line-height:1.6;
+}
+
 /* ヘルプ（？アイコンとフロート） */
 button.hp {
   flex:none;
