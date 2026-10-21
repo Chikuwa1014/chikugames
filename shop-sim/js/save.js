@@ -127,7 +127,7 @@ function syncSave() {
     if (sig === svSig)
         return;
     svSig = sig;
-    let h = '<b>💾 セーブデータ</b><div class="meta">ファイルに書き出して保管し、別の端末やブラウザでも続きから遊べます。</div>';
+    let h = '<b>💾 セーブデータ</b>' + helpIcon('save');
     if (!ok)
         h += '<div class="meta svwarn">営業中はセーブ・ロードできません。閉店後に操作してください。</div>';
     h += '<div class="row"><button data-a="fsave"' + (ok ? '' : ' disabled') + '>📤 ファイルに書き出す</button><button class="alt" data-a="fload"' + (ok ? '' : ' disabled') + '>📥 ファイルから読み込む</button></div>';
