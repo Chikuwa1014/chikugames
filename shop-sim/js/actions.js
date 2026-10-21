@@ -196,6 +196,7 @@ function openShop() {
     if (state.phase !== 'prep')
         return;
     state.phase = 'open';
+    lastSale = '';
     state.t = 0;
     state.dOpen = true;
     addLog('開店！');

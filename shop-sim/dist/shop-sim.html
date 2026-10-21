@@ -230,6 +230,20 @@ body {
   font-weight:600;
 }
 
+.log div.sale {
+  color:var(--sub);
+  font-weight:400;
+}
+
+.log div.sale + div {
+  color:var(--ink);
+  font-weight:600;
+}
+
+.card.off {
+  opacity:.5;
+}
+
 h2 {
   font-size:16px;
   margin:16px 0 8px;
@@ -664,7 +678,7 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 
 /** 著作権表記 */
 const COPYRIGHT = '© 2026 ちくわげーむず';
@@ -1484,6 +1498,7 @@ function openShop() {
     if (state.phase !== 'prep')
         return;
     state.phase = 'open';
+    lastSale = '';
     state.t = 0;
     state.dOpen = true;
     addLog('開店！');
@@ -1497,6 +1512,9 @@ function openShop() {
 /**
  * engine.js — 時間の進行（営業中の1秒、閉店、翌日）。
  */
+
+/** 直近の販売（営業タブのログ欄の一番上に表示。開店時に空にする） */
+let lastSale = '';
 
 /** 閉店処理（盗難・月末・倒産判定） */
 function endDay() {
@@ -1711,7 +1729,8 @@ function tick() {
         gs.push(0);
     for (let i = cnt(rate / 2 * (state.fem > 0 ? 5 : 1)); i > 0; i--)
         gs.push(1);
-    let bc = 0;
+    let bc = 0, sy = 0;
+    const sl = {};
     for (const g of gs) {
         if (g)
             state.dF = (state.dF || 0) + 1;
@@ -1742,11 +1761,15 @@ function tick() {
         state.dRev += q * pp;
         state.dSold += q;
         state.sold += q;
+        sl[s.id] = (sl[s.id] || 0) + q;
+        sy += q * pp;
         if (state.boost === 0)
             state.gauge = Math.min(100, state.gauge + 2);
         if (q * pp >= 1000)
             addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp));
     }
+    if (bc)
+        lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +¥' + fmt(sy);
     pxArrive(gs, bc);
     if (state.flame > 0)
         state.gauge = Math.min(state.gauge, 4);
@@ -1801,7 +1824,14 @@ let fr = 0;
 const Rc = (x, y, w, h, c) => {
     cx.fillStyle = c;
     cx.fillRect(Math.round(x), Math.round(y), w, h);
+    if (pxDk) {
+        cx.fillStyle = 'rgba(8,16,48,0.5)';
+        cx.fillRect(Math.round(x), Math.round(y), w, h);
+    }
 };
+
+/** 夜に人物を描き直すとき、夜の暗さを重ねる */
+let pxDk = false;
 
 /** 来店中のお客さん */
 const PXC = [];
@@ -2023,24 +2053,26 @@ function drawPx() {
     Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
     pxLights(op, night);
     pxSec();
+    const k = op ? (state.spd || 1) : 1;
     for (const c of PXC) {
         if (c.st === 0) {
             const dx = 93 - c.x;
-            if (Math.abs(dx) <= c.sp + 1) {
+            if (Math.abs(dx) <= c.sp * k + 1) {
+                c.x = 93;
                 c.st = 1;
                 c.t = 8;
             }
             else
-                c.x += Math.sign(dx) * c.sp;
+                c.x += Math.sign(dx) * c.sp * k;
         }
         else if (c.st === 1) {
-            if (--c.t <= 0) {
+            if ((c.t -= k) <= 0) {
                 c.st = 2;
                 c.L = Math.random() < .5;
             }
         }
         else {
-            c.x += (c.L ? -1 : 1) * c.sp;
+            c.x += (c.L ? -1 : 1) * c.sp * k;
             if (c.x < -8 || c.x > 200)
                 c.dead = 1;
         }
@@ -2048,15 +2080,7 @@ function drawPx() {
     for (let i = PXC.length; i--;)
         if (PXC[i].dead)
             PXC.splice(i, 1);
-    PXC.forEach(c => {
-        if (c.st !== 1)
-            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
-    });
-    const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
-    for (let i = 0; i < n; i++) {
-        const sad = e < 0 || state.dn > 0;
-        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
-    }
+    pxPeople(op);
     if (wt === 2)
         for (let i = 0; i < 70; i++)
             Rc((i * 37 + fr * 2) % W, (i * 23 + fr * 6) % H, 1, 3, '#7ab8ea');
@@ -2075,6 +2099,22 @@ function drawPx() {
         Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
         Rc(37, 37, 8, 2, '#ffe9a8');
         pxLights(op, true);
+        pxDk = true;
+        pxPeople(op);
+        pxDk = false;
+    }
+}
+
+/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す） */
+function pxPeople(op) {
+    PXC.forEach(c => {
+        if (c.st !== 1)
+            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
+    });
+    const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
+    for (let i = 0; i < n; i++) {
+        const sad = e < 0 || state.dn > 0;
+        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
     }
 }
 </script>
@@ -2461,6 +2501,9 @@ function restart() {
 }
 
 /** 画面全体の描画 */
+/** 閉店後以外は、お金の欄を無効化してグレーアウトする（？アイコンは押せるまま） */
+const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g, 'class="card off"').replace(/<(input|select)/g, '<$1 disabled').replace(/<button data-a="sv/g, '<button disabled data-a="sv').replace(/<button class="alt" data-a="sv/g, '<button class="alt" disabled data-a="sv');
+
 function render() {
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
     byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
@@ -2490,7 +2533,7 @@ function render() {
     byId('act').innerHTML = a;
     syncOver();
     syncSave();
-    byId('lg').innerHTML = state.log.map(l => '<div>' + l + '</div>').join('');
+    byId('lg').innerHTML = (state.phase === 'open' && lastSale ? '<div class="sale">🛒 ' + lastSale + '</div>' : '') + state.log.map(l => '<div>' + l + '</div>').join('');
     let pn = '';
     if (state.evs.length)
         pn += '<div class="card"><b>本日のできごと</b>' + state.evs.map(t => '<div class="meta">' + t + '</div>').join('') + '</div>';
@@ -2524,7 +2567,7 @@ function render() {
     if (!dragMg)
         byId('mnyA').innerHTML = '';
     if (!dragMg)
-        byId('mg').innerHTML = (state.phase === 'closed' && !state.over) ? '<div class="card"><div class="row"><b>粗利率の設定' + helpIcon('mg') + '</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"></div>' + '<div class="card"><div class="row"><b>自分の月収' + helpIcon('sal') + '</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"></div><div class="card"><b>営業時間</b>' + helpIcon('hours') + '<div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div></div>' + '<div class="card"><div class="row"><b>🏦 預金' + helpIcon('sv') + '</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div></div>' : '';
+        byId('mg').innerHTML = !state.over ? lockMoney('<div class="card"><div class="row"><b>粗利率の設定' + helpIcon('mg') + '</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"></div>' + '<div class="card"><div class="row"><b>自分の月収' + helpIcon('sal') + '</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"></div><div class="card"><b>営業時間</b>' + helpIcon('hours') + '<div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div></div>' + '<div class="card"><div class="row"><b>🏦 預金' + helpIcon('sv') + '</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div></div>') : '';
     const mv = byId('mgv');
     if (mv)
         mv.textContent = state.margin + '%（来店数 ×' + Math.round(demandFactor() * 100) / 100 + '）';
@@ -2557,6 +2600,8 @@ function render() {
                 if (e)
                     A.appendChild(e.closest('.card'));
             });
+            if (A.children.length && state.phase !== 'closed')
+                A.insertAdjacentHTML('afterbegin', '<div class="meta svwarn">粗利率・月収・預金は、閉店後に変更できます。</div>');
         }
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
