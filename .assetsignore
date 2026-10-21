@@ -1,0 +1,8 @@
+# 公開しないファイル（遊ぶのに不要なもの）
+.git
+.assetsignore
+wrangler.jsonc
+**/CLAUDE.md
+**/README.md
+**/build.py
+**/dist

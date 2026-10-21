@@ -1,0 +1,8 @@
+// Cloudflare Workers の設定：リポジトリのファイルをそのまま静的サイトとして公開する
+{
+  "name": "chikuwa-games",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "."
+  }
+}
