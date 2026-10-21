@@ -41,9 +41,9 @@ function render() {
     if (state.over)
         a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '</div><button class="big" data-a="ovshow">📣 結果を見る・シェアする</button>';
     else if (state.phase === 'prep')
-        a = '<div class="hint">棚の「補充」で在庫を整えて、開店しましょう。</div><button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
+        a = '<button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
-        a = '<div class="hint">営業中 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）。販売しながら補充できます。</div>';
+        a = '<div class="hint">営業中 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）</div>';
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
@@ -63,11 +63,9 @@ function render() {
         if (state.day > 0)
             pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ¥' + fmt(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : '') + '</div></div>';
         pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料¥' + fmt(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
-        pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする</div><div class="d">売上ゼロですが、購買欲+8、幸福度も回復します（高いほど大きく回復）。テナント料は発生します。</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
-        pn += '<div class="card"><b>🏦 融資</b><div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上は月平均売上の10倍まで（上限 ¥' + fmt(loanCap()) + '）</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
+        pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
+        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ¥' + fmt(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
     }
-    else if (!state.over)
-        pn += '<div class="hint">投資・店休日の選択・天気予報の確認は閉店後に行えます。</div>';
     byId('hp').textContent = Math.floor(state.happy) + '%';
     byId('hb').style.width = state.happy + '%';
     byId('hb').parentNode.className = 'bar' + (state.happy < 15 ? ' low' : '');
@@ -85,7 +83,7 @@ function render() {
     if (!dragMg)
         byId('mnyA').innerHTML = '';
     if (!dragMg)
-        byId('mg').innerHTML = (state.phase === 'closed' && !state.over) ? '<div class="card"><div class="row"><b>粗利率の設定</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"><div class="meta">高くすると1個あたりの利益は増えますが、来店数が減ります。</div></div>' + '<div class="card"><div class="row"><b>自分の月収</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"><div class="meta">月末に引かれます。年収中央値（約400万円＝月約33万円）が目安。多いと幸福度が上がり、少ないと下がります。</div></div><div class="card"><b>営業時間</b><div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div><div class="meta">長時間営業は幸福度を下げます。</div></div>' + '<div class="card"><div class="row"><b>🏦 預金</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div><div class="meta">月末に所持金がマイナスになると、自動で預金から引き出されます。</div></div>' : '';
+        byId('mg').innerHTML = (state.phase === 'closed' && !state.over) ? '<div class="card"><div class="row"><b>粗利率の設定' + helpIcon('mg') + '</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"></div>' + '<div class="card"><div class="row"><b>自分の月収' + helpIcon('sal') + '</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"></div><div class="card"><b>営業時間</b>' + helpIcon('hours') + '<div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div></div>' + '<div class="card"><div class="row"><b>🏦 預金' + helpIcon('sv') + '</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div></div>' : '';
     const mv = byId('mgv');
     if (mv)
         mv.textContent = state.margin + '%（来店数 ×' + Math.round(demandFactor() * 100) / 100 + '）';
@@ -177,10 +175,22 @@ function render() {
 }
 
 document.addEventListener('click', e => {
+    if (!e.target.closest('[data-a="help"]'))
+        hideHelp();
+}, true);
+document.addEventListener('scroll', hideHelp, true);
+addEventListener('resize', hideHelp);
+
+document.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b || b.disabled)
         return;
     const a = b.dataset.a;
+    if (a === 'help') {
+        e.preventDefault();
+        showHelp(b);
+        return;
+    }
     if (a === 'r')
         restock(+b.dataset.i, +b.dataset.n);
     if (a === 'b')
