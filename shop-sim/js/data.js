@@ -48,7 +48,7 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 
 /** 著作権表記 */
 const COPYRIGHT = '© 2026 ちくわげーむず';
