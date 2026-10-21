@@ -67,12 +67,13 @@ function endDay() {
         const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev), fa = p => Math.random() < 0.25 * p / (1 - p);
         state.pre = { snow: false, typ: false };
         state.warn = { snow: false, typ: false };
-        if (sn === 3) {
+        state.prep = { typ: false, snow: false };
+        if (sn === 3 && state.next >= 1) {
             const p = pe(0.1), h = Math.random() < p;
             state.pre.snow = h;
             state.warn.snow = h || fa(p);
         }
-        if (sn === 1 || sn === 2) {
+        if ((sn === 1 || sn === 2) && (state.next === 1 || state.next === 2)) {
             const p = pe(0.05), h = Math.random() < p;
             state.pre.typ = h;
             state.warn.typ = h || fa(p);
@@ -180,8 +181,20 @@ function nextDay() {
         snow = true;
         state.hol = false;
     }
-    if (snow)
+    if (snow) {
+        state.kama = 0;
         endDay();
+    }
+    else if (state.kama) {
+        state.hol = false;
+        state.phase = 'open';
+        state.t = 0;
+        state.paused = false;
+        lastSale = '';
+        addLog('⛄ かまくらを作っています…（12:00から甘酒ボーナス）');
+        if (state.openH >= 12)
+            amaStart();
+    }
     else if (state.hol) {
         state.hol = false;
         state.gauge = Math.min(99, state.gauge + 8);
@@ -200,6 +213,10 @@ function nextDay() {
 function tick() {
     if (state.phase !== 'open' || state.paused)
         return;
+    if (state.kama) {
+        kamaTick();
+        return;
+    }
     state.t++;
     const pw = pwr(state.day), sh = state.shelf.filter(Boolean);
     if (state.boost > 0) {

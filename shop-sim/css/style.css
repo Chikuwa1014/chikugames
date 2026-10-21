@@ -464,8 +464,100 @@ button.hp::before {
   animation:ovin .25s ease-out;
 }
 
-#ovm[hidden] {
+#ovm[hidden], #ama[hidden] {
   display:none;
+}
+
+#ama {
+  position:fixed;
+  inset:0;
+  z-index:45;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+.ovbox.amabox {
+  display:flex;
+  flex-direction:column;
+  height:min(560px, 100%);
+  padding:12px;
+  border-top-color:#c8a45a;
+  overflow:hidden;
+}
+
+.amatop {
+  flex:7 1 0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.amahd {
+  display:flex;
+  justify-content:space-between;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+#amacv {
+  flex:1 1 0;
+  min-height:0;
+  width:100%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  border-radius:8px;
+  margin:6px 0;
+  background:#e6ecf1;
+}
+
+.amanum {
+  text-align:center;
+  font-size:22px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+.amanum small {
+  font-size:13px;
+  color:var(--sub);
+  margin-left:6px;
+}
+
+.amabot {
+  flex:3 1 0;
+  min-height:0;
+  display:flex;
+}
+
+.amabtn {
+  flex:1;
+  font-size:28px;
+  font-weight:900;
+  border-radius:14px;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.amabtn:active {
+  transform:scale(.97);
+}
+
+.amares {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+  gap:6px;
+}
+
+.amares b {
+  font-size:20px;
 }
 
 .ovbox {
@@ -558,11 +650,26 @@ select {
 
 .gr {
   display:grid;
-  grid-template-columns:48px 1fr auto;
+  grid-template-columns:64px 1fr auto;
   align-items:center;
   gap:8px;
   font-size:13px;
   margin:4px 0;
+}
+
+.gr b {
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  white-space:nowrap;
+}
+
+.pw {
+  float:right;
+  font-size:12px;
+  font-weight:700;
+  color:var(--sub);
+  line-height:22px;
 }
 
 .gr .bar {

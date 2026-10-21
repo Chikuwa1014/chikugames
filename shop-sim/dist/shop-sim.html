@@ -471,8 +471,100 @@ button.hp::before {
   animation:ovin .25s ease-out;
 }
 
-#ovm[hidden] {
+#ovm[hidden], #ama[hidden] {
   display:none;
+}
+
+#ama {
+  position:fixed;
+  inset:0;
+  z-index:45;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+.ovbox.amabox {
+  display:flex;
+  flex-direction:column;
+  height:min(560px, 100%);
+  padding:12px;
+  border-top-color:#c8a45a;
+  overflow:hidden;
+}
+
+.amatop {
+  flex:7 1 0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.amahd {
+  display:flex;
+  justify-content:space-between;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+#amacv {
+  flex:1 1 0;
+  min-height:0;
+  width:100%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  border-radius:8px;
+  margin:6px 0;
+  background:#e6ecf1;
+}
+
+.amanum {
+  text-align:center;
+  font-size:22px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+.amanum small {
+  font-size:13px;
+  color:var(--sub);
+  margin-left:6px;
+}
+
+.amabot {
+  flex:3 1 0;
+  min-height:0;
+  display:flex;
+}
+
+.amabtn {
+  flex:1;
+  font-size:28px;
+  font-weight:900;
+  border-radius:14px;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.amabtn:active {
+  transform:scale(.97);
+}
+
+.amares {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+  gap:6px;
+}
+
+.amares b {
+  font-size:20px;
 }
 
 .ovbox {
@@ -565,11 +657,26 @@ select {
 
 .gr {
   display:grid;
-  grid-template-columns:48px 1fr auto;
+  grid-template-columns:64px 1fr auto;
   align-items:center;
   gap:8px;
   font-size:13px;
   margin:4px 0;
+}
+
+.gr b {
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  white-space:nowrap;
+}
+
+.pw {
+  float:right;
+  font-size:12px;
+  font-weight:700;
+  color:var(--sub);
+  line-height:22px;
 }
 
 .gr .bar {
@@ -612,10 +719,10 @@ details .meta {
 <div class="awning"></div>
 <div class="money" id="m"></div>
 <div class="meta" id="dt"></div>
-<details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button></summary><canvas id="px" width="192" height="92" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
+<details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="192" height="92" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
 <div id="sp" style="display:none"></div>
 <div class="sd" id="sd"></div>
-<div class="card"><div class="gr"><b>購買欲</b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ</b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度</b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div><details><summary>ゲージの説明 ▼</summary><div class="meta" id="pw"></div><div class="meta">購買欲：販売で上昇、取り逃がしで減少。MAXで10秒間、来店数2倍。</div><div class="meta">ノルマ：今月の売上の目標（損益分岐点）。2ヶ月目以降は前月比+3%も必要。</div><div class="meta">幸福度：休業で回復、長時間営業や赤字で低下。低いほど病気になりやすく、低迷が続くと深刻な状態に。</div></details></div>
+<div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div></div>
 
 
 <div id="act"></div>
@@ -678,7 +785,7 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 
 /** 著作権表記 */
 const COPYRIGHT = '© 2026 ちくわげーむず';
@@ -717,16 +824,16 @@ const LA = [30000, 50000, 100000, 250000, 750000, 1000000, 1500000, 5000000, 100
 /** 難易度ごとのパラメータ */
 const DF = {
     easy: {
-       n: 'イージー', money: 30000, ev: 0.5, fee: 0.5, wage: 0.6, cust: 1.3, bank: 0.3, gr: 1, hd: 0.3, sick: 0, sal: 0, full: 0, mg: 50, fl: 0.9
+       n: 'イージー', ama: 1.2, money: 30000, ev: 0.5, fee: 0.5, wage: 0.6, cust: 1.3, bank: 0.3, gr: 1, hd: 0.3, sick: 0, sal: 0, full: 0, mg: 50, fl: 0.9
     },
     normal: {
-       n: 'ノーマル', money: 10000, ev: 1.1, fee: 0.75, wage: 0.8, cust: 1.15, bank: 0.2, gr: 1.01, hd: 0.7, sick: 1, sal: 1, full: 0, mg: 45, fl: 0.8
+       n: 'ノーマル', ama: 1.5, money: 10000, ev: 1.1, fee: 0.75, wage: 0.8, cust: 1.15, bank: 0.2, gr: 1.01, hd: 0.7, sick: 1, sal: 1, full: 0, mg: 45, fl: 0.8
     },
     hard: {
-       n: 'ハード', money: 5000, ev: 2.2, fee: 1, wage: 1, cust: 1, bank: 0.1, gr: 1.03, hd: 1, sick: 1, sal: 1, full: 1, mg: 40, fl: 0.7
+       n: 'ハード', ama: 2.0, money: 5000, ev: 2.2, fee: 1, wage: 1, cust: 1, bank: 0.1, gr: 1.03, hd: 1, sick: 1, sal: 1, full: 1, mg: 40, fl: 0.7
     },
     inferno: {
-       n: 'インフェルノ', money: 3000, ev: 15, fee: 1.3, wage: 1.2, cust: 0.85, bank: 0.05, gr: 1.05, hd: 1.3, sick: 1, sal: 1, full: 1, mg: 40, neg: 1, fl: 0.5
+       n: 'インフェルノ', ama: 3.5, money: 3000, ev: 15, fee: 1.3, wage: 1.2, cust: 0.85, bank: 0.05, gr: 1.05, hd: 1.3, sick: 1, sal: 1, full: 1, mg: 40, neg: 1, fl: 0.5
     }
 };
 
@@ -803,6 +910,11 @@ const FH = ['#3a2418', '#7a4a21', '#d9a441', '#111'];
 
 /** ヘルプ（？アイコンを触ったときだけ出す説明）。改行は \n */
 const HELP = {
+    gauge: '販売で上昇、取り逃がしで減少。MAXで10秒間、来店数2倍。',
+    quota: '今月の売上の目標（損益分岐点）。2ヶ月目以降は前月比+3%も必要。',
+    happy: '休業で回復、長時間営業や赤字で低下。低いほど病気になりやすく、低迷が続くと深刻な状態に。',
+    sandbag: '無料。台風が来たら55%で被害なし（幸福度+25、台風の次の日は店員の能力+1段階）。失敗すると通常の被害。予報が外れたら、備えのため休業します。',
+    kama: '無料。大雪が来たら55%で「かまくらボーナス」：休業の代わりに、12:00から甘酒を配るミニゲーム（10秒間の連打で売上）。失敗すると強制休業。予報が外れたら、備えのため休業します。',
     phase: '① 開店準備：棚の「補充」で在庫を整えて開店します。\n② 開店：販売しながら補充できます。\n③ 閉店後：投資・店休日の選択・天気予報の確認ができます。',
     hol: '売上ゼロですが、購買欲+8、幸福度も回復します（高いほど大きく回復）。テナント料は発生します。',
     loan: '150万円以上は、月平均売上の10倍まで借りられます。',
@@ -948,6 +1060,9 @@ const fresh = () => ({
     pays: [],
     boom: 0,
     evs: [],
+    prep: { typ: false, snow: false },
+    kama: 0,
+    mbDay: 0,
     log: ['開業前です。投資や天気予報を確認して「開業する」を押しましょう。']
 });
 
@@ -1102,7 +1217,7 @@ function applyDiff() {
 }
 
 /** 店員の実効レベル */
-const eff = () => Math.max(difficulty().neg ? -10 : 0, (state.sk || 0) - (state.dn || 0));
+const eff = () => Math.max(difficulty().neg ? -10 : 0, (state.sk || 0) - (state.dn || 0) + (state.mbDay && state.day === state.mbDay ? 1 : 0));
 
 /** 店員の1回の補充量 */
 const clAmt = () => {
@@ -1271,7 +1386,17 @@ function rollEvents() {
         state.happy = clamp100(state.happy - 5);
         addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000');
     }
-    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05)) {
+    const pr = state.prep || {}, ok = () => Math.random() < 0.55;
+    let typ = false, sn = false;
+    state.prep = { typ: false, snow: false };
+    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05) && (typ = true) && pr.typ && ok()) {
+        state.happy = clamp100(state.happy + 25);
+        state.mbDay = state.day + 1;
+        addEvent('🧱 土嚢で台風に耐えました！被害なし（幸福度+25、明日は店員の士気アップ）');
+    }
+    else if (typ) {
+        if (pr.typ)
+            addEvent('🧱 土嚢を積みましたが、耐えきれませんでした…');
         lose();
         state.happy = clamp100(state.happy - 5);
         state.shelf.forEach(s => {
@@ -1280,11 +1405,24 @@ function rollEvents() {
         });
         addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に');
     }
-    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1)) {
+    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
+        state.kama = 1;
+        state.hol = false;
+        state.weather = 3;
+        addEvent('⛄ 大雪！休業してかまくらで遊んでいたら、お客さんが集まってきました（12:00から甘酒ボーナス）');
+    }
+    else if (sn) {
+        if (pr.snow)
+            addEvent('⛄ かまくらを作りましたが、崩れてしまいました…');
         snow = true;
         state.hol = false;
         state.weather = 3;
         addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）');
+    }
+    if ((pr.typ && !typ) || (pr.snow && !sn)) {
+        snow = true;
+        state.hol = false;
+        addEvent((pr.typ ? '🧱 台風' : '⛄ 大雪') + 'の予報は外れました。備えのため休業しました');
     }
     if (r() < 0.05) {
         state.boom = 3;
@@ -1578,12 +1716,13 @@ function endDay() {
         const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev), fa = p => Math.random() < 0.25 * p / (1 - p);
         state.pre = { snow: false, typ: false };
         state.warn = { snow: false, typ: false };
-        if (sn === 3) {
+        state.prep = { typ: false, snow: false };
+        if (sn === 3 && state.next >= 1) {
             const p = pe(0.1), h = Math.random() < p;
             state.pre.snow = h;
             state.warn.snow = h || fa(p);
         }
-        if (sn === 1 || sn === 2) {
+        if ((sn === 1 || sn === 2) && (state.next === 1 || state.next === 2)) {
             const p = pe(0.05), h = Math.random() < p;
             state.pre.typ = h;
             state.warn.typ = h || fa(p);
@@ -1691,8 +1830,20 @@ function nextDay() {
         snow = true;
         state.hol = false;
     }
-    if (snow)
+    if (snow) {
+        state.kama = 0;
         endDay();
+    }
+    else if (state.kama) {
+        state.hol = false;
+        state.phase = 'open';
+        state.t = 0;
+        state.paused = false;
+        lastSale = '';
+        addLog('⛄ かまくらを作っています…（12:00から甘酒ボーナス）');
+        if (state.openH >= 12)
+            amaStart();
+    }
     else if (state.hol) {
         state.hol = false;
         state.gauge = Math.min(99, state.gauge + 8);
@@ -1711,6 +1862,10 @@ function nextDay() {
 function tick() {
     if (state.phase !== 'open' || state.paused)
         return;
+    if (state.kama) {
+        kamaTick();
+        return;
+    }
     state.t++;
     const pw = pwr(state.day), sh = state.shelf.filter(Boolean);
     if (state.boost > 0) {
@@ -2053,6 +2208,8 @@ function drawPx() {
     Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
     pxLights(op, night);
     pxSec();
+    if (state.kama)
+        pxKama();
     const k = op ? (state.spd || 1) : 1;
     for (const c of PXC) {
         if (c.st === 0) {
@@ -2102,6 +2259,23 @@ function drawPx() {
         pxDk = true;
         pxPeople(op);
         pxDk = false;
+    }
+}
+
+/** かまくらボーナスの日：店の前のかまくらと甘酒の鍋 */
+function pxKama() {
+    Rc(150, 46, 26, 16, '#ffffff');
+    Rc(153, 42, 20, 4, '#ffffff');
+    Rc(157, 39, 12, 3, '#ffffff');
+    Rc(150, 61, 26, 1, '#cfd8e0');
+    Rc(158, 51, 10, 11, '#3b4a5a');
+    Rc(159, 53, 8, 9, '#ffb347');
+    if (state.kama === 1)
+        pp(144 + (fr % 8 < 4 ? 0 : 1), 52, '#ffd23f');
+    else {
+        Rc(130, 57, 8, 5, '#555');
+        Rc(131, 54 - (fr % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
+        Rc(135, 53 - (fr % 6 < 3 ? 0 : 1), 1, 3, 'rgba(255,255,255,.8)');
     }
 }
 
@@ -2343,7 +2517,7 @@ function copyShareText(b) {
  */
 
 /** ファイルの目印と版番号（state の形を変えたら SAVE_VER を上げ、loadFix に移行処理を書く） */
-const SAVE_GAME = 'shop-sim', SAVE_VER = 1;
+const SAVE_GAME = 'shop-sim', SAVE_VER = 2;
 
 /** 読み込み待ちのデータ（確認してから反映）、欄に出すメッセージ */
 let svPend = null, svMsg = null, svSig = '';
@@ -2409,6 +2583,7 @@ function loadFix(o) {
     });
     s.cm = PRODUCTS.map((_, i) => (s.cm && s.cm[i]) || 1);
     // o.v が古いときの移行処理はここに追加する（例：if (o.v < 2) { ... }）
+    // v2：土嚢・かまくら（prep・kama・mbDay）を追加。初期値で埋まるので移行処理なし
     return s;
 }
 
@@ -2480,6 +2655,205 @@ function syncSave() {
 </script>
 <script>
 /**
+ * amazake.js — かまくらボーナスの日（大雪＋かまくら成功）と甘酒ミニゲーム。
+ * state.kama：1＝かまくら作り中（通常の販売なし）、2＝ミニゲーム中。終了後に閉店する。
+ */
+
+/** ミニゲームの長さ（実時間・ミリ秒） */
+const AMA_MS = 10000;
+
+/** ミニゲームの進行（保存しない。途中で再読み込みしたら最初から） */
+let ama = null;
+
+/** 終了時の一言（連打数の下限と文言） */
+const AMA_MSG = [[1000, '伝説の甘酒屋'], [600, '指が見えない…'], [300, '町じゅうが甘酒まみれ'], [120, '指がつりそう！'], [70, '行列ができた！'], [30, '大にぎわい'], [1, 'ちらほら'], [0, 'だれも来なかった…']];
+
+/** 甘酒1杯の売上：解放済みで一番安い商品の販売価格 × 難易度倍率 */
+const amaPer = () => Math.round(Math.min(...state.own.map(i => priceOf(PRODUCTS[i]))) * (difficulty().ama || 1));
+
+/** かまくらの日の1秒（12:00 か閉店時刻でミニゲームを始める） */
+function kamaTick() {
+    if (state.kama !== 1)
+        return;
+    state.t++;
+    if (state.openH + Math.floor(state.t / 5) >= 12 || state.t >= dayTicks())
+        amaStart();
+    render();
+    save();
+}
+
+/** ミニゲームを始める（時間を止めてポップアップ） */
+function amaStart() {
+    state.kama = 2;
+    state.paused = true;
+    addLog('🍵 12:00 甘酒ボーナス開始！');
+    ama = null;
+    syncAma();
+    save();
+}
+
+/** ポップアップの表示（render から呼ぶ。再読み込み後も開き直す） */
+function syncAma() {
+    let o = byId('ama');
+    if (state.kama === 3 && !ama) {
+        // 結果を見る前に再読み込みした（報酬は加算済み）→ そのまま閉店
+        state.kama = 0;
+        state.paused = false;
+        setTimeout(() => {
+            endDay();
+            render();
+            save();
+        });
+    }
+    if ((state.kama !== 2 && state.kama !== 3) || state.over) {
+        if (o)
+            o.hidden = true;
+        return;
+    }
+    if (o && !o.hidden && ama)
+        return;
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'ama';
+        o.setAttribute('role', 'dialog');
+        o.setAttribute('aria-modal', 'true');
+        document.body.append(o);
+        o.addEventListener('pointerdown', e => {
+            if (e.target.closest('#amab')) {
+                e.preventDefault();
+                amaTap();
+            }
+        });
+    }
+    ama = { n: 0, t0: 0, done: false, q: [], fx: [], f: 0, per: amaPer() };
+    for (let i = 0; i < 4; i++)
+        ama.q.push(amaGuest(60 + i * 12));
+    o.innerHTML = '<div class="ovbox amabox"><div class="amatop"><div class="amahd"><span>🍵 甘酒ボーナス</span><span id="amat">10.0秒</span></div>' +
+        '<canvas id="amacv" width="96" height="60"></canvas><div class="amanum"><span id="aman">0</span>杯 <small id="amay">押すとスタート</small></div></div>' +
+        '<div class="amabot" id="amabot"><button class="amabtn" id="amab" type="button">🍵 甘酒</button></div></div>';
+    o.hidden = false;
+    clearInterval(ama.iv);
+    ama.iv = setInterval(amaFrame, 60);
+    amaFrame();
+}
+
+/** 並ぶお客さん（服と髪の色はドット絵と同じ表から） */
+function amaGuest(x) {
+    const g = Math.random() < .5, c = Math.floor(Math.random() * 4);
+    return { x, g, b: (g ? FP : MP)[c], h: (g ? FH : MH)[c] };
+}
+
+/** 連打1回 */
+function amaTap() {
+    if (!ama || ama.done)
+        return;
+    if (!ama.t0)
+        ama.t0 = performance.now();
+    ama.n++;
+    const c = ama.q.shift();
+    if (c)
+        ama.fx.push({ x: c.x, g: c, t: 0 });
+    ama.q.push(amaGuest(Math.max(96, (ama.q.length ? ama.q[ama.q.length - 1].x : 56) + 12)));
+    byId('aman').textContent = ama.n;
+    byId('amay').textContent = '+¥' + fmt(ama.n * ama.per);
+}
+
+/** 1コマ進める（残り時間・アニメ） */
+function amaFrame() {
+    if (!ama || !byId('amacv'))
+        return;
+    ama.f++;
+    if (ama.t0 && !ama.done) {
+        const left = Math.max(0, AMA_MS - (performance.now() - ama.t0));
+        byId('amat').textContent = (left / 1000).toFixed(1) + '秒';
+        if (left <= 0)
+            amaFinish();
+    }
+    amaDraw();
+}
+
+/** 終了：報酬を加算して結果を表示 */
+function amaFinish() {
+    ama.done = true;
+    const y = ama.n * ama.per, m = AMA_MSG.find(([k]) => ama.n >= k)[1];
+    state.money += y;
+    state.mSales += y;
+    state.tot = (state.tot || 0) + y;
+    state.dRev += y;
+    addEvent('🍵 甘酒を' + ama.n + '杯ふるまいました（' + m + '）+¥' + fmt(y));
+    state.kama = 3;
+    save();
+    byId('amabot').innerHTML = '<div class="amares"><b>' + m + '</b><div class="meta">' + ama.n + '杯 × ¥' + fmt(ama.per) + ' ＝ +¥' + fmt(y) + '（今月の売上に加算）</div>' +
+        '<button class="big" data-a="amaclose">閉店する</button></div>';
+}
+
+/** 結果を閉じて閉店 */
+function amaClose() {
+    if (!ama || !ama.done)
+        return;
+    clearInterval(ama.iv);
+    ama = null;
+    byId('ama').hidden = true;
+    state.kama = 0;
+    state.paused = false;
+    addLog('閉店。本日の売上 ¥' + fmt(state.dRev) + '（甘酒）');
+    endDay();
+    render();
+    save();
+}
+
+/** ミニゲームのドット絵（96×60：雪・かまくら・店主・行列） */
+function amaDraw() {
+    const c = byId('amacv').getContext('2d'), R = (x, y, w, h, k) => {
+        c.fillStyle = k;
+        c.fillRect(Math.round(x), Math.round(y), w, h);
+    }, P = (x, y, b, h, cup) => {
+        R(x + 1, y, 3, 3, '#f1c27d');
+        R(x + 1, y, 3, 1, h);
+        R(x, y + 3, 5, 4, b);
+        R(x + 1, y + 7, 1, 2, '#2a2a2a');
+        R(x + 3, y + 7, 1, 2, '#2a2a2a');
+        if (cup) {
+            R(x - 2, y + 4, 2, 2, '#fff8e7');
+            R(x - 2, y + 3, 1, 1, 'rgba(255,255,255,.7)');
+        }
+    }, f = ama.f;
+    ['#c8d3dc', '#d3dce4', '#dde5ec', '#e6ecf1'].forEach((k, i) => R(0, i * 10, 96, 10, k));
+    R(0, 40, 96, 20, '#f4f8fb');
+    R(0, 40, 96, 1, '#dfe7ee');
+    // かまくら
+    R(6, 22, 26, 18, '#ffffff');
+    R(9, 18, 20, 4, '#ffffff');
+    R(13, 15, 12, 3, '#ffffff');
+    R(6, 39, 26, 1, '#cfd8e0');
+    R(14, 28, 10, 12, '#3b4a5a');
+    R(15, 30, 8, 10, '#ffb347');
+    R(16, 36, 6, 4, '#c44d2d');
+    // 鍋と店主
+    R(36, 34, 8, 5, '#555');
+    R(35, 33, 10, 1, '#777');
+    R(37, 30 - (f % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
+    R(41, 29 - (f % 6 < 3 ? 0 : 1), 1, 3, 'rgba(255,255,255,.8)');
+    P(46, 30, '#ffd23f', '#3b2a20', ama.n > 0 && f % 4 < 2);
+    // 行列（先頭は x=56、後ろに12ずつ並ぶ）
+    ama.q.forEach((g, i) => {
+        g.x = Math.max(56 + i * 12, g.x - 2);
+        P(g.x, 31 + ((f + Math.floor(g.x)) % 4 < 2 ? 0 : 1), g.b, g.h);
+    });
+    // 甘酒をもらって帰る人
+    ama.fx.forEach(e => {
+        e.t++;
+        e.x -= 2.5;
+        P(e.x, 31 - Math.min(6, e.t), e.g.b, e.g.h, true);
+    });
+    ama.fx = ama.fx.filter(e => e.x > -8);
+    // 雪
+    for (let i = 0; i < 24; i++)
+        R((i * 29 + Math.sin((f + i * 9) / 9) * 3 + 96) % 96, (i * 17 + f) % 60, 1, 1, '#fff');
+}
+</script>
+<script>
+/**
  * ui.js — 画面の描画とボタン操作。
  */
 
@@ -2513,7 +2887,8 @@ function render() {
     byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
     byId('gb').style.width = state.gauge + '%';
     const pw = pwr(state.day);
-    byId('pw').textContent = state.day === 0 ? '' : '購買力 ×' + (Math.round(pw * 1000) / 1000) + '（季節×' + sea.p + ' 天気×' + we.p + '）';
+    byId('pw').textContent = state.day === 0 ? '' : '購買力×' + (Math.round(pw * 1000) / 1000);
+    byId('pw').title = '季節×' + sea.p + ' 天気×' + we.p;
     const q = quota();
     byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
     byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
@@ -2527,12 +2902,13 @@ function render() {
     else if (state.phase === 'prep')
         a = '<button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
-        a = '<div class="hint">営業中 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）</div>';
+        a = '<div class="hint">' + (state.kama ? '⛄ かまくら作り中（12:00から甘酒ボーナス） ' : '営業中 ') + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）</div>';
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
     syncOver();
     syncSave();
+    syncAma();
     byId('lg').innerHTML = (state.phase === 'open' && lastSale ? '<div class="sale">🛒 ' + lastSale + '</div>' : '') + state.log.map(l => '<div>' + l + '</div>').join('');
     let pn = '';
     if (state.evs.length)
@@ -2547,6 +2923,10 @@ function render() {
         if (state.day > 0)
             pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ¥' + fmt(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : '') + '</div></div>';
         pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料¥' + fmt(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
+        if (state.warn && (state.warn.typ || state.warn.snow)) {
+            const k = state.warn.typ ? 'typ' : 'snow', on = state.prep && state.prep[k];
+            pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
+        }
         pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
         pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ¥' + fmt(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
     }
@@ -2559,6 +2939,8 @@ function render() {
         const e = eff();
         if (state.clerk > 0 && e < 0)
             byId('hs').textContent += ' 😡負の感情モード（店員Lv' + e + '・盗難中）休業か投資で回復';
+        else if (state.mbDay && state.day === state.mbDay && state.clerk > 0)
+            byId('hs').textContent += ' 💪士気アップ（店員+1Lv・本日のみ）';
         else if ((state.dn || 0) > 0)
             byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
     }
@@ -2736,6 +3118,14 @@ document.addEventListener('click', e => {
         openShop();
     if (a === 'next')
         nextDay();
+    if (a === 'prep') {
+        state.prep = state.prep || { typ: false, snow: false };
+        state.prep[b.dataset.v] = !state.prep[b.dataset.v];
+        render();
+        save();
+    }
+    if (a === 'amaclose')
+        amaClose();
     if (a === 'hol') {
         state.hol = !state.hol;
         render();

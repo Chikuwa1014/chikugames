@@ -4,7 +4,7 @@
  */
 
 /** ファイルの目印と版番号（state の形を変えたら SAVE_VER を上げ、loadFix に移行処理を書く） */
-const SAVE_GAME = 'shop-sim', SAVE_VER = 1;
+const SAVE_GAME = 'shop-sim', SAVE_VER = 2;
 
 /** 読み込み待ちのデータ（確認してから反映）、欄に出すメッセージ */
 let svPend = null, svMsg = null, svSig = '';
@@ -70,6 +70,7 @@ function loadFix(o) {
     });
     s.cm = PRODUCTS.map((_, i) => (s.cm && s.cm[i]) || 1);
     // o.v が古いときの移行処理はここに追加する（例：if (o.v < 2) { ... }）
+    // v2：土嚢・かまくら（prep・kama・mbDay）を追加。初期値で埋まるので移行処理なし
     return s;
 }
 

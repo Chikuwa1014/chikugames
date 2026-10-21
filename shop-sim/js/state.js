@@ -68,6 +68,9 @@ const fresh = () => ({
     pays: [],
     boom: 0,
     evs: [],
+    prep: { typ: false, snow: false },
+    kama: 0,
+    mbDay: 0,
     log: ['開業前です。投資や天気予報を確認して「開業する」を押しましょう。']
 });
 
