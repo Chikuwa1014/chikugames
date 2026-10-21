@@ -1,0 +1,335 @@
+/**
+ * ui.js — 画面の描画とボタン操作。
+ */
+
+/** 営業時間の選択肢（option）を作る */
+const hrs = (a, b, v) => Array.from({ length: b - a + 1 }, (_, i) => {
+    const h = a + i;
+    return '<option' + (h === v ? ' selected' : '') + ' value="' + h + '">' + h + ':00</option>';
+}).join('');
+
+/** 画面全体の描画 */
+function render() {
+    const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
+    byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
+    byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
+    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + m + 'ヶ月目 ' + ((d - 1) % MD + 1) + '日目（通算' + state.day + '日）' + we.e + we.n;
+    byId('sp').innerHTML = Object.keys(PHN).map(k => '<span class="' + (state.phase === k ? 'on' : '') + '">' + PHN[k] + '</span>').join('');
+    byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
+    byId('gb').style.width = state.gauge + '%';
+    const pw = pwr(state.day);
+    byId('pw').textContent = state.day === 0 ? '' : '購買力 ×' + (Math.round(pw * 1000) / 1000) + '（季節×' + sea.p + ' 天気×' + we.p + '）';
+    const q = quota();
+    byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
+    byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
+    byId('qb').className = 'bar' + (state.mSales >= q ? '' : ' low');
+    const left = state.day === 0 ? MD : MD - ((d - 1) % MD) - 1;
+    byId('fe').textContent = 'テナント料 月¥' + fmt(tenantFee()) + '（棚' + state.slots + '台）' + (loanPay() ? ' / 返済 月¥' + fmt(loanPay()) : '') + (state.mWage > 0 ? ' / 給料未払 ¥' + fmt(state.mWage) : '');
+    byId('qd').textContent = (left === 0 ? '本日が月末' : '月末まであと' + left + '日') + ' / 棚増設チェック' + (state.slotQ > 0 ? '済' : 'あと' + (3 - (Math.floor((d - 1) / MD) % 3)) + 'ヶ月');
+    let a = '';
+    if (state.over)
+        a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '「設定」タブの「最初からやり直す」で再挑戦できます。</div>' + shareBox();
+    else if (state.phase === 'prep')
+        a = '<div class="hint">棚の「補充」で在庫を整えて、開店しましょう。</div><button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
+    else if (state.phase === 'open')
+        a = '<div class="hint">営業中 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）。販売しながら補充できます。</div>';
+    else
+        a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
+    byId('act').innerHTML = a;
+    byId('lg').innerHTML = state.log.map(l => '<div>' + l + '</div>').join('');
+    let pn = '';
+    if (state.evs.length)
+        pn += '<div class="card"><b>本日のできごと</b>' + state.evs.map(t => '<div class="meta">' + t + '</div>').join('') + '</div>';
+    const tags = [state.fem > 0 ? '🍌女性客×5（あと' + state.fem + '日）' : '', state.rb > 0 ? '🍙おにぎりブーム（あと' + state.rb + '日）' : '', state.flame > 0 ? '🔥炎上中（あと' + state.flame + '日）' : ''].filter(Boolean);
+    if (tags.length)
+        pn += '<div class="card meta">' + tags.join('　') + '</div>';
+    if (state.boom > 0 || state.pays.length)
+        pn += '<div class="card meta">' + (state.boom > 0 ? '🎉 ブーム中（あと' + state.boom + '日）：まとめ買い増　' : '') + (state.pays.length ? '💳 ' + state.pays.join('・') + '（客足×' + Math.round(Math.pow(1.2, state.pays.length) * 100) / 100 + '）' : '') + '</div>';
+    if (state.phase === 'closed' && !state.over) {
+        const nd = state.day + 1, nw = WE[state.next], ns = SEA[seaOf(nd)];
+        if (state.day > 0)
+            pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ¥' + fmt(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : '') + '</div></div>';
+        pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料¥' + fmt(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
+        pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする</div><div class="d">売上ゼロですが、購買欲+8、幸福度も回復します（高いほど大きく回復）。テナント料は発生します。</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
+        pn += '<div class="card"><b>🏦 融資</b><div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上は月平均売上の10倍まで（上限 ¥' + fmt(loanCap()) + '）</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
+    }
+    else if (!state.over)
+        pn += '<div class="hint">投資・店休日の選択・天気予報の確認は閉店後に行えます。</div>';
+    byId('hp').textContent = Math.floor(state.happy) + '%';
+    byId('hb').style.width = state.happy + '%';
+    byId('hb').parentNode.className = 'bar' + (state.happy < 15 ? ' low' : '');
+    byId('hs').textContent = state.sick > 0 ? '🤒 病気中（復帰まであと' + state.sick + '日）' + (state.clerk > 0 ? '・店員が営業中（給料150%）' : '・強制休業') : '15%未満で病気になります';
+    byId('hs').textContent = state.dep > 0 ? '😔 うつ病で休養中（あと' + state.dep + '日）補充・投資不可' + (state.clerk > 0 ? '・店員が営業中（給料150%）' : '・休業') : state.sick > 0 ? '🤒 病気中（あと' + state.sick + '日）補充・投資不可' + (state.clerk > 0 ? '・店員が営業中（給料150%）' : '・休業') : (state.low || 0) >= 7 ? '⚠ 幸福度が20%未満の日が' + state.low + '日続いています' : '';
+    {
+        const e = eff();
+        if (state.clerk > 0 && e < 0)
+            byId('hs').textContent += ' 😡負の感情モード（店員Lv' + e + '・盗難中）休業か投資で回復';
+        else if ((state.dn || 0) > 0)
+            byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
+    }
+    byId('pn').innerHTML = pn;
+    byId('sd').innerHTML = '<button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + '>' + (state.paused ? '▶' : '⏸') + '</button>' + [1, 2, 4, 8].map(v => '<button class="' + ((state.spd || 1) === v ? '' : 'alt') + '" data-a="spd" data-v="' + v + '">×' + v + '</button>').join('');
+    if (!dragMg)
+        byId('mnyA').innerHTML = '';
+    if (!dragMg)
+        byId('mg').innerHTML = (state.phase === 'closed' && !state.over) ? '<div class="card"><div class="row"><b>粗利率の設定</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"><div class="meta">高くすると1個あたりの利益は増えますが、来店数が減ります。</div></div>' + '<div class="card"><div class="row"><b>自分の月収</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"><div class="meta">月末に引かれます。年収中央値（約400万円＝月約33万円）が目安。多いと幸福度が上がり、少ないと下がります。</div></div><div class="card"><b>営業時間</b><div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div><div class="meta">長時間営業は幸福度を下げます。</div></div>' + '<div class="card"><div class="row"><b>🏦 預金</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div><div class="meta">月末に所持金がマイナスになると、自動で預金から引き出されます。</div></div>' : '';
+    const mv = byId('mgv');
+    if (mv)
+        mv.textContent = state.margin + '%（来店数 ×' + Math.round(demandFactor() * 100) / 100 + '）';
+    const sv = byId('slv');
+    if (sv)
+        sv.textContent = '¥' + fmt(state.sal) + (state.sal >= 330000 ? '（中央値以上）' : '（中央値未満）');
+    {
+        const dd = difficulty();
+        [['[data-a="mg"]', dd.full], ['[data-a="sal"]', dd.sal], ['[data-a="la"]', dd.full]].forEach(([q, v]) => {
+            const e = document.querySelector(q);
+            if (e && !v)
+                e.closest('.card').style.display = 'none';
+        });
+        byId('dt').textContent = dd.n + ' / ' + byId('dt').textContent;
+        byId('dfc').style.display = state.diff ? 'none' : 'block';
+    }
+    {
+        const sw = byId('svv');
+        if (sw)
+            sw.textContent = '金額 ¥' + fmt(state.svs || 0);
+        const A = byId('mnyA'), B = byId('mnyB');
+        B.innerHTML = '';
+        const lc = document.querySelector('[data-a="la"]');
+        if (lc)
+            B.appendChild(lc.closest('.card'));
+        if (!dragMg) {
+            A.innerHTML = '';
+            ['mg', 'sal', 'svx'].forEach(k => {
+                const e = document.querySelector('[data-a="' + k + '"]');
+                if (e)
+                    A.appendChild(e.closest('.card'));
+            });
+        }
+        byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
+        byId('ph').textContent = PHN[state.phase] || '';
+        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('');
+        [0, 1, 2, 3].forEach(i => {
+            const e = byId('p' + i);
+            if (e)
+                e.style.display = (state.tab || 0) === i ? '' : 'none';
+        });
+    }
+    const can = state.phase !== 'closed' && !state.over && !ill();
+    byId('sh').innerHTML = state.shelf.map((s, i) => {
+        if (!s)
+            return '<div class="shelf empty">空き棚<br>新商品を扱うと並びます</div>';
+        const p = PRODUCTS[s.id], dis = (!can || state.money < p.c || s.st >= state.cap) ? ' disabled' : '';
+        return '<div class="shelf"><div class="top"><span class="emo">' + p.e + '</span><div><div class="nm">' + p.n + (state.up[s.id] ? ' <small>Lv' + state.up[s.id] + '</small>' : '') + '</div><span class="price">¥' + fmt(priceOf(p)) + '</span></div></div>' +
+            '<div class="bar' + (s.st <= Math.ceil(state.cap * .2) ? ' low' : '') + '"><i style="width:' + (s.st / state.cap * 100) + '%"></i></div>' +
+            '<div class="cnt"><span>' + s.st + ' / ' + state.cap + '個</span><span>原価 ¥' + fmt(p.c) + '</span></div>' +
+            '<div class="btns"><button class="alt" data-a="r" data-i="' + i + '" data-n="5"' + dis + '>+5</button><button data-a="r" data-i="' + i + '" data-n="999"' + dis + '>満タン</button></div></div>';
+    }).join('');
+    const ok = state.phase === 'closed' && !state.over && !ill();
+    const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
+    const R = [];
+    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < PRODUCTS.length ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + '。テナント料は約1.6倍に', cost.slot(), state.slots >= MAX.slot));
+    R.push(row('cap', '', '📦 棚の容量アップ（' + state.cap + '個）', '次の容量: ' + (CAPS[CAPS.indexOf(state.cap) + 1] || '最大') + '個', cost.cap(), state.cap >= MAX.cap));
+    R.push(row('ad', '', '📣 広告（Lv.' + state.ad + '）', '来店数とまとめ買いが増える', cost.ad(), state.ad >= MAX.ad));
+    R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給¥' + fmt(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
+    PRODUCTS.forEach((p, id) => {
+        if (false)
+            R.push(row('new', id, p.e + ' ' + p.n + 'を扱う', '原価¥' + fmt(p.c) + ' → 売値¥' + fmt(priceOf(p)) + '（利益¥' + fmt(priceOf(p) - p.c) + '）', p.u, false));
+    });
+    const SECR = [];
+    SECR.push(row('seclv', '', '🛡 セキュリティ Lv.' + (state.sl || 0) + '/10' + (state.sl ? ' ' + SECN[state.sl - 1] : ''), (state.sl >= 10 ? '最大レベル' : '次: ' + SECN[state.sl || 0] + '（' + SECX[state.sl || 0] + '）'), cost.seclv(), (state.sl || 0) >= 10));
+    SECR.push(row('secbuy', '', '🛡 ストックを買う（' + (state.ss || 0) + '/5）', (state.sl > 0 ? SECN[state.sl - 1] + '：' + SECX[state.sl - 1] + '。破損まで' + ((state.ss || 0) > 0 ? Math.max(0, (state.sb || 0) - state.day) + '日' : (SECD[state.sl - 1] / 7) + 'ヶ月') + '（盗難1回ごとに1つ消費）' : 'まずレベルを上げてください'), cost.secbuy(), !(state.sl > 0) ? 1 : (state.ss || 0) >= 5));
+    R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）', '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
+    R.push(...SECR);
+    PRODUCTS.forEach((p, i) => {
+        if (!state.own.includes(i))
+            return;
+        const L = state.up[i];
+        let d, pc = 0, dn = false;
+        if (L >= 7) {
+            d = '最大レベル';
+            dn = true;
+        }
+        else if (state.sd[i] < TH[L]) {
+            d = '解放まであと' + (TH[L] - state.sd[i]) + '個販売 → ' + NM[i][L];
+            dn = 1;
+        }
+        else {
+            pc = upCost(i, L);
+            d = '→ ' + NM[i][L] + '（原価・売価アップ）';
+        }
+        R.push(row('upg', i, '⬆ ' + p.e + ' ' + p.n + ' Lv.' + L + '/7', d, pc, dn));
+    });
+    byId('up').innerHTML = R.join('');
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'r')
+        restock(+b.dataset.i, +b.dataset.n);
+    if (a === 'b')
+        buy(b.dataset.k, b.dataset.id === '' ? null : +b.dataset.id);
+    if (a === 'diff')
+        newGame(b.dataset.v);
+    if (a === 'tab') {
+        state.tab = +b.dataset.v;
+        render();
+        save();
+        byId('scr').scrollTop = 0;
+    }
+    if (a === 'svin')
+        svMove(1);
+    if (a === 'svout')
+        svMove(-1);
+    if (a === 'pause') {
+        state.paused = !state.paused;
+        render();
+    }
+    if (a === 'fillall')
+        fillAll();
+    if (a === 'share')
+        shareResult();
+    if (a === 'shimg')
+        saveResultImage();
+    if (a === 'shcopy')
+        copyShareText(b);
+    if (a === 'spd') {
+        state.spd = +b.dataset.v;
+        render();
+        save();
+    }
+    if (a === 'loan')
+        takeLoan();
+    if (a === 'open')
+        openShop();
+    if (a === 'next')
+        nextDay();
+    if (a === 'hol') {
+        state.hol = !state.hol;
+        render();
+        save();
+    }
+    if (a === 'reset') {
+        if (!window.rs) {
+            window.rs = 1;
+            b.textContent = 'もう一度押すとリセットします';
+            setTimeout(() => {
+                window.rs = 0;
+                b.textContent = '最初からやり直す';
+            }, 4000);
+        }
+        else {
+            window.rs = 0;
+            b.textContent = '最初からやり直す';
+            state = fresh();
+            applyUp();
+            state.next = roll(1);
+            state.weather = state.next;
+            dragMg = false;
+            render();
+            save();
+        }
+    }
+});
+
+document.addEventListener('input', e => {
+    const a = e.target.dataset.a;
+    if (a === 'mg') {
+        dragMg = true;
+        state.margin = +e.target.value;
+        render();
+    }
+    if (a === 'sal') {
+        dragMg = true;
+        state.sal = +e.target.value;
+        render();
+    }
+    if (a === 'svx') {
+        dragMg = true;
+        state.svs = +e.target.value;
+        render();
+    }
+});
+
+document.addEventListener('change', e => {
+    const t = e.target, a = t.dataset.a;
+    if (a === 'mg') {
+        dragMg = false;
+        state.margin = +t.value;
+        render();
+        save();
+    }
+    if (a === 'sal') {
+        dragMg = false;
+        state.sal = +t.value;
+        render();
+        save();
+    }
+    if (a === 'svx') {
+        dragMg = false;
+        state.svs = +t.value;
+        render();
+        save();
+    }
+    if (a === 'oh') {
+        state.openH = +t.value;
+        if (state.closeH <= state.openH)
+            state.closeH = state.openH + 1;
+        render();
+        save();
+    }
+    if (a === 'ch') {
+        state.closeH = +t.value;
+        if (state.closeH <= state.openH)
+            state.openH = state.closeH - 1;
+        render();
+        save();
+    }
+    if (a === 'la') {
+        state.ln.a = +t.value;
+        if (state.ln.a < 1500000 && state.ln.m > 12)
+            state.ln.m = 12;
+        render();
+    }
+    if (a === 'lm') {
+        state.ln.m = +t.value;
+        render();
+    }
+});
+
+/** 画面の組み替え（固定の上部・タブ・スクロール領域）。起動時に1回だけ呼ぶ */
+function initLayout() {
+    const tp = document.createElement('div');
+    tp.id = 'top';
+    document.querySelector('.awning').after(tp);
+    const hr = document.createElement('div');
+    hr.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;gap:8px';
+    byId('dt').style.cssText = 'font-size:12px;text-align:right';
+    hr.append(byId('m'), byId('dt'));
+    tp.append(hr);
+    const dd = byId('px').closest('details');
+    dd.style.margin = '4px 0';
+    tp.append(dd, byId('sd'));
+    const tb = document.createElement('div');
+    tb.id = 'tabs';
+    tb.className = 'sd';
+    tp.append(tb);
+    const mk = i => {
+        const d = document.createElement('div');
+        d.id = 'p' + i;
+        return d;
+    }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3);
+    [byId('gl').closest('.card'), byId('act'), byId('lg'), byId('pn'), byId('sh').previousElementSibling, byId('sh')].forEach(e => P0.append(e));
+    P1.append(byId('up').previousElementSibling, byId('up'));
+    const my = byId('mny');
+    my.open = true;
+    P2.append(my);
+    P3.append(byId('mg'), document.querySelector('.foot'));
+    const sc = document.createElement('div');
+    sc.id = 'scr';
+    sc.append(P0, P1, P2, P3);
+    tp.after(sc);
+}
