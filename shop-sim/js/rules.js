@@ -117,7 +117,7 @@ function applyDiff() {
 }
 
 /** 店員の実効レベル */
-const eff = () => Math.max(difficulty().neg ? -10 : 0, (state.sk || 0) - (state.dn || 0));
+const eff = () => Math.max(difficulty().neg ? -10 : 0, (state.sk || 0) - (state.dn || 0) + (state.mbDay && state.day === state.mbDay ? 1 : 0));
 
 /** 店員の1回の補充量 */
 const clAmt = () => {
