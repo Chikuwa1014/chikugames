@@ -223,6 +223,20 @@ body {
   font-weight:600;
 }
 
+.log div.sale {
+  color:var(--sub);
+  font-weight:400;
+}
+
+.log div.sale + div {
+  color:var(--ink);
+  font-weight:600;
+}
+
+.card.off {
+  opacity:.5;
+}
+
 h2 {
   font-size:16px;
   margin:16px 0 8px;

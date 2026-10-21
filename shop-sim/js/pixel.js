@@ -15,7 +15,14 @@ let fr = 0;
 const Rc = (x, y, w, h, c) => {
     cx.fillStyle = c;
     cx.fillRect(Math.round(x), Math.round(y), w, h);
+    if (pxDk) {
+        cx.fillStyle = 'rgba(8,16,48,0.5)';
+        cx.fillRect(Math.round(x), Math.round(y), w, h);
+    }
 };
+
+/** 夜に人物を描き直すとき、夜の暗さを重ねる */
+let pxDk = false;
 
 /** 来店中のお客さん */
 const PXC = [];
@@ -237,24 +244,26 @@ function drawPx() {
     Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
     pxLights(op, night);
     pxSec();
+    const k = op ? (state.spd || 1) : 1;
     for (const c of PXC) {
         if (c.st === 0) {
             const dx = 93 - c.x;
-            if (Math.abs(dx) <= c.sp + 1) {
+            if (Math.abs(dx) <= c.sp * k + 1) {
+                c.x = 93;
                 c.st = 1;
                 c.t = 8;
             }
             else
-                c.x += Math.sign(dx) * c.sp;
+                c.x += Math.sign(dx) * c.sp * k;
         }
         else if (c.st === 1) {
-            if (--c.t <= 0) {
+            if ((c.t -= k) <= 0) {
                 c.st = 2;
                 c.L = Math.random() < .5;
             }
         }
         else {
-            c.x += (c.L ? -1 : 1) * c.sp;
+            c.x += (c.L ? -1 : 1) * c.sp * k;
             if (c.x < -8 || c.x > 200)
                 c.dead = 1;
         }
@@ -262,15 +271,7 @@ function drawPx() {
     for (let i = PXC.length; i--;)
         if (PXC[i].dead)
             PXC.splice(i, 1);
-    PXC.forEach(c => {
-        if (c.st !== 1)
-            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
-    });
-    const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
-    for (let i = 0; i < n; i++) {
-        const sad = e < 0 || state.dn > 0;
-        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
-    }
+    pxPeople(op);
     if (wt === 2)
         for (let i = 0; i < 70; i++)
             Rc((i * 37 + fr * 2) % W, (i * 23 + fr * 6) % H, 1, 3, '#7ab8ea');
@@ -289,5 +290,21 @@ function drawPx() {
         Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
         Rc(37, 37, 8, 2, '#ffe9a8');
         pxLights(op, true);
+        pxDk = true;
+        pxPeople(op);
+        pxDk = false;
+    }
+}
+
+/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す） */
+function pxPeople(op) {
+    PXC.forEach(c => {
+        if (c.st !== 1)
+            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
+    });
+    const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
+    for (let i = 0; i < n; i++) {
+        const sad = e < 0 || state.dn > 0;
+        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
     }
 }

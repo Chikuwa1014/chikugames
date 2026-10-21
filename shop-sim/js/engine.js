@@ -2,6 +2,9 @@
  * engine.js — 時間の進行（営業中の1秒、閉店、翌日）。
  */
 
+/** 直近の販売（営業タブのログ欄の一番上に表示。開店時に空にする） */
+let lastSale = '';
+
 /** 閉店処理（盗難・月末・倒産判定） */
 function endDay() {
     LIMIT = -Math.floor(quota() * difficulty().bank / 1000) * 1000;
@@ -215,7 +218,8 @@ function tick() {
         gs.push(0);
     for (let i = cnt(rate / 2 * (state.fem > 0 ? 5 : 1)); i > 0; i--)
         gs.push(1);
-    let bc = 0;
+    let bc = 0, sy = 0;
+    const sl = {};
     for (const g of gs) {
         if (g)
             state.dF = (state.dF || 0) + 1;
@@ -246,11 +250,15 @@ function tick() {
         state.dRev += q * pp;
         state.dSold += q;
         state.sold += q;
+        sl[s.id] = (sl[s.id] || 0) + q;
+        sy += q * pp;
         if (state.boost === 0)
             state.gauge = Math.min(100, state.gauge + 2);
         if (q * pp >= 1000)
             addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp));
     }
+    if (bc)
+        lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +¥' + fmt(sy);
     pxArrive(gs, bc);
     if (state.flame > 0)
         state.gauge = Math.min(state.gauge, 4);
