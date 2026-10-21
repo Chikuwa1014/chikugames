@@ -368,6 +368,23 @@ button:focus-visible {
   font-weight:700;
 }
 
+/* セーブデータ欄 */
+.svpend {
+  margin-top:10px;
+  padding:10px;
+  border:1.5px dashed var(--line);
+  border-radius:8px;
+}
+
+.svwarn {
+  color:var(--red);
+}
+
+.svok {
+  color:var(--ok);
+  word-break:break-all;
+}
+
 /* 倒産ポップアップ */
 #ovm {
   position:fixed;

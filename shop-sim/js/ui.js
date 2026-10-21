@@ -48,6 +48,7 @@ function render() {
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
     syncOver();
+    syncSave();
     byId('lg').innerHTML = state.log.map(l => '<div>' + l + '</div>').join('');
     let pn = '';
     if (state.evs.length)
@@ -209,6 +210,19 @@ document.addEventListener('click', e => {
     }
     if (a === 'restart')
         restart();
+    if (a === 'fsave')
+        exportSave();
+    if (a === 'fload') {
+        svMsg = null;
+        byId('svf').click();
+    }
+    if (a === 'fok')
+        applyLoad();
+    if (a === 'fno') {
+        svPend = null;
+        svMsg = null;
+        syncSave();
+    }
     if (a === 'share')
         shareResult();
     if (a === 'shimg')
@@ -269,6 +283,10 @@ document.addEventListener('input', e => {
 
 document.addEventListener('change', e => {
     const t = e.target, a = t.dataset.a;
+    if (t.id === 'svf') {
+        importFile(t.files && t.files[0]);
+        t.value = '';
+    }
     if (a === 'mg') {
         dragMg = false;
         state.margin = +t.value;
@@ -340,7 +358,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('svd'), byId('svf'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
