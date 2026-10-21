@@ -11,6 +11,7 @@ if (!LA.includes(state.ln.a))
     state.ln.a = LA[0];
 applyDiff();
 initLayout();
+byId('ver').innerHTML = 'ちいさなお店 v' + VERSION + '<br>' + COPYRIGHT;
 setInterval(() => {
     fr++;
     drawPx();

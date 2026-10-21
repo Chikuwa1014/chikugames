@@ -375,6 +375,13 @@ button:focus-visible {
   font-weight:700;
 }
 
+.ver {
+  margin-top:16px;
+  color:var(--sub);
+  font-size:11px;
+  line-height:1.6;
+}
+
 /* ヘルプ（？アイコンとフロート） */
 button.hp {
   flex:none;
@@ -605,7 +612,7 @@ details .meta {
 <h2>投資</h2>
 <div id="up"></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
-<div class="foot"><button data-a="reset">最初からやり直す</button></div>
+<div class="foot"><button data-a="reset">最初からやり直す</button><div class="ver" id="ver"></div></div>
 <script>
 /**
  * data.js — データ定義（商品・季節・天気・難易度・各種テーブル）。ここは数値の調整だけで済む。
@@ -655,6 +662,12 @@ const WW = [
 
 /** フェーズ名 */
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
+
+/** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
+const VERSION = '1.0.0';
+
+/** 著作権表記 */
+const COPYRIGHT = '© 2026 ちくわげーむず';
 
 /** localStorage のセーブキー */
 const KEY = 'shopsim8';
@@ -2817,6 +2830,7 @@ if (!LA.includes(state.ln.a))
     state.ln.a = LA[0];
 applyDiff();
 initLayout();
+byId('ver').innerHTML = 'ちいさなお店 v' + VERSION + '<br>' + COPYRIGHT;
 setInterval(() => {
     fr++;
     drawPx();
