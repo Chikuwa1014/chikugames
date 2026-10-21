@@ -34,6 +34,7 @@ const fresh = () => ({
     dMiss: 0,
     rep: '',
     over: false,
+    ovx: false,
     margin: 40,
     feeMul: 1,
     spd: 1,
