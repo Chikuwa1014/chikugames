@@ -150,9 +150,9 @@ const GAMES = [
     tags: ['経営', 'ひとりで遊ぶ', '自動セーブ'], version: '1.1.0', thumb: 'shop', updated: '2026-10-22'
   },
   {
-    href: './stage-kobo/', kicker: 'ゲームメーカー', title: 'ステージ工房', sub: '2Dアクションのステージエディタ',
-    desc: 'パーツを並べてアクションステージを作り、その場でテストプレイ。ステージをクリアして集めたちくわで、新しいパーツを解放できる。',
-    tags: ['アクション', 'つくる', 'リンクで共有'], version: '1.3.0', thumb: 'stage', updated: '2026-10-23'
+    href: './stage-kobo/', kicker: 'ゲームメーカー', title: 'ステージ工房', sub: 'おでん横丁の2Dアクションエディタ',
+    desc: 'ちくわくんが走る「おでん横丁」のステージを作って、その場でテストプレイ。クリアで集めたちくわで、ちょうちんやおみくじ箱などのパーツを解放できる。',
+    tags: ['アクション', 'つくる', 'リンクで共有'], version: '1.4.0', thumb: 'stage', updated: '2026-10-23'
   }
 ];
 
@@ -219,45 +219,53 @@ function DRAW_shop(c, t) {
   r(126, cy, 6, 6, '#F6C431'); r(128, cy + 1, 2, 4, '#B8860B');
 }
 function DRAW_stage(c, t) {
+  /* おでん横丁の夕暮れ：ちくわくん、こんにゃん、だしのしずく、かまぼこ板、ちょうちん、のれん */
   const r = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
-  const g = c.createLinearGradient(0, 0, 0, 90); g.addColorStop(0, '#8CCBF2'); g.addColorStop(1, '#DCF0FA');
+  const g = c.createLinearGradient(0, 0, 0, 90); g.addColorStop(0, '#2C2D63'); g.addColorStop(0.55, '#A9587C'); g.addColorStop(1, '#F2A46A');
   c.fillStyle = g; c.fillRect(0, 0, 160, 90);
-  // 遠景の丘
-  c.fillStyle = '#A5D6B8';
-  for (let x = 0; x < 160; x += 2) { const h = 12 + Math.sin((x + t * 4) / 18) * 6; c.fillRect(x, 74 - h, 2, h); }
-  // 雲
-  const cx = 150 - ((t * 5) % 200);
-  r(cx, 14, 20, 5, '#FFFFFF'); r(cx + 4, 10, 11, 5, '#FFFFFF');
+  // 屋台のシルエット
+  c.fillStyle = 'rgba(46,26,52,0.55)';
+  for (let i = 0; i < 5; i++) { const x = i * 36 - 6, h = 16 + (i % 2) * 6; c.beginPath(); c.moveTo(x, 74 - h); c.lineTo(x + 16, 74 - h - 7); c.lineTo(x + 32, 74 - h); c.lineTo(x + 32, 74); c.lineTo(x, 74); c.fill(); }
+  // 湯気
+  c.fillStyle = 'rgba(255,255,255,0.35)';
+  for (let i = 0; i < 3; i++) { const ph = (t * 0.35 + i / 3) % 1; c.beginPath(); c.arc(40 + i * 34 + Math.sin(t * 2 + i) * 3, 52 - ph * 40, 3 + ph * 5, 0, Math.PI * 2); c.fill(); }
   // 地面（穴あり）
-  const T = 10;
-  for (let x = 0; x < 160; x += T) {
+  for (let x = 0; x < 160; x += 10) {
     if (x >= 60 && x < 80) continue;
-    r(x, 74, T, 16, '#8A5A3B'); r(x, 74, T, 3, '#4FAF4A'); r(x + 3, 82, 2, 2, '#74492F');
+    r(x, 74, 10, 16, '#7A4E36'); r(x, 74, 10, 3, '#5E9A3E'); r(x + 3, 82, 2, 2, '#623D2A');
   }
-  // ブロック
-  for (let i = 0; i < 4; i++) { const x = 52 + i * T; r(x, 44, T, T, '#D9783A'); r(x, 48, T, 1, '#A4532A'); r(x + 4, 44, 1, 4, '#A4532A'); r(x, 53, T, 1, '#A4532A'); }
-  // コイン（回転）
+  // かまぼこ板
+  for (let i = 0; i < 4; i++) { const x = 52 + i * 10; r(x, 44, 10, 2, '#EE8AA0'); r(x, 46, 10, 5, '#FFF7F0'); r(x, 51, 10, 3, '#C99A62'); }
+  // ちょうちん
+  const lx = 22, ly = 18;
+  const gl = c.createRadialGradient(lx, ly, 1, lx, ly, 16); gl.addColorStop(0, 'rgba(255,180,90,0.6)'); gl.addColorStop(1, 'rgba(255,180,90,0)');
+  c.fillStyle = gl; c.fillRect(lx - 16, ly - 16, 32, 32);
+  r(lx - 0.5, 4, 1, 8, '#3A2A1E');
+  c.fillStyle = '#E8483A'; c.beginPath(); c.ellipse(lx, ly, 5, 6, 0, 0, Math.PI * 2); c.fill();
+  r(lx - 3, 11, 6, 2, '#2A2420'); r(lx - 3, 23, 6, 2, '#2A2420');
+  // だしのしずく
   for (let i = 0; i < 3; i++) {
-    const w = Math.max(1, Math.round(4 * Math.abs(Math.cos(t * 3 + i))));
-    const y = 33 + Math.round(Math.sin(t * 4 + i) * 1.5);
-    r(58 + i * 10 + (4 - w) / 2, y, w, 6, '#F6C431');
+    const x = 61 + i * 10, y = 36 + Math.round(Math.sin(t * 4 + i) * 1.5);
+    c.fillStyle = '#F2B23A'; c.beginPath(); c.moveTo(x, y - 4); c.quadraticCurveTo(x + 3, y, x + 3, y + 1); c.arc(x, y + 1, 3, 0, Math.PI); c.quadraticCurveTo(x - 3, y, x, y - 4); c.fill();
   }
-  // トゲ
-  c.fillStyle = '#9AA3AD';
-  for (let i = 0; i < 2; i++) { c.beginPath(); c.moveTo(108 + i * 5, 74); c.lineTo(110.5 + i * 5, 68); c.lineTo(113 + i * 5, 74); c.fill(); }
-  // ゴール旗
-  r(140, 44, 2, 30, '#DDE3EA'); r(139, 42, 4, 3, '#F6C431');
-  const wv = Math.round(Math.sin(t * 5));
-  c.fillStyle = '#2FA36B'; c.beginPath(); c.moveTo(142, 46); c.lineTo(154, 50 + wv); c.lineTo(142, 55); c.fill();
-  // 敵（往復）
+  // つまようじ山
+  r(106, 72, 12, 2, '#7C5A3A');
+  for (let i = 0; i < 4; i++) r(107 + i * 3, 66 + (i % 2) * 2, 1, 8 - (i % 2) * 2, '#E8D3A2');
+  // のれん（ゴール）
+  r(136, 46, 22, 2, '#7A5230');
+  const wv = Math.round(Math.sin(t * 3));
+  for (let i = 0; i < 3; i++) { r(137 + i * 7 + (i - 1) * wv * 0.5, 48, 6, 18, '#2F4A86'); r(137 + i * 7 + (i - 1) * wv * 0.5, 64, 6, 2, '#E9EEF8'); }
+  c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(147, 55, 3, 0, Math.PI * 2); c.fill();
+  // こんにゃん（往復）
   const ex = 88 + Math.sin(t * 1.2) * 8;
-  r(ex, 66, 9, 8, '#7B3FA0'); r(ex + 1, 64, 7, 2, '#7B3FA0');
-  r(ex + 2, 67, 2, 3, '#FFFFFF'); r(ex + 5, 67, 2, 3, '#FFFFFF');
-  // プレイヤー（ジャンプのループ）
+  r(ex, 66, 10, 8, '#8D8E96'); r(ex, 64, 2, 2, '#8D8E96'); r(ex + 8, 64, 2, 2, '#8D8E96');
+  r(ex + 2, 68, 2, 3, '#FFFFFF'); r(ex + 6, 68, 2, 3, '#FFFFFF'); r(ex + 3, 72, 1, 1, '#5E5F68'); r(ex + 7, 71, 1, 1, '#5E5F68');
+  // ちくわくん（ジャンプのループ）
   const ph = (t * 0.55) % 1;
   const px = 14 + ph * 46;
-  const py = 64 - Math.max(0, Math.sin(Math.min(1, ph / 0.75) * Math.PI)) * 26;
-  r(px, py, 8, 10, '#2B5FD9'); r(px + 1, py + 2, 6, 4, '#F4C9A0'); r(px + 4, py + 3, 1, 2, '#1C2230'); r(px + 6, py + 3, 1, 2, '#1C2230');
+  const py = 63 - Math.max(0, Math.sin(Math.min(1, ph / 0.75) * Math.PI)) * 26;
+  r(px, py + 1, 8, 10, '#F3DDB2'); r(px, py + 1, 8, 3, '#C9772E'); r(px + 1, py, 6, 2, '#E9A55B'); r(px + 3, py, 2, 1, '#6B3A17');
+  r(px + 2, py + 5, 1, 2, '#2A1A10'); r(px + 5, py + 5, 1, 2, '#2A1A10'); r(px + 1, py + 8, 6, 1, '#C9772E');
 }
 var DRAW = { shop: DRAW_shop, stage: DRAW_stage };
 
