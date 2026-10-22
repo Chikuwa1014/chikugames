@@ -110,6 +110,39 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
 .share a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #shUrl{width:100%;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--well);color:var(--ink);padding:8px}
 .sheet .small{font-size:12px}
+.hdr-r{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.wallet{display:flex;align-items:center;gap:6px;padding:6px 14px 6px 8px;border-radius:999px;background:var(--well);font-variant-numeric:tabular-nums}
+.wallet svg{width:24px;height:24px;flex:none}
+.wallet b{font-family:var(--f-mono);font-weight:500;font-size:16px}
+.wallet span{font-size:12px;color:var(--muted)}
+.wallet.bump{animation:bump .5s ease}
+@keyframes bump{30%{transform:scale(1.12)}}
+.tile.locked{color:var(--muted)}
+.tile .cost{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.collect{gap:16px}
+.collect-head{display:flex;flex-direction:column;gap:4px}
+.collect-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px 28px}
+.collect h3{margin:0 0 4px;font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.prog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.prog li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.prog li:last-child{border-bottom:0}
+.prog li.soon{opacity:.6}
+.prog strong{font-weight:700}
+.prog .sub{display:block;font-size:12px;color:var(--muted);line-height:1.5}
+.bar{height:6px;border-radius:3px;background:var(--well);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--play);border-radius:3px}
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--well);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.done{background:var(--accent);color:var(--accent-ink)}
+.btn.small{padding:6px 12px;font-size:13px;white-space:nowrap}
+.btn:disabled{opacity:.55;cursor:default}
+.rules{font-size:13px;color:var(--muted)}
+.rules summary{cursor:pointer;color:var(--ink);font-weight:700}
+.rules ul{margin:8px 0 0;padding-left:1.2em}
+.reward{background:var(--well);border-radius:10px;padding:10px 14px;font-size:14px}
+.reward strong{font-family:var(--f-display);font-weight:400;font-size:18px;color:var(--play)}
+.reward ul{margin:4px 0 0;padding-left:1.2em;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:12px;font-size:14px;font-weight:700;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+body.shared #collect{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -121,9 +154,15 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
       <h1>ステージ工房<span class="ver" id="ver"></span></h1>
       <p id="tagline">パーツを並べて2Dアクションのステージを作り、その場でテストプレイできます。</p>
     </div>
-    <div class="mode" role="tablist" aria-label="モード">
-      <button id="modeEdit" role="tab" aria-selected="true">編集</button>
-      <button id="modePlay" role="tab" aria-selected="false">テストプレイ ▶</button>
+    <div class="hdr-r">
+      <div class="wallet" id="wallet" title="持っているちくわ">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#C9772E"/><circle cx="16" cy="16" r="12" fill="#E9A55B"/><path d="M8 11.5c2-.6 3.4-.3 4.6.6M19.5 22c1.6.4 3 .2 4.3-.7" stroke="#B5651F" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="16" cy="16" r="6.2" fill="#FFF6EA"/></svg>
+        <span>ちくわ</span><b id="chikuwa">0</b><span>本</span>
+      </div>
+      <div class="mode" role="tablist" aria-label="モード">
+        <button id="modeEdit" role="tab" aria-selected="true">編集</button>
+        <button id="modePlay" role="tab" aria-selected="false">テストプレイ ▶</button>
+      </div>
     </div>
   </header>
 
@@ -132,6 +171,7 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
       <h2>パーツ</h2>
       <div class="tiles" id="palette"></div>
       <p class="hint">クリックかドラッグで配置。右クリックで消去。数字キーでパーツを切り替え。</p>
+      <p class="hint" id="lockHint" role="status"></p>
     </aside>
 
     <section class="stage">
@@ -159,6 +199,32 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
       <p class="keys" id="keys">操作: ← → または A D で移動、Space / ↑ / W でジャンプ、R でリトライ</p>
     </section>
   </main>
+
+  <section class="panel collect" id="collect">
+    <div class="collect-head">
+      <h2>ちくわとスタンプ</h2>
+      <p>ステージをクリアするとちくわがもらえます。ちくわでパーツを順番に解放し、ミッションを達成するとスタンプが集まります。</p>
+    </div>
+    <div class="collect-grid">
+      <div>
+        <h3>ちくわで解放</h3>
+        <ul class="prog" id="unlockList"></ul>
+      </div>
+      <div>
+        <h3>スタンプ（ミッション）</h3>
+        <ul class="prog" id="stampList"></ul>
+      </div>
+    </div>
+    <details class="rules">
+      <summary>ちくわのもらい方</summary>
+      <ul>
+        <li>共有されたステージを初クリア：10本。全コイン取得とノーミスで、それぞれ＋5本</li>
+        <li>サンプルステージを初クリア：10本。全コイン取得とノーミスで、それぞれ＋5本</li>
+        <li>自分で作ったステージを初クリア：3本（1日5回まで）</li>
+        <li>報酬は1つのステージにつき1回だけです。自分で共有したステージは、自分のステージとして数えます。</li>
+      </ul>
+    </details>
+  </section>
 
   <section class="panels">
     <div class="panel">
@@ -193,6 +259,7 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
+      <li><b>v1.3.0</b>（2026-10-22）ちくわとスタンプでパーツを解放する仕組みを追加。新パーツ：中間旗、雲の足場、壊れるブロック、？ブロック、氷の床</li>
       <li><b>v1.2.1</b>（2026-10-22）ステージの書き出しをステージコード（改ざん検出つき）に変更。共有リンクにも改ざん検出を追加</li>
       <li><b>v1.2.0</b>（2026-10-22）背景を5種類から選べるように（ある日の昼下がり、たそがれどき、流星のぐんじょう、マンマンボルケーノ、カチカチチンチン）</li>
       <li><b>v1.1.1</b>（2026-10-22）SNS共有の文面に「#ちくわげーむず」を追加</li>
@@ -206,6 +273,7 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
   <div class="sheet">
     <h2 id="mTitle">ステージクリア！</h2>
     <p id="mBody"></p>
+    <div class="reward" id="mReward" hidden></div>
     <div class="share">
       <a id="shX" target="_blank" rel="noopener">X でシェア</a>
       <a id="shLine" target="_blank" rel="noopener">LINE で送る</a>
@@ -221,11 +289,13 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
   </div>
 </div>
 
+<div class="toast" id="toast" role="status" hidden></div>
+
 <script>
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.2.1';
+const VERSION = '1.3.0';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 const THEMES = {
@@ -237,7 +307,28 @@ const THEMES = {
 };
 for (const k in THEMES) THEMES[k].key = k;
 let TH = THEMES.day;
-const PARTS = [['P','スタート'],['#','地面'],['B','ブロック'],['o','コイン'],['e','敵'],['^','トゲ'],['S','ジャンプ台'],['G','ゴール'],['.','消しゴム']];
+const ALL_PARTS = [['P','スタート'],['#','地面'],['B','ブロック'],['o','コイン'],['e','敵'],['^','トゲ'],['S','ジャンプ台'],['G','ゴール'],
+  ['C','中間旗'],['=','雲の足場'],['X','壊れるブロック'],['?','？ブロック'],['I','氷の床'],['.','消しゴム']];
+const KEY_PARTS = { '1': 'P', '2': '#', '3': 'B', '4': 'o', '5': 'e', '6': '^', '7': 'S', '8': 'G', '9': 'C', '0': '.' };
+const UNLOCKS = [
+  { ch: 'C', name: '中間旗', cost: 10, desc: 'さわると、ミスしてもここから再開' },
+  { ch: '=', name: '雲の足場', cost: 20, desc: '下からすり抜けて、上に乗れる' },
+  { ch: 'X', name: '壊れるブロック', cost: 30, desc: '下からたたくと壊れる' },
+  { ch: '?', name: '？ブロック', cost: 40, desc: '下からたたくとコインが出る' },
+  { ch: 'I', name: '氷の床', cost: 50, desc: 'つるつるすべる' },
+  { name: '動く床', cost: 70, soon: true },
+  { name: '飛ぶ敵', cost: 90, soon: true },
+  { name: '1UPキノコ', cost: 110, soon: true },
+  { name: 'カギと扉', cost: 140, soon: true },
+  { name: 'ワープ土管', cost: 180, soon: true }
+];
+const LOCKABLE = new Set(UNLOCKS.filter(u => u.ch).map(u => u.ch));
+const STAMPS = [
+  { id: 'lava', name: 'マンマンボルケーノの背景でクリア', goal: 1, part: '溶岩' },
+  { id: 'stomp', name: '敵を合計30体ふむ', goal: 30, part: 'トゲの敵' },
+  { id: 'nomiss', name: 'ノーミスで3ステージクリア', goal: 3, part: '大砲' },
+  { id: 'shared', name: '他の人のステージを5つクリア', goal: 5, part: '無敵スター' }
+];
 const dots = n => '.'.repeat(n);
 const SAMPLE = [
   '', '', '', '', '', '',
@@ -258,7 +349,7 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 function normalize(rows) {
   const out = [];
   for (let y = 0; y < H; y++) {
-    const r = String((rows && rows[y]) || '').replace(/[^.#Boe^SGP]/g, '.');
+    const r = String((rows && rows[y]) || '').replace(/[^.#Boe^SGPC=X?I]/g, '.');
     out.push((r + dots(W)).slice(0, W));
   }
   return out;
@@ -335,6 +426,75 @@ function save() {
   updateStats();
 }
 
+/* ---------- ちくわ・スタンプ（進行データ。チェック値つきで保存） ---------- */
+const PSTORE = 'stage-kobo-progress';
+function b64e(str) { const by = new TextEncoder().encode(str); let bin = ''; by.forEach(b => { bin += String.fromCharCode(b); }); return btoa(bin); }
+function b64d(s) { const bin = atob(s); return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))); }
+const freshPG = () => ({ w: 0, u: [], cl: {}, day: '', dn: 0, stomp: 0, lava: 0, nm: [], sh: [], mine: [], got: [] });
+let PG = freshPG(), pgReset = false;
+try {
+  const raw = localStorage.getItem(PSTORE);
+  if (raw) {
+    const [body, sum] = raw.split('.');
+    if (checksum(body) !== sum) pgReset = true;
+    else PG = Object.assign(freshPG(), JSON.parse(b64d(body)));
+  }
+} catch (e) { pgReset = true; }
+for (const k of ['u', 'nm', 'sh', 'mine', 'got']) if (!Array.isArray(PG[k])) PG[k] = [];
+for (const k of ['w', 'dn', 'stomp', 'lava']) PG[k] = Math.max(0, Math.floor(+PG[k] || 0));
+if (!PG.cl || typeof PG.cl !== 'object') PG.cl = {};
+PG.u = PG.u.filter(ch => LOCKABLE.has(ch));
+function saveProgress() {
+  try { const body = b64e(JSON.stringify(PG)); localStorage.setItem(PSTORE, body + '.' + checksum(body)); } catch (e) {}
+  renderProgress();
+}
+const stageId = d => checksum(encodeShare(d));
+const SAMPLE_ID = stageId(sampleDoc());
+const capList = (a, n) => { while (a.length > n) a.shift(); };
+function markMine(id) { if (!PG.mine.includes(id)) { PG.mine.push(id); capList(PG.mine, 300); saveProgress(); } }
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const STAMP_PROGRESS = { lava: () => PG.lava, stomp: () => PG.stomp, nomiss: () => PG.nm.length, shared: () => PG.sh.length };
+function checkStamps() {
+  const fresh = [];
+  for (const s of STAMPS) if (!PG.got.includes(s.id) && STAMP_PROGRESS[s.id]() >= s.goal) { PG.got.push(s.id); fresh.push(s); }
+  return fresh;
+}
+/* クリア時の報酬。ステージの中身から作るIDごとに、初クリア・全コイン・ノーミスを1回ずつ */
+function grantClear(g) {
+  const id = stageId(doc);
+  const kind = id === SAMPLE_ID ? 'sample' : (readOnly && !PG.mine.includes(id)) ? 'shared' : 'own';
+  const prev = PG.cl[id] || 0, nomiss = g.lives === doc.settings.lives, lines = [];
+  let bits = prev, gain = 0;
+  if (!(prev & 1)) {
+    bits |= 1;
+    if (kind === 'own') {
+      if (PG.day !== today()) { PG.day = today(); PG.dn = 0; }
+      if (PG.dn < 5) { PG.dn++; gain += 3; lines.push(['自分のステージを初クリア', 3]); }
+      else lines.push(['自分のステージの報酬は、今日の上限（5回）に達しています', 0]);
+    } else { gain += 10; lines.push([(kind === 'sample' ? 'サンプルステージ' : '共有ステージ') + 'を初クリア', 10]); }
+  }
+  if (kind !== 'own') {
+    if (g.total > 0 && g.coins >= g.total && !(prev & 2)) { bits |= 2; gain += 5; lines.push(['全コイン', 5]); }
+    if (nomiss && !(prev & 4)) { bits |= 4; gain += 5; lines.push(['ノーミス', 5]); }
+  }
+  PG.cl[id] = bits;
+  const ks = Object.keys(PG.cl); if (ks.length > 500) delete PG.cl[ks[0]];
+  PG.w += gain;
+  if (doc.bg === 'magma') PG.lava = 1;
+  if (nomiss && !PG.nm.includes(id)) { PG.nm.push(id); capList(PG.nm, 50); }
+  if (kind === 'shared' && !PG.sh.includes(id)) { PG.sh.push(id); capList(PG.sh, 50); }
+  const stamps = checkStamps();
+  saveProgress();
+  if (gain) { const wl = $('wallet'); wl.classList.remove('bump'); void wl.offsetWidth; wl.classList.add('bump'); }
+  return { gain, lines, stamps, kind };
+}
+function countStomp() {
+  PG.stomp++;
+  const st = checkStamps();
+  saveProgress();
+  st.forEach(s => toast(`スタンプ獲得：${s.name}`));
+}
+
 /* ---------- 描画 ---------- */
 function rr(c, x, y, w, h, r) {
   c.beginPath();
@@ -402,6 +562,48 @@ function drawTile(c, ch, x, y, s, t, top) {
       c.fillStyle = '#4C5560'; c.fillRect(x + s * 0.15, y + s * 0.9, s * 0.36, s * 0.1);
       break;
     }
+    case 'C': case 'c': {
+      c.fillStyle = '#8C96A3'; c.fillRect(x + s * 0.3, y + s * 0.08, s * 0.08, s * 0.92);
+      c.fillStyle = '#4C5560'; c.fillRect(x + s * 0.18, y + s * 0.9, s * 0.32, s * 0.1);
+      const on = ch === 'c', wv = on ? Math.sin(t * 6) * s * 0.05 : 0;
+      c.fillStyle = on ? '#F08A3A' : '#AEB7C2';
+      c.beginPath(); c.moveTo(x + s * 0.38, y + s * 0.1); c.lineTo(x + s * 0.88, y + s * 0.24 + wv); c.lineTo(x + s * 0.38, y + s * 0.4); c.fill();
+      break;
+    }
+    case '=':
+      c.fillStyle = 'rgba(90,120,160,0.35)'; c.fillRect(x + s * 0.06, y + s * 0.36, s * 0.88, s * 0.1);
+      c.fillStyle = '#FFFFFF';
+      c.beginPath(); c.arc(x + s * 0.25, y + s * 0.2, s * 0.2, 0, Math.PI * 2); c.arc(x + s * 0.55, y + s * 0.16, s * 0.22, 0, Math.PI * 2); c.arc(x + s * 0.8, y + s * 0.22, s * 0.18, 0, Math.PI * 2); c.fill();
+      c.fillRect(x + s * 0.05, y + s * 0.18, s * 0.9, s * 0.2);
+      break;
+    case 'X':
+      c.fillStyle = '#C9A27A'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#9C7650'; c.fillRect(x, y, s, s * 0.08); c.fillRect(x, y + s * 0.92, s, s * 0.08);
+      c.strokeStyle = '#6E4F33'; c.lineWidth = Math.max(1, s * 0.06);
+      c.beginPath(); c.moveTo(x + s * 0.2, y + s * 0.15); c.lineTo(x + s * 0.45, y + s * 0.45); c.lineTo(x + s * 0.35, y + s * 0.7); c.lineTo(x + s * 0.55, y + s * 0.9);
+      c.moveTo(x + s * 0.45, y + s * 0.45); c.lineTo(x + s * 0.8, y + s * 0.35); c.stroke();
+      break;
+    case '?': {
+      c.fillStyle = '#F2B33D'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#B87A12'; c.fillRect(x, y + s * 0.9, s, s * 0.1); c.fillRect(x + s * 0.9, y, s * 0.1, s);
+      c.fillStyle = '#FFF1C2'; c.fillRect(x, y, s, s * 0.08); c.fillRect(x, y, s * 0.08, s);
+      const u = s / 8;
+      c.fillStyle = '#8A4F06';
+      for (const [a, b, w, h] of [[3, 1.2, 2, 1], [2, 2, 1, 1.2], [5, 2, 1, 1.8], [4, 3.6, 1, 1], [3, 4.4, 1, 1.1], [3, 6, 1, 1]]) c.fillRect(x + u * a, y + u * b, u * w, u * h);
+      break;
+    }
+    case 'U':
+      c.fillStyle = '#9C7A55'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#7A5C3D'; c.fillRect(x, y + s * 0.9, s, s * 0.1); c.fillRect(x + s * 0.9, y, s * 0.1, s);
+      c.fillStyle = '#6A4E33';
+      for (const [a, b] of [[0.2, 0.2], [0.68, 0.2], [0.2, 0.68], [0.68, 0.68]]) c.fillRect(x + s * a, y + s * b, s * 0.1, s * 0.1);
+      break;
+    case 'I':
+      c.fillStyle = '#BFE9F7'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#E9F8FD'; c.beginPath(); c.moveTo(x + s * 0.1, y + s * 0.55); c.lineTo(x + s * 0.55, y + s * 0.1); c.lineTo(x + s * 0.72, y + s * 0.1); c.lineTo(x + s * 0.1, y + s * 0.72); c.fill();
+      c.fillStyle = '#7CC3E0'; c.fillRect(x, y + s * 0.92, s, s * 0.08); c.fillRect(x + s * 0.92, y, s * 0.08, s);
+      c.fillStyle = '#FFFFFF'; c.fillRect(x, y, s, s * 0.08);
+      break;
     case 'P': drawPlayer(c, x + s * 0.13, y + s * 0.08, s * 0.74, s * 0.92, 1, 1); break;
   }
 }
@@ -506,23 +708,101 @@ function drawSky(c, w, h, camX, t) { (SKY[TH.key] || SKY.day)(c, w, h, camX, t |
 /* ---------- パレット ---------- */
 let current = '#';
 const pal = $('palette');
-PARTS.forEach(([ch, name], i) => {
-  const b = document.createElement('button');
-  b.className = 'tile'; b.dataset.ch = ch;
-  const ic = document.createElement('canvas'); ic.width = 64; ic.height = 64;
-  const c = ic.getContext('2d');
+const isUnlocked = ch => !LOCKABLE.has(ch) || PG.u.includes(ch);
+const KEY_OF = Object.fromEntries(Object.entries(KEY_PARTS).map(([k, ch]) => [ch, k]));
+function drawIcon(b) {
+  const ch = b.dataset.ch, c = b.querySelector('canvas').getContext('2d');
   if (ch === '.') { c.fillStyle = '#E8ECF1'; c.fillRect(0, 0, 64, 64); c.strokeStyle = '#C0392B'; c.lineWidth = 6; c.beginPath(); c.moveTo(16, 16); c.lineTo(48, 48); c.moveTo(48, 16); c.lineTo(16, 48); c.stroke(); }
   else { c.fillStyle = TH.base; c.fillRect(0, 0, 64, 64); drawTile(c, ch, 0, 0, 64, 0.3, true); }
-  b.append(ic, document.createTextNode(name));
-  const kb = document.createElement('kbd'); kb.textContent = String(i + 1); b.append(kb);
-  b.addEventListener('click', () => selectPart(ch));
-  pal.append(b);
-});
+  if (!isUnlocked(ch)) {
+    c.fillStyle = 'rgba(20,24,34,0.6)'; c.fillRect(0, 0, 64, 64);
+    c.strokeStyle = '#F4F6FA'; c.lineWidth = 5; c.beginPath(); c.arc(32, 30, 8, Math.PI, 0); c.stroke();
+    c.fillStyle = '#F4F6FA'; c.fillRect(20, 30, 24, 20);
+    c.fillStyle = '#2A3040'; c.fillRect(30, 36, 4, 8);
+  }
+}
+function buildPalette() {
+  pal.textContent = '';
+  for (const [ch, name] of ALL_PARTS) {
+    const b = document.createElement('button');
+    b.className = 'tile'; b.dataset.ch = ch;
+    const ic = document.createElement('canvas'); ic.width = 64; ic.height = 64;
+    b.append(ic, document.createTextNode(name));
+    if (!isUnlocked(ch)) {
+      const u = UNLOCKS.find(x => x.ch === ch);
+      b.classList.add('locked');
+      b.setAttribute('aria-label', `${name}（未解放・ちくわ${u.cost}本）`);
+      const sm = document.createElement('small'); sm.className = 'cost'; sm.textContent = `${u.cost}本`; b.append(sm);
+    } else if (KEY_OF[ch]) {
+      const kb = document.createElement('kbd'); kb.textContent = KEY_OF[ch]; b.append(kb);
+    }
+    b.addEventListener('click', () => selectPart(ch));
+    drawIcon(b);
+    pal.append(b);
+  }
+  selectPart(isUnlocked(current) ? current : '#');
+}
 function selectPart(ch) {
+  if (!isUnlocked(ch)) {
+    const u = UNLOCKS.find(x => x.ch === ch);
+    $('lockHint').textContent = `「${u.name}」はまだ使えません。ちくわ${u.cost}本で解放できます（下の「ちくわとスタンプ」から）。`;
+    return;
+  }
+  $('lockHint').textContent = '';
   current = ch;
   pal.querySelectorAll('.tile').forEach(b => b.setAttribute('aria-pressed', b.dataset.ch === ch ? 'true' : 'false'));
 }
-selectPart('#');
+buildPalette();
+
+/* ---------- 解放とスタンプの一覧 ---------- */
+let toastTimer;
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg; el.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3400);
+}
+function pill(text, cls) { const s = document.createElement('span'); s.className = 'pill' + (cls ? ' ' + cls : ''); s.textContent = text; return s; }
+function rowText(title, sub) {
+  const d = document.createElement('div');
+  const st = document.createElement('strong'); st.textContent = title;
+  const sp = document.createElement('span'); sp.className = 'sub'; sp.textContent = sub;
+  d.append(st, sp); return d;
+}
+function unlock(u) {
+  if (PG.w < u.cost || PG.u.includes(u.ch)) return;
+  PG.w -= u.cost; PG.u.push(u.ch);
+  saveProgress(); buildPalette(); selectPart(u.ch);
+  toast(`「${u.name}」を解放しました。パーツ棚から使えます`);
+}
+function renderProgress() {
+  $('chikuwa').textContent = PG.w;
+  const ul = $('unlockList'); ul.textContent = '';
+  let nextShown = false;
+  for (const u of UNLOCKS) {
+    const li = document.createElement('li');
+    const owned = !!u.ch && PG.u.includes(u.ch);
+    li.append(rowText(u.name, u.soon ? `ちくわ${u.cost}本 ・ v1.4.0で登場` : `ちくわ${u.cost}本 ・ ${u.desc}`));
+    if (owned) li.append(pill('解放済み', 'done'));
+    else if (u.soon) { li.classList.add('soon'); li.append(pill('近日登場')); }
+    else if (!nextShown) {
+      nextShown = true;
+      const b = document.createElement('button'); b.className = 'btn small primary';
+      b.disabled = PG.w < u.cost;
+      b.textContent = b.disabled ? `あと${u.cost - PG.w}本` : '解放する';
+      b.addEventListener('click', () => unlock(u));
+      li.append(b);
+    } else li.append(pill('ロック中'));
+    ul.append(li);
+  }
+  const sl = $('stampList'); sl.textContent = '';
+  for (const s of STAMPS) {
+    const v = Math.min(s.goal, STAMP_PROGRESS[s.id]()), done = PG.got.includes(s.id);
+    const li = document.createElement('li');
+    const txt = rowText(s.name, `ごほうび：${s.part}（v1.4.0で登場）`);
+    if (!done) { const bar = document.createElement('div'); bar.className = 'bar'; const i = document.createElement('i'); i.style.width = (v / s.goal * 100) + '%'; bar.append(i); txt.append(bar); }
+    li.append(txt, done ? pill('スタンプ獲得', 'done') : pill(`${v} / ${s.goal}`));
+    sl.append(li);
+  }
+}
 
 /* ---------- 背景 ---------- */
 const bgBox = $('bgs');
@@ -546,13 +826,7 @@ for (const k in THEMES) {
   b.addEventListener('click', () => { if (readOnly) return; doc.bg = k; applyTheme(); save(); });
   bgBox.append(b);
 }
-function redrawIcons() {
-  pal.querySelectorAll('.tile').forEach(b => {
-    const ch = b.dataset.ch; if (ch === '.') return;
-    const c = b.querySelector('canvas').getContext('2d');
-    c.fillStyle = TH.base; c.fillRect(0, 0, 64, 64); drawTile(c, ch, 0, 0, 64, 0.3, true);
-  });
-}
+function redrawIcons() { pal.querySelectorAll('.tile').forEach(drawIcon); }
 function applyTheme() {
   TH = THEMES[doc.bg] || THEMES.day;
   $('scroller').style.background = TH.base;
@@ -630,20 +904,42 @@ function updateStats() {
 const keys = { left: false, right: false, jump: false };
 let game = null, jumpBuf = 0;
 const ended = () => !!game && (game.state === 'clear' || game.state === 'over');
+const SOLID = new Set(['#', 'B', 'X', '?', 'U', 'I']);
 function solidAt(tx, ty) {
   if (tx < 0 || tx >= W) return true;
   if (ty < 0 || ty >= H) return false;
-  const ch = game.map[ty][tx];
-  return ch === '#' || ch === 'B';
+  return SOLID.has(game.map[ty][tx]);
 }
-function move(e, dx, dy) {
+const inMap = (tx, ty) => tx >= 0 && tx < W && ty >= 0 && ty < H;
+const groundAt = (tx, ty) => solidAt(tx, ty) || (inMap(tx, ty) && game.map[ty][tx] === '=');
+/* 雲の足場は、上から落ちてきたときだけ乗れる */
+function blocks(e, tx, ty, dy) {
+  if (solidAt(tx, ty)) return true;
+  return dy > 0 && inMap(tx, ty) && game.map[ty][tx] === '=' && e.y + e.h - dy <= ty * T + 0.01;
+}
+function bonk(g, hits, p) {
+  const cx = p.x + p.w / 2;
+  hits.sort((a, b) => Math.abs((a[0] + 0.5) * T - cx) - Math.abs((b[0] + 0.5) * T - cx));
+  const [tx, ty] = hits[0];
+  if (!inMap(tx, ty)) return;
+  const ch = g.map[ty][tx], bx = tx * T, by = ty * T;
+  if (ch === 'X') {
+    g.map[ty][tx] = '.';
+    for (let i = 0; i < 4; i++) g.debris.push({ x: bx + (i % 2) * 12 + 3, y: by + (i < 2 ? 3 : 13), vx: i % 2 ? 1.6 : -1.6, vy: i < 2 ? -7 : -5, life: 50 });
+  } else if (ch === '?') {
+    g.map[ty][tx] = 'U'; g.coins++; g.bumpT[ty + ',' + tx] = 8;
+    g.pops.push({ x: bx + T / 2, y: by - 4, life: 30, coin: true });
+  }
+}
+function move(e, dx, dy, hits) {
   e.x += dx; e.y += dy;
   let hit = false;
   const x0 = Math.floor(e.x / T), x1 = Math.floor((e.x + e.w - 0.001) / T);
   const y0 = Math.floor(e.y / T), y1 = Math.floor((e.y + e.h - 0.001) / T);
   for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
-    if (!solidAt(tx, ty)) continue;
+    if (!blocks(e, tx, ty, dy)) continue;
     hit = true;
+    if (hits && dy < 0) hits.push([tx, ty]);
     if (dx > 0) e.x = Math.min(e.x, tx * T - e.w);
     else if (dx < 0) e.x = Math.max(e.x, (tx + 1) * T);
     else if (dy > 0) e.y = Math.min(e.y, ty * T - e.h);
@@ -660,12 +956,13 @@ function startGame() {
     const ch = map[y][x];
     if (ch === 'P') { p = { x: x * T + 3, y: y * T + 2, w: 18, h: 22, vx: 0, vy: 0, face: 1, ground: false, coyote: 0 }; map[y][x] = '.'; }
     else if (ch === 'e') { enemies.push({ x: x * T + 2, y: y * T + 6, w: 20, h: 18, vx: -doc.settings.enemy, vy: 0, alive: true }); map[y][x] = '.'; }
-    else if (ch === 'o') total++;
+    else if (ch === 'o' || ch === '?') total++;
   }
-  game = { map, p, enemies, total, coins: 0, frames: 0, state: 'run', pops: [], springT: {},
+  game = { map, p, enemies, total, coins: 0, frames: 0, state: 'run', pops: [], springT: {}, bumpT: {}, debris: [],
     lives: doc.settings.lives, start: { x: p.x, y: p.y }, deadT: 0 };
   jumpBuf = 0;
   hideModal();
+  if (!readOnly) markMine(stageId(doc));
 }
 function die() {
   const g = game; if (g.state !== 'run') return;
@@ -690,8 +987,10 @@ function update() {
   const s = doc.settings, p = g.p;
   g.frames++;
   const ax = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
-  p.vx += (ax * s.speed - p.vx) * 0.35;
-  if (Math.abs(p.vx) < 0.05) p.vx = 0;
+  const fy = Math.floor((p.y + p.h + 1) / T), fx = Math.floor((p.x + p.w / 2) / T);
+  const onIce = p.ground && inMap(fx, fy) && g.map[fy][fx] === 'I';
+  p.vx += (ax * s.speed - p.vx) * (onIce ? (ax ? 0.05 : 0.012) : 0.35);
+  if (Math.abs(p.vx) < (onIce ? 0.01 : 0.05)) p.vx = 0;
   if (ax) p.face = ax;
   p.vy += s.gravity;
   if (!keys.jump && p.vy < 0) p.vy += s.gravity * 0.9;
@@ -701,8 +1000,9 @@ function update() {
   if (jumpBuf > 0 && p.coyote > 0) { p.vy = -s.jump; p.coyote = 0; jumpBuf = 0; }
   move(p, p.vx, 0);
   p.ground = false;
-  const vy = p.vy;
-  if (move(p, 0, p.vy)) { if (vy > 0) p.ground = true; p.vy = 0; }
+  const vy = p.vy, hits = [];
+  if (move(p, 0, p.vy, hits)) { if (vy > 0) p.ground = true; p.vy = 0; }
+  if (vy < 0 && hits.length) bonk(g, hits, p);
   if (p.y > H * T + 40) return die();
 
   const x0 = Math.floor(p.x / T), x1 = Math.floor((p.x + p.w - 0.001) / T);
@@ -712,7 +1012,8 @@ function update() {
     if (ch === 'o') { g.map[ty][tx] = '.'; g.coins++; g.pops.push({ x: bx + T / 2, y: by, life: 30 }); }
     else if (ch === '^' && overlap(p, { x: bx + 3, y: by + T * 0.45, w: T - 6, h: T * 0.55 })) return die();
     else if (ch === 'S' && p.vy >= 0 && overlap(p, { x: bx + 2, y: by + T * 0.5, w: T - 4, h: T * 0.5 })) { p.vy = -s.jump * 1.55; g.springT[ty + ',' + tx] = 12; }
-    else if (ch === 'G' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.state = 'clear'; finish(g); return; }
+    else if (ch === 'C' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.map[ty][tx] = 'c'; g.start = { x: bx + 3, y: by + 2 }; g.pops.push({ x: bx + T / 2, y: by, life: 40, txt: '中間！' }); }
+    else if (ch === 'G' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.state = 'clear'; g.reward = grantClear(g); finish(g); return; }
   }
 
   for (const e of g.enemies) {
@@ -724,16 +1025,18 @@ function update() {
     if (landed) e.vy = 0;
     if (landed && e.vx) {
       const fx = e.vx > 0 ? e.x + e.w + 1 : e.x - 1;
-      if (!solidAt(Math.floor(fx / T), Math.floor((e.y + e.h + 1) / T))) e.vx = -e.vx;
+      if (!groundAt(Math.floor(fx / T), Math.floor((e.y + e.h + 1) / T))) e.vx = -e.vx;
     }
     if (e.y > H * T + 40) { e.alive = false; continue; }
     if (overlap(p, e)) {
-      if (p.vy > 0 && p.y + p.h - p.vy <= e.y + 8) { e.alive = false; p.vy = -s.jump * 0.65; g.pops.push({ x: e.x + e.w / 2, y: e.y, life: 30, txt: 'ふみ!' }); }
+      if (p.vy > 0 && p.y + p.h - p.vy <= e.y + 8) { e.alive = false; p.vy = -s.jump * 0.65; g.pops.push({ x: e.x + e.w / 2, y: e.y, life: 30, txt: 'ふみ!' }); countStomp(); }
       else return die();
     }
   }
   g.pops.forEach(q => q.life--); g.pops = g.pops.filter(q => q.life > 0);
   for (const k in g.springT) if (--g.springT[k] <= 0) delete g.springT[k];
+  for (const k in g.bumpT) if (--g.bumpT[k] <= 0) delete g.bumpT[k];
+  g.debris.forEach(d => { d.x += d.vx; d.y += d.vy; d.vy += 0.4; d.life--; }); g.debris = g.debris.filter(d => d.life > 0);
 }
 function renderPlay(t) {
   const g = game, p = g.p, vw = VW * T, vh = H * T;
@@ -745,12 +1048,19 @@ function renderPlay(t) {
     const ch = g.map[y][x];
     if (ch === '.') continue;
     if (ch === 'S' && g.springT[y + ',' + x]) { ctx.save(); ctx.translate(0, T * 0.25); drawTile(ctx, ch, x * T, y * T, T, t); ctx.restore(); continue; }
+    const bt = g.bumpT[y + ',' + x];
+    if (bt) { ctx.save(); ctx.translate(0, -T * 0.3 * Math.sin(bt / 8 * Math.PI)); drawTile(ctx, ch, x * T, y * T, T, t); ctx.restore(); continue; }
     drawTile(ctx, ch, x * T, y * T, T, t, ch === '#' && (y === 0 || g.map[y - 1][x] !== '#'));
   }
+  ctx.fillStyle = '#B98A5C';
+  for (const d of g.debris) ctx.fillRect(d.x, d.y, 7, 7);
   for (const e of g.enemies) if (e.alive) drawEnemy(ctx, e.x, e.y, e.w, e.h, t);
   if (g.state !== 'dead' || Math.floor(t * 8) % 2) drawPlayer(ctx, p.x, p.y, p.w, p.h, p.face, 1);
   ctx.font = '12px DotGothic16, monospace'; ctx.textAlign = 'center';
-  for (const q of g.pops) { ctx.fillStyle = `rgba(${TH.ink},${q.life / 30})`; ctx.fillText(q.txt || '+1', q.x, q.y - (30 - q.life) * 0.8); }
+  for (const q of g.pops) {
+    if (q.coin) { ctx.fillStyle = '#F6C431'; ctx.beginPath(); ctx.ellipse(q.x, q.y - (30 - q.life) * 1.3, 6 * Math.abs(Math.cos(q.life / 3)) + 1, 8, 0, 0, Math.PI * 2); ctx.fill(); continue; }
+    ctx.fillStyle = `rgba(${TH.ink},${Math.min(1, q.life / 30)})`; ctx.fillText(q.txt || '+1', q.x, q.y - (30 - q.life) * 0.8);
+  }
   ctx.restore();
   ctx.textAlign = 'center';
   if (g.state === 'dead') {
@@ -803,7 +1113,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (mode === 'edit') {
-    const n = +e.key; if (n >= 1 && n <= PARTS.length) selectPart(PARTS[n - 1][0]);
+    const kp = KEY_PARTS[e.key]; if (kp) selectPart(kp);
     return;
   }
   const k = KEYMAP[e.code];
@@ -885,6 +1195,7 @@ function openShare(title, body, shareText, noteText) {
   $('shFb').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) + '&hashtag=' + encodeURIComponent('#ちくわげーむず');
   $('shCopy').textContent = 'リンクをコピー';
   $('mRetry').hidden = mode !== 'play';
+  $('mReward').hidden = true;
   modalFrom = document.activeElement;
   $('modal').hidden = false;
   $('mClose').focus();
@@ -900,6 +1211,15 @@ function showResult(g) {
   const t = doc.title || 'ステージ';
   if (g.state === 'clear') openShare('ステージクリア！', `「${t}」 ${stat} ・ 残機 ${g.lives}`, `「${t}」を ${sec}秒でクリア！ コイン ${g.coins}/${g.total}`);
   else openShare('ゲームオーバー', `「${t}」 ${stat}`, `「${t}」でゲームオーバー…。クリアできる？`);
+  const r = g.reward, rw = $('mReward');
+  if (g.state !== 'clear' || !r) return;
+  rw.textContent = '';
+  const head = document.createElement('strong'); head.textContent = `ちくわ +${r.gain}本`;
+  const ul = document.createElement('ul');
+  const lines = r.lines.length ? r.lines : [['このステージの報酬は受け取り済みです', 0]];
+  for (const [txt, n] of lines) { const li = document.createElement('li'); li.textContent = n ? `${txt} +${n}` : txt; ul.append(li); }
+  for (const st of r.stamps) { const li = document.createElement('li'); li.textContent = `スタンプ獲得：${st.name}`; ul.append(li); }
+  rw.append(head, ul); rw.hidden = false;
 }
 $('mClose').onclick = hideModal;
 $('mRetry').onclick = () => startGame();
@@ -915,6 +1235,7 @@ $('shareBtn').onclick = () => {
   save();
   const ok = grid.some(r => r.includes('P')) && grid.some(r => r.includes('G'));
   if (!ok) { updateStats(); return; }
+  markMine(stageId(doc));
   openShare('このステージを共有', `「${doc.title}」をプレイ専用のリンクで共有します。リンクを開いた人はすぐに遊べて、編集はできません。`,
     `「${doc.title}」を作りました。遊んでみて！`,
     'ステージを変えたら、もう一度ここからリンクを作り直してください。前に配ったリンクは古い内容のままです。');
@@ -940,6 +1261,8 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 $('ver').textContent = 'v' + VERSION;
+renderProgress();
+if (pgReset) { saveProgress(); toast('ちくわの記録が書き換えられていたため、最初からになりました'); }
 syncSettings(); updateStats();
 if (readOnly) {
   document.body.classList.add('shared');
