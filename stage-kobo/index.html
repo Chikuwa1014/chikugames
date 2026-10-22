@@ -83,7 +83,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-s
 .row{display:grid;grid-template-columns:7.5em minmax(0,1fr) 3.4em;gap:10px;align-items:center;font-size:14px}
 .row output{font-family:var(--f-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
 .row input{width:100%;accent-color:var(--accent)}
-textarea{width:100%;min-height:110px;font-family:var(--f-mono);font-size:12px;line-height:1.5;border:1px solid var(--line);border-radius:8px;background:var(--well);color:var(--ink);padding:8px;resize:vertical}
+textarea{width:100%;min-height:110px;word-break:break-all;font-family:var(--f-mono);font-size:12px;line-height:1.5;border:1px solid var(--line);border-radius:8px;background:var(--well);color:var(--ink);padding:8px;resize:vertical}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .note{font-size:13px;min-height:1.4em;color:var(--muted)}
 .bgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
@@ -178,10 +178,10 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
     </div>
     <div class="panel">
       <h2>データ</h2>
-      <p>作ったステージはこのブラウザに自動保存されます。JSONで書き出して保存・共有し、貼り付けて読み込めます。</p>
-      <textarea id="json" spellcheck="false" placeholder="ここにステージのJSONを貼り付けて「読み込む」"></textarea>
+      <p>作ったステージはこのブラウザに自動保存されます。ステージコードを書き出して保管し、貼り付けて読み込めます。書き換えたコードは読み込めません。</p>
+      <textarea id="json" spellcheck="false" placeholder="ここにステージコード（SK1. で始まる文字列）か共有リンクを貼り付けて「読み込む」"></textarea>
       <div class="actions">
-        <button class="btn primary" id="exportBtn">書き出してコピー</button>
+        <button class="btn primary" id="exportBtn">ステージコードをコピー</button>
         <button class="btn" id="importBtn">読み込む</button>
         <button class="btn" id="sampleBtn">サンプルに戻す</button>
         <button class="btn danger" id="clearBtn">全消去</button>
@@ -193,6 +193,7 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
+      <li><b>v1.2.1</b>（2026-10-22）ステージの書き出しをステージコード（改ざん検出つき）に変更。共有リンクにも改ざん検出を追加</li>
       <li><b>v1.2.0</b>（2026-10-22）背景を5種類から選べるように（ある日の昼下がり、たそがれどき、流星のぐんじょう、マンマンボルケーノ、カチカチチンチン）</li>
       <li><b>v1.1.1</b>（2026-10-22）SNS共有の文面に「#ちくわげーむず」を追加</li>
       <li><b>v1.1.0</b>（2026-10-22）ステージの共有リンク、クリア・ゲームオーバー時の共有ポップアップ、残機数の設定を追加</li>
@@ -224,7 +225,7 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 const THEMES = {
@@ -267,7 +268,9 @@ function fromData(d) {
   if (!d || !Array.isArray(d.map)) throw new Error('map がありません');
   const s = { ...DEF };
   for (const k in DEF) if (d.settings && Number.isFinite(+d.settings[k])) s[k] = +d.settings[k];
-  s.lives = Math.max(1, Math.min(9, Math.round(s.lives)));
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  s.gravity = clamp(s.gravity, 0.2, 0.9); s.jump = clamp(s.jump, 5, 13); s.speed = clamp(s.speed, 1.5, 6); s.enemy = clamp(s.enemy, 0, 3);
+  s.lives = clamp(Math.round(s.lives), 1, 9);
   return { title: String(d.title || '無題のステージ').slice(0, 40), bg: THEMES[d.bg] ? d.bg : 'day', settings: s, map: normalize(d.map) };
 }
 
@@ -295,16 +298,34 @@ function decodeShare(code) {
   const [gravity, jump, speed, enemy, lives] = o.s || [];
   return fromData({ title: o.t, bg: o.b, settings: { gravity, jump, speed, enemy, lives }, map });
 }
-const shareUrl = d => BASE_URL + '#st.' + encodeShare(d);
+const SALT = 'chikuwa-stage-kobo';
+function checksum(str) {
+  let h = 0x811c9dc5;
+  for (const ch of SALT + str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(36);
+}
+function sealed(d) { const p = encodeShare(d); return p + '.' + checksum(p); }
+const shareUrl = d => BASE_URL + '#st.' + sealed(d);
+const stageCode = d => 'SK1.' + sealed(d);
+/* ステージコード（SK1.〜）か共有リンク（#st.〜）を読む。チェック値が合わなければ書き換えありとして拒否 */
+function parseCode(raw) {
+  const t = String(raw).trim();
+  const m = t.match(/(?:^SK1\.|#st\.)([A-Za-z0-9_-]+)(?:\.([0-9a-z]+))?/);
+  if (!m) throw new Error('format');
+  const needSum = t.startsWith('SK1.');
+  if ((m[2] || needSum) && m[2] !== checksum(m[1])) throw new Error('tampered');
+  return decodeShare(m[1]);
+}
 
 let readOnly = false, doc;
 function loadOwn() {
   try { return fromData(JSON.parse(localStorage.getItem(STORE))); } catch (e) { return sampleDoc(); }
 }
+let badLink = false;
 try {
   const h = location.hash || '';
-  if (h.startsWith('#st.')) { doc = decodeShare(h.slice(4)); readOnly = true; }
-} catch (e) { doc = null; }
+  if (h.startsWith('#st.')) { doc = parseCode(h); readOnly = true; }
+} catch (e) { doc = null; badLink = true; }
 if (!doc) doc = loadOwn();
 let grid = doc.map.map(r => r.split(''));
 
@@ -823,16 +844,20 @@ function loadDoc(d) { doc = d; grid = doc.map.map(r => r.split('')); syncSetting
 
 $('exportBtn').onclick = () => {
   save();
-  const txt = JSON.stringify(doc, null, 1);
+  const txt = stageCode(doc);
   const ta = $('json'); ta.value = txt;
-  const fallback = () => { ta.focus(); ta.select(); note('JSONを選択しました。コピーして保存してください'); };
+  const fallback = () => { ta.focus(); ta.select(); note('ステージコードを選択しました。コピーして保管してください'); };
   try {
-    navigator.clipboard.writeText(txt).then(() => note('JSONをクリップボードにコピーしました'), fallback);
+    navigator.clipboard.writeText(txt).then(() => note('ステージコードをコピーしました'), fallback);
   } catch (e) { fallback(); }
 };
 $('importBtn').onclick = () => {
-  try { loadDoc(fromData(JSON.parse($('json').value))); note(`「${doc.title}」を読み込みました`); }
-  catch (e) { note('読み込めませんでした。「書き出してコピー」で作ったJSONをそのまま貼り付けてください'); }
+  try { loadDoc(parseCode($('json').value)); note(`「${doc.title}」を読み込みました`); }
+  catch (e) {
+    note(e.message === 'tampered'
+      ? 'このステージコードは書き換えられているため読み込めません'
+      : '読み込めませんでした。「ステージコードをコピー」で作ったコードか、共有リンクをそのまま貼り付けてください');
+  }
 };
 $('sampleBtn').onclick = () => { loadDoc(sampleDoc()); note('サンプルステージに戻しました'); };
 let armed = null;
@@ -928,7 +953,10 @@ if (readOnly) {
   $('makeOwn').hidden = false;
   if (grid.some(r => r.includes('P'))) setMode('play');
   else { sn.textContent = 'このリンクのステージにはスタート地点がないため、遊べません。'; sizeCanvas(); }
-} else sizeCanvas();
+} else {
+  sizeCanvas();
+  if (badLink) $('tagline').textContent = '共有リンクが壊れているか書き換えられているため、ステージを開けませんでした。あなたのステージを表示しています。';
+}
 requestAnimationFrame(frame);
 })();
 </script>
