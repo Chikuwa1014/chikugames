@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ステージ工房</title>
+<meta name="description" content="パーツを並べて2Dアクションのステージを作り、その場で遊んで、リンクで友だちに共有できるブラウザゲームメーカー。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ステージ工房">
+<meta property="og:description" content="2Dアクションのステージを作って、遊んで、共有しよう。">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2387CEEB'/%3E%3Crect y='11' width='16' height='5' fill='%238A5A3B'/%3E%3Crect y='10' width='16' height='2' fill='%234FAF4A'/%3E%3Crect x='3' y='5' width='5' height='5' rx='1.5' fill='%232B5FD9'/%3E%3C/svg%3E">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: 左にパーツ棚、右に作業キャンバス（編集⇄テストプレイ切替）。下に設定とデータの2枚パネル */
+:root{
+  --bg:#ECEEF2; --surface:#FFFFFF; --well:#E1E5EC; --ink:#1C2230; --muted:#5B6476; --line:#D3D8E1;
+  --accent:#2D58C8; --accent-ink:#FFFFFF; --play:#D25E26; --play-ink:#FFFFFF; --warn:#B4361F;
+  --f-display:"DotGothic16","Hiragino Kaku Gothic ProN","Noto Sans JP",monospace;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13161C; --surface:#1C2029; --well:#252A35; --ink:#E5E8EE; --muted:#9AA3B3; --line:#2F3542;
+  --accent:#7D9BFF; --accent-ink:#0F1426; --play:#F08A52; --play-ink:#1B0E06; --warn:#FF8C73; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13161C; --surface:#1C2029; --well:#252A35; --ink:#E5E8EE; --muted:#9AA3B3; --line:#2F3542;
+  --accent:#7D9BFF; --accent-ink:#0F1426; --play:#F08A52; --play-ink:#1B0E06; --warn:#FF8C73; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.app{max-width:1240px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}
+h1{font-family:var(--f-display);font-weight:400;font-size:30px;line-height:1.1;margin:0;letter-spacing:.04em}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px}
+h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-spacing:.05em}
+.mode{display:flex;background:var(--well);border-radius:10px;padding:4px;gap:4px}
+.mode button{font:inherit;font-weight:700;border:0;border-radius:7px;padding:8px 16px;background:transparent;color:var(--muted);cursor:pointer}
+.mode button[aria-selected="true"]#modeEdit{background:var(--accent);color:var(--accent-ink)}
+.mode button[aria-selected="true"]#modePlay{background:var(--play);color:var(--play-ink)}
+.mode button:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:760px){.layout{grid-template-columns:minmax(0,1fr)}}
+.palette{display:flex;flex-direction:column;gap:12px}
+.tiles{display:grid;grid-template-columns:1fr;gap:6px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}}
+.tile{display:flex;align-items:center;gap:10px;font:inherit;font-size:14px;text-align:left;padding:6px 10px 6px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+.tile canvas{width:32px;height:32px;border-radius:4px;flex:none;image-rendering:pixelated}
+.tile kbd{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.stage{display:flex;flex-direction:column;gap:10px;min-width:0}
+.stagebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.stagebar input{font:inherit;font-family:var(--f-display);font-size:18px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink);padding:2px 6px;min-width:0;flex:1 1 220px}
+.stagebar input:hover{border-color:var(--line)}
+.stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stats.warn{color:var(--warn);font-weight:700}
+.scroller{overflow-x:auto;border-radius:10px;border:1px solid var(--line);background:#9fd3f5;line-height:0}
+#cv{display:block;image-rendering:pixelated}
+#cv.edit{touch-action:none;cursor:crosshair}
+#cv.play{width:100%;height:auto}
+.hud{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-family:var(--f-mono);font-size:14px;font-variant-numeric:tabular-nums}
+.hud .sp{flex:1}
+.btn{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:7px 14px;background:var(--surface);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--warn)}
+.btn.danger.armed{background:var(--warn);color:var(--surface);border-color:var(--warn)}
+.touch{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;user-select:none;-webkit-user-select:none}
+.touch button{font:inherit;font-family:var(--f-display);font-size:20px;padding:16px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);touch-action:none}
+.touch button.on{background:var(--well)}
+.touch #tJump{background:var(--play);color:var(--play-ink);border-color:var(--play)}
+.keys{margin:0;font-size:13px;color:var(--muted)}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel p{margin:0;font-size:13px;color:var(--muted)}
+.row{display:grid;grid-template-columns:7.5em minmax(0,1fr) 3.4em;gap:10px;align-items:center;font-size:14px}
+.row output{font-family:var(--f-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.row input{width:100%;accent-color:var(--accent)}
+textarea{width:100%;min-height:110px;font-family:var(--f-mono);font-size:12px;line-height:1.5;border:1px solid var(--line);border-radius:8px;background:var(--well);color:var(--ink);padding:8px;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:13px;min-height:1.4em;color:var(--muted)}
+.ver{display:inline-block;vertical-align:middle;margin-left:10px;font-family:var(--f-mono);font-size:12px;letter-spacing:0;padding:2px 8px;border-radius:999px;background:var(--well);color:var(--muted)}
+.sharedNote{margin:0;padding:10px 14px;border-radius:10px;background:var(--well);font-size:14px}
+.sharedNote strong{font-family:var(--f-display);font-weight:400;font-size:16px}
+body.shared .mode,body.shared #paletteBox,body.shared .panels,body.shared #backEdit,body.shared #shareBtn,body.shared .changelog{display:none}
+body.shared .layout{grid-template-columns:minmax(0,1fr)}
+.changelog{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.changelog h2{color:var(--ink)}
+.changelog ul{margin:0;padding-left:1.2em}
+.changelog b{font-family:var(--f-mono);font-weight:500;color:var(--ink)}
+.modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(10,14,22,.55);padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{background:var(--surface);color:var(--ink);border-radius:16px;padding:22px;width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.sheet h2{font-size:26px}
+.sheet p{margin:0;color:var(--muted);font-variant-numeric:tabular-nums}
+.share{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.share a,.share button{font:inherit;font-size:14px;font-weight:700;text-align:center;text-decoration:none;padding:10px 8px;border-radius:9px;border:1px solid var(--line);background:var(--well);color:var(--ink);cursor:pointer}
+.share a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#shUrl{width:100%;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--well);color:var(--ink);padding:8px}
+.sheet .small{font-size:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>ステージ工房<span class="ver" id="ver"></span></h1>
+      <p id="tagline">パーツを並べて2Dアクションのステージを作り、その場でテストプレイできます。</p>
+    </div>
+    <div class="mode" role="tablist" aria-label="モード">
+      <button id="modeEdit" role="tab" aria-selected="true">編集</button>
+      <button id="modePlay" role="tab" aria-selected="false">テストプレイ ▶</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="palette" id="paletteBox">
+      <h2>パーツ</h2>
+      <div class="tiles" id="palette"></div>
+      <p class="hint">クリックかドラッグで配置。右クリックで消去。数字キーでパーツを切り替え。</p>
+    </aside>
+
+    <section class="stage">
+      <p class="sharedNote" id="sharedNote" hidden></p>
+      <div class="stagebar">
+        <input id="gameTitle" aria-label="ステージ名" maxlength="40">
+        <span class="stats" id="stats"></span>
+        <button class="btn" id="shareBtn">このステージを共有</button>
+      </div>
+      <div class="scroller" id="scroller"><canvas id="cv" class="edit"></canvas></div>
+      <div class="hud" id="hud" hidden>
+        <span id="hudLives">残機 3</span>
+        <span id="hudCoin">コイン 0/0</span>
+        <span id="hudTime">タイム 0.0</span>
+        <span class="sp"></span>
+        <button class="btn" id="retry">リトライ (R)</button>
+        <button class="btn" id="makeOwn" hidden>自分でステージを作る</button>
+        <button class="btn primary" id="backEdit">編集に戻る (Esc)</button>
+      </div>
+      <div class="touch" id="touch" hidden>
+        <button id="tLeft" aria-label="左へ">◀</button>
+        <button id="tRight" aria-label="右へ">▶</button>
+        <button id="tJump">ジャンプ</button>
+      </div>
+      <p class="keys" id="keys">操作: ← → または A D で移動、Space / ↑ / W でジャンプ、R でリトライ</p>
+    </section>
+  </main>
+
+  <section class="panels">
+    <div class="panel">
+      <h2>ゲーム設定</h2>
+      <p>動きの手ざわりを調整します。変更はすぐテストプレイに反映されます。</p>
+      <label class="row" for="sGravity">重力<input id="sGravity" type="range" min="0.2" max="0.9" step="0.01"><output id="oGravity"></output></label>
+      <label class="row" for="sJump">ジャンプ力<input id="sJump" type="range" min="5" max="13" step="0.1"><output id="oJump"></output></label>
+      <label class="row" for="sSpeed">移動速度<input id="sSpeed" type="range" min="1.5" max="6" step="0.1"><output id="oSpeed"></output></label>
+      <label class="row" for="sEnemy">敵の速さ<input id="sEnemy" type="range" min="0" max="3" step="0.1"><output id="oEnemy"></output></label>
+      <label class="row" for="sLives">残機数<input id="sLives" type="range" min="1" max="9" step="1"><output id="oLives"></output></label>
+      <div class="actions"><button class="btn" id="resetSettings">設定を初期値に戻す</button></div>
+    </div>
+    <div class="panel">
+      <h2>データ</h2>
+      <p>作ったステージはこのブラウザに自動保存されます。JSONで書き出して保存・共有し、貼り付けて読み込めます。</p>
+      <textarea id="json" spellcheck="false" placeholder="ここにステージのJSONを貼り付けて「読み込む」"></textarea>
+      <div class="actions">
+        <button class="btn primary" id="exportBtn">書き出してコピー</button>
+        <button class="btn" id="importBtn">読み込む</button>
+        <button class="btn" id="sampleBtn">サンプルに戻す</button>
+        <button class="btn danger" id="clearBtn">全消去</button>
+      </div>
+      <div class="note" id="note" role="status"></div>
+    </div>
+  </section>
+
+  <footer class="changelog">
+    <h2>更新履歴</h2>
+    <ul>
+      <li><b>v1.1.0</b>（2026-10-22）ステージの共有リンク、クリア・ゲームオーバー時の共有ポップアップ、残機数の設定を追加</li>
+      <li><b>v1.0.0</b>（2026-10-22）初期バージョン。ステージ編集、テストプレイ、ゲーム設定、JSONの書き出しと読み込み</li>
+    </ul>
+  </footer>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" hidden>
+  <div class="sheet">
+    <h2 id="mTitle">ステージクリア！</h2>
+    <p id="mBody"></p>
+    <div class="share">
+      <a id="shX" target="_blank" rel="noopener">X でシェア</a>
+      <a id="shLine" target="_blank" rel="noopener">LINE で送る</a>
+      <a id="shFb" target="_blank" rel="noopener">Facebook</a>
+      <button id="shCopy">リンクをコピー</button>
+    </div>
+    <input id="shUrl" readonly aria-label="共有リンク">
+    <p class="small" id="mNote"></p>
+    <div class="actions">
+      <button class="btn primary" id="mRetry">もう一度プレイ</button>
+      <button class="btn" id="mClose">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const T = 24, W = 40, H = 15, VW = 20, K = 2;
+const STORE = 'stage-kobo-v1';
+const VERSION = '1.1.0';
+const BASE_URL = location.origin + location.pathname;
+const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
+const PARTS = [['P','スタート'],['#','地面'],['B','ブロック'],['o','コイン'],['e','敵'],['^','トゲ'],['S','ジャンプ台'],['G','ゴール'],['.','消しゴム']];
+const dots = n => '.'.repeat(n);
+const SAMPLE = [
+  '', '', '', '', '', '',
+  dots(15) + 'ooo',
+  dots(14) + 'BBBBBB',
+  '',
+  '........oo' + dots(18) + 'oo',
+  '.......BBBB' + dots(16) + 'BBBB',
+  dots(33) + 'oo',
+  '.P.......o.....e.....S......e....^^...G.',
+  '##########...##########..###############',
+  '##########...##########..###############'
+];
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+
+function normalize(rows) {
+  const out = [];
+  for (let y = 0; y < H; y++) {
+    const r = String((rows && rows[y]) || '').replace(/[^.#Boe^SGP]/g, '.');
+    out.push((r + dots(W)).slice(0, W));
+  }
+  return out;
+}
+function sampleDoc() { return { title: 'はじめてのステージ', settings: { ...DEF }, map: normalize(SAMPLE) }; }
+function fromData(d) {
+  if (!d || !Array.isArray(d.map)) throw new Error('map がありません');
+  const s = { ...DEF };
+  for (const k in DEF) if (d.settings && Number.isFinite(+d.settings[k])) s[k] = +d.settings[k];
+  s.lives = Math.max(1, Math.min(9, Math.round(s.lives)));
+  return { title: String(d.title || '無題のステージ').slice(0, 40), settings: s, map: normalize(d.map) };
+}
+
+/* ---------- 共有リンク（#st.<base64url>） ---------- */
+function encodeShare(d) {
+  const flat = d.map.join('');
+  let rle = '';
+  for (let i = 0; i < flat.length;) {
+    let j = i; while (j < flat.length && flat[j] === flat[i]) j++;
+    rle += flat[i] + (j - i > 1 ? (j - i) : ''); i = j;
+  }
+  const s = d.settings;
+  const json = JSON.stringify({ f: 1, t: d.title, s: [s.gravity, s.jump, s.speed, s.enemy, s.lives], m: rle });
+  const bytes = new TextEncoder().encode(json);
+  let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeShare(code) {
+  const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64 + '==='.slice((b64.length + 3) % 4));
+  const o = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+  let flat = '';
+  o.m.replace(/([^0-9])(\d*)/g, (_, ch, n) => { flat += ch.repeat(n ? Math.min(+n, W * H) : 1); return ''; });
+  const map = Array.from({ length: H }, (_, y) => flat.slice(y * W, y * W + W));
+  const [gravity, jump, speed, enemy, lives] = o.s || [];
+  return fromData({ title: o.t, settings: { gravity, jump, speed, enemy, lives }, map });
+}
+const shareUrl = d => BASE_URL + '#st.' + encodeShare(d);
+
+let readOnly = false, doc;
+function loadOwn() {
+  try { return fromData(JSON.parse(localStorage.getItem(STORE))); } catch (e) { return sampleDoc(); }
+}
+try {
+  const h = location.hash || '';
+  if (h.startsWith('#st.')) { doc = decodeShare(h.slice(4)); readOnly = true; }
+} catch (e) { doc = null; }
+if (!doc) doc = loadOwn();
+let grid = doc.map.map(r => r.split(''));
+
+function save() {
+  doc.map = grid.map(r => r.join(''));
+  if (!readOnly) { try { localStorage.setItem(STORE, JSON.stringify(doc)); } catch (e) {} }
+  updateStats();
+}
+
+/* ---------- 描画 ---------- */
+function rr(c, x, y, w, h, r) {
+  c.beginPath();
+  if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h);
+}
+function drawPlayer(c, x, y, w, h, face, alpha) {
+  c.save(); c.globalAlpha = alpha ?? 1;
+  c.fillStyle = '#2B5FD9'; rr(c, x, y, w, h, w * 0.3); c.fill();
+  c.fillStyle = '#F4C9A0'; rr(c, x + w * 0.12, y + h * 0.18, w * 0.76, h * 0.42, w * 0.2); c.fill();
+  c.fillStyle = '#1C2230';
+  const ex = face < 0 ? -w * 0.08 : w * 0.08;
+  c.fillRect(x + w * 0.3 + ex, y + h * 0.3, w * 0.1, h * 0.16);
+  c.fillRect(x + w * 0.6 + ex, y + h * 0.3, w * 0.1, h * 0.16);
+  c.restore();
+}
+function drawEnemy(c, x, y, w, h, t) {
+  const sq = 1 + Math.sin(t * 10) * 0.05;
+  c.fillStyle = '#7B3FA0';
+  c.beginPath(); c.ellipse(x + w / 2, y + h * 0.62, w / 2, h * 0.62 * sq, 0, Math.PI, 0); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.fill();
+  c.fillStyle = '#FFFFFF';
+  c.fillRect(x + w * 0.22, y + h * 0.3, w * 0.2, h * 0.28); c.fillRect(x + w * 0.58, y + h * 0.3, w * 0.2, h * 0.28);
+  c.fillStyle = '#1C2230';
+  c.fillRect(x + w * 0.27, y + h * 0.4, w * 0.1, h * 0.16); c.fillRect(x + w * 0.63, y + h * 0.4, w * 0.1, h * 0.16);
+}
+function drawTile(c, ch, x, y, s, t, top) {
+  switch (ch) {
+    case '#':
+      c.fillStyle = '#8A5A3B'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#74492F'; c.fillRect(x + s * 0.2, y + s * 0.55, s * 0.15, s * 0.12); c.fillRect(x + s * 0.65, y + s * 0.75, s * 0.15, s * 0.12);
+      if (top) { c.fillStyle = '#4FAF4A'; c.fillRect(x, y, s, s * 0.28); c.fillStyle = '#3C8F39'; c.fillRect(x, y + s * 0.28, s, s * 0.06); }
+      break;
+    case 'B':
+      c.fillStyle = '#D9783A'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#A4532A';
+      c.fillRect(x, y + s / 2 - 1, s, 2); c.fillRect(x, y + s - 2, s, 2);
+      c.fillRect(x + s / 2 - 1, y, 2, s / 2); c.fillRect(x + s * 0.2, y + s / 2, 2, s / 2); c.fillRect(x + s * 0.75, y + s / 2, 2, s / 2);
+      break;
+    case 'o': {
+      const cy = y + s / 2 + Math.sin(t * 4) * s * 0.06;
+      const rx = s * 0.26 * Math.abs(Math.cos(t * 3)) + s * 0.06;
+      c.fillStyle = '#F6C431'; c.strokeStyle = '#A9780E'; c.lineWidth = Math.max(1, s * 0.06);
+      c.beginPath(); c.ellipse(x + s / 2, cy, rx, s * 0.32, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+      break;
+    }
+    case 'e': drawEnemy(c, x + s * 0.1, y + s * 0.2, s * 0.8, s * 0.8, t); break;
+    case '^':
+      c.fillStyle = '#9AA3AD'; c.strokeStyle = '#5F6872'; c.lineWidth = 1;
+      for (let i = 0; i < 2; i++) {
+        c.beginPath(); c.moveTo(x + i * s / 2, y + s); c.lineTo(x + i * s / 2 + s / 4, y + s * 0.38); c.lineTo(x + (i + 1) * s / 2, y + s); c.closePath(); c.fill(); c.stroke();
+      }
+      break;
+    case 'S':
+      c.fillStyle = '#555E6A'; c.fillRect(x + s * 0.1, y + s * 0.86, s * 0.8, s * 0.14);
+      c.strokeStyle = '#8C96A3'; c.lineWidth = Math.max(1.5, s * 0.08);
+      c.beginPath(); c.moveTo(x + s * 0.3, y + s * 0.86);
+      for (let i = 0; i < 4; i++) c.lineTo(x + (i % 2 ? s * 0.3 : s * 0.7), y + s * (0.78 - i * 0.07));
+      c.stroke();
+      c.fillStyle = '#E04545'; c.fillRect(x + s * 0.05, y + s * 0.48, s * 0.9, s * 0.14);
+      break;
+    case 'G': {
+      c.fillStyle = '#DDE3EA'; c.fillRect(x + s * 0.28, y, s * 0.1, s);
+      c.fillStyle = '#F6C431'; c.beginPath(); c.arc(x + s * 0.33, y + s * 0.05, s * 0.09, 0, Math.PI * 2); c.fill();
+      const wv = Math.sin(t * 5) * s * 0.06;
+      c.fillStyle = '#2FA36B'; c.beginPath(); c.moveTo(x + s * 0.38, y + s * 0.1); c.lineTo(x + s * 0.95, y + s * 0.28 + wv); c.lineTo(x + s * 0.38, y + s * 0.48); c.fill();
+      c.fillStyle = '#4C5560'; c.fillRect(x + s * 0.15, y + s * 0.9, s * 0.36, s * 0.1);
+      break;
+    }
+    case 'P': drawPlayer(c, x + s * 0.13, y + s * 0.08, s * 0.74, s * 0.92, 1, 1); break;
+  }
+}
+function drawSky(c, w, h, camX) {
+  const g = c.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#8CCBF2'); g.addColorStop(1, '#DCF0FA');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  for (let i = 0; i < 8; i++) {
+    const cx = ((i * 211 - camX * 0.3) % (W * T + 200) + W * T + 200) % (W * T + 200) - 100;
+    const cy = 40 + (i * 53) % 110;
+    c.beginPath(); c.ellipse(cx, cy, 34, 11, 0, 0, Math.PI * 2); c.ellipse(cx + 18, cy - 7, 20, 11, 0, 0, Math.PI * 2); c.fill();
+  }
+  c.fillStyle = 'rgba(80,150,110,0.25)';
+  c.beginPath(); c.moveTo(0, h);
+  for (let x = 0; x <= w; x += 20) c.lineTo(x, h - 70 - Math.sin((x + camX * 0.5) / 90) * 26);
+  c.lineTo(w, h); c.fill();
+}
+
+/* ---------- パレット ---------- */
+let current = '#';
+const pal = $('palette');
+PARTS.forEach(([ch, name], i) => {
+  const b = document.createElement('button');
+  b.className = 'tile'; b.dataset.ch = ch;
+  const ic = document.createElement('canvas'); ic.width = 64; ic.height = 64;
+  const c = ic.getContext('2d');
+  if (ch === '.') { c.fillStyle = '#E8ECF1'; c.fillRect(0, 0, 64, 64); c.strokeStyle = '#C0392B'; c.lineWidth = 6; c.beginPath(); c.moveTo(16, 16); c.lineTo(48, 48); c.moveTo(48, 16); c.lineTo(16, 48); c.stroke(); }
+  else { c.fillStyle = '#BFE3F7'; c.fillRect(0, 0, 64, 64); drawTile(c, ch, 0, 0, 64, 0.3, true); }
+  b.append(ic, document.createTextNode(name));
+  const kb = document.createElement('kbd'); kb.textContent = String(i + 1); b.append(kb);
+  b.addEventListener('click', () => selectPart(ch));
+  pal.append(b);
+});
+function selectPart(ch) {
+  current = ch;
+  pal.querySelectorAll('.tile').forEach(b => b.setAttribute('aria-pressed', b.dataset.ch === ch ? 'true' : 'false'));
+}
+selectPart('#');
+
+/* ---------- 編集 ---------- */
+let mode = 'edit', hover = null, painting = null;
+function sizeCanvas() {
+  const w = (mode === 'edit' ? W : VW) * T, h = H * T;
+  cv.width = w * K; cv.height = h * K;
+  cv.className = mode;
+  cv.style.width = mode === 'edit' ? w + 'px' : '';
+  ctx.setTransform(K, 0, 0, K, 0, 0);
+}
+function tileFromEvent(e) {
+  const r = cv.getBoundingClientRect();
+  const x = Math.floor((e.clientX - r.left) / r.width * W);
+  const y = Math.floor((e.clientY - r.top) / r.height * H);
+  return (x >= 0 && x < W && y >= 0 && y < H) ? { x, y } : null;
+}
+function paint(p, ch) {
+  if (readOnly) return;
+  if (!p || grid[p.y][p.x] === ch) return;
+  if (ch === 'P') for (const row of grid) for (let x = 0; x < W; x++) if (row[x] === 'P') row[x] = '.';
+  grid[p.y][p.x] = ch;
+  save();
+}
+cv.addEventListener('pointerdown', e => {
+  if (mode !== 'edit') { if (ended()) startGame(); return; }
+  painting = e.button === 2 ? '.' : current;
+  cv.setPointerCapture(e.pointerId);
+  paint(tileFromEvent(e), painting);
+});
+cv.addEventListener('pointermove', e => {
+  if (mode !== 'edit') return;
+  hover = tileFromEvent(e);
+  if (painting) paint(hover, painting);
+});
+const endPaint = () => { painting = null; };
+cv.addEventListener('pointerup', endPaint);
+cv.addEventListener('pointercancel', endPaint);
+cv.addEventListener('pointerleave', () => { hover = null; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+function renderEdit(t) {
+  drawSky(ctx, W * T, H * T, 0);
+  ctx.strokeStyle = 'rgba(20,40,70,0.10)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 0; x <= W; x++) { ctx.moveTo(x * T + 0.5, 0); ctx.lineTo(x * T + 0.5, H * T); }
+  for (let y = 0; y <= H; y++) { ctx.moveTo(0, y * T + 0.5); ctx.lineTo(W * T, y * T + 0.5); }
+  ctx.stroke();
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const ch = grid[y][x];
+    if (ch !== '.') drawTile(ctx, ch, x * T, y * T, T, t, ch === '#' && (y === 0 || grid[y - 1][x] !== '#'));
+  }
+  if (hover) {
+    ctx.save(); ctx.globalAlpha = 0.5;
+    if (current !== '.') drawTile(ctx, current, hover.x * T, hover.y * T, T, t, true);
+    ctx.restore();
+    ctx.strokeStyle = current === '.' ? '#C0392B' : '#1C2230'; ctx.lineWidth = 2;
+    ctx.strokeRect(hover.x * T + 1, hover.y * T + 1, T - 2, T - 2);
+  }
+}
+function updateStats() {
+  let coins = 0, enemies = 0, goals = 0, start = 0;
+  for (const r of grid) for (const ch of r) { if (ch === 'o') coins++; else if (ch === 'e') enemies++; else if (ch === 'G') goals++; else if (ch === 'P') start++; }
+  const el = $('stats');
+  el.classList.toggle('warn', !start || !goals);
+  el.textContent = !start ? 'スタート地点がありません' : !goals ? 'ゴールがありません' : `コイン ${coins} ・ 敵 ${enemies} ・ ゴール ${goals}`;
+}
+
+/* ---------- テストプレイ ---------- */
+const keys = { left: false, right: false, jump: false };
+let game = null, jumpBuf = 0;
+const ended = () => !!game && (game.state === 'clear' || game.state === 'over');
+function solidAt(tx, ty) {
+  if (tx < 0 || tx >= W) return true;
+  if (ty < 0 || ty >= H) return false;
+  const ch = game.map[ty][tx];
+  return ch === '#' || ch === 'B';
+}
+function move(e, dx, dy) {
+  e.x += dx; e.y += dy;
+  let hit = false;
+  const x0 = Math.floor(e.x / T), x1 = Math.floor((e.x + e.w - 0.001) / T);
+  const y0 = Math.floor(e.y / T), y1 = Math.floor((e.y + e.h - 0.001) / T);
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+    if (!solidAt(tx, ty)) continue;
+    hit = true;
+    if (dx > 0) e.x = Math.min(e.x, tx * T - e.w);
+    else if (dx < 0) e.x = Math.max(e.x, (tx + 1) * T);
+    else if (dy > 0) e.y = Math.min(e.y, ty * T - e.h);
+    else if (dy < 0) e.y = Math.max(e.y, (ty + 1) * T);
+  }
+  return hit;
+}
+const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+function startGame() {
+  const map = grid.map(r => r.slice());
+  let p = null; const enemies = []; let total = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const ch = map[y][x];
+    if (ch === 'P') { p = { x: x * T + 3, y: y * T + 2, w: 18, h: 22, vx: 0, vy: 0, face: 1, ground: false, coyote: 0 }; map[y][x] = '.'; }
+    else if (ch === 'e') { enemies.push({ x: x * T + 2, y: y * T + 6, w: 20, h: 18, vx: -doc.settings.enemy, vy: 0, alive: true }); map[y][x] = '.'; }
+    else if (ch === 'o') total++;
+  }
+  game = { map, p, enemies, total, coins: 0, frames: 0, state: 'run', pops: [], springT: {},
+    lives: doc.settings.lives, start: { x: p.x, y: p.y }, deadT: 0 };
+  jumpBuf = 0;
+  hideModal();
+}
+function die() {
+  const g = game; if (g.state !== 'run') return;
+  g.lives--;
+  if (g.lives > 0) { g.state = 'dead'; g.deadT = 70; }
+  else { g.state = 'over'; finish(g); }
+}
+function finish(g) {
+  setTimeout(() => { if (game === g && mode === 'play') showResult(g); }, 900);
+}
+function update() {
+  const g = game; if (!g) return;
+  if (g.state === 'dead') {
+    if (--g.deadT <= 0) {
+      const p = g.p;
+      p.x = g.start.x; p.y = g.start.y; p.vx = p.vy = 0; p.coyote = 0; jumpBuf = 0;
+      g.state = 'run';
+    }
+    return;
+  }
+  if (g.state !== 'run') return;
+  const s = doc.settings, p = g.p;
+  g.frames++;
+  const ax = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
+  p.vx += (ax * s.speed - p.vx) * 0.35;
+  if (Math.abs(p.vx) < 0.05) p.vx = 0;
+  if (ax) p.face = ax;
+  p.vy += s.gravity;
+  if (!keys.jump && p.vy < 0) p.vy += s.gravity * 0.9;
+  p.vy = Math.min(p.vy, 12);
+  p.coyote = p.ground ? 6 : p.coyote - 1;
+  if (jumpBuf > 0) jumpBuf--;
+  if (jumpBuf > 0 && p.coyote > 0) { p.vy = -s.jump; p.coyote = 0; jumpBuf = 0; }
+  move(p, p.vx, 0);
+  p.ground = false;
+  const vy = p.vy;
+  if (move(p, 0, p.vy)) { if (vy > 0) p.ground = true; p.vy = 0; }
+  if (p.y > H * T + 40) return die();
+
+  const x0 = Math.floor(p.x / T), x1 = Math.floor((p.x + p.w - 0.001) / T);
+  const y0 = Math.floor(p.y / T), y1 = Math.floor((p.y + p.h - 0.001) / T);
+  for (let ty = Math.max(0, y0); ty <= Math.min(H - 1, y1); ty++) for (let tx = Math.max(0, x0); tx <= Math.min(W - 1, x1); tx++) {
+    const ch = g.map[ty][tx], bx = tx * T, by = ty * T;
+    if (ch === 'o') { g.map[ty][tx] = '.'; g.coins++; g.pops.push({ x: bx + T / 2, y: by, life: 30 }); }
+    else if (ch === '^' && overlap(p, { x: bx + 3, y: by + T * 0.45, w: T - 6, h: T * 0.55 })) return die();
+    else if (ch === 'S' && p.vy >= 0 && overlap(p, { x: bx + 2, y: by + T * 0.5, w: T - 4, h: T * 0.5 })) { p.vy = -s.jump * 1.55; g.springT[ty + ',' + tx] = 12; }
+    else if (ch === 'G' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.state = 'clear'; finish(g); return; }
+  }
+
+  for (const e of g.enemies) {
+    if (!e.alive) continue;
+    e.vx = Math.sign(e.vx || -1) * s.enemy;
+    e.vy = Math.min(e.vy + s.gravity, 12);
+    if (move(e, e.vx, 0)) e.vx = -e.vx;
+    const evy = e.vy, landed = move(e, 0, e.vy) && evy > 0;
+    if (landed) e.vy = 0;
+    if (landed && e.vx) {
+      const fx = e.vx > 0 ? e.x + e.w + 1 : e.x - 1;
+      if (!solidAt(Math.floor(fx / T), Math.floor((e.y + e.h + 1) / T))) e.vx = -e.vx;
+    }
+    if (e.y > H * T + 40) { e.alive = false; continue; }
+    if (overlap(p, e)) {
+      if (p.vy > 0 && p.y + p.h - p.vy <= e.y + 8) { e.alive = false; p.vy = -s.jump * 0.65; g.pops.push({ x: e.x + e.w / 2, y: e.y, life: 30, txt: 'ふみ!' }); }
+      else return die();
+    }
+  }
+  g.pops.forEach(q => q.life--); g.pops = g.pops.filter(q => q.life > 0);
+  for (const k in g.springT) if (--g.springT[k] <= 0) delete g.springT[k];
+}
+function renderPlay(t) {
+  const g = game, p = g.p, vw = VW * T, vh = H * T;
+  const camX = Math.max(0, Math.min(W * T - vw, p.x + p.w / 2 - vw / 2));
+  drawSky(ctx, vw, vh, camX);
+  ctx.save(); ctx.translate(-Math.round(camX), 0);
+  const c0 = Math.floor(camX / T), c1 = Math.min(W - 1, c0 + VW + 1);
+  for (let y = 0; y < H; y++) for (let x = c0; x <= c1; x++) {
+    const ch = g.map[y][x];
+    if (ch === '.') continue;
+    if (ch === 'S' && g.springT[y + ',' + x]) { ctx.save(); ctx.translate(0, T * 0.25); drawTile(ctx, ch, x * T, y * T, T, t); ctx.restore(); continue; }
+    drawTile(ctx, ch, x * T, y * T, T, t, ch === '#' && (y === 0 || g.map[y - 1][x] !== '#'));
+  }
+  for (const e of g.enemies) if (e.alive) drawEnemy(ctx, e.x, e.y, e.w, e.h, t);
+  if (g.state !== 'dead' || Math.floor(t * 8) % 2) drawPlayer(ctx, p.x, p.y, p.w, p.h, p.face, 1);
+  ctx.font = '12px DotGothic16, monospace'; ctx.textAlign = 'center';
+  for (const q of g.pops) { ctx.fillStyle = `rgba(28,34,48,${q.life / 30})`; ctx.fillText(q.txt || '+1', q.x, q.y - (30 - q.life) * 0.8); }
+  ctx.restore();
+  ctx.textAlign = 'center';
+  if (g.state === 'dead') {
+    ctx.fillStyle = 'rgba(16,22,34,0.35)'; ctx.fillRect(0, vh / 2 - 36, vw, 64);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '26px DotGothic16, monospace'; ctx.fillText('ミス！', vw / 2, vh / 2 - 6);
+    ctx.font = '14px DotGothic16, monospace'; ctx.fillText(`残機 あと ${g.lives}`, vw / 2, vh / 2 + 18);
+  } else if (g.state !== 'run') {
+    ctx.fillStyle = 'rgba(16,22,34,0.55)'; ctx.fillRect(0, 0, vw, vh);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '36px DotGothic16, monospace';
+    ctx.fillText(g.state === 'clear' ? 'ステージクリア！' : 'ゲームオーバー', vw / 2, vh / 2 - 14);
+    ctx.font = '15px DotGothic16, monospace';
+    ctx.fillText(`タイム ${(g.frames / 60).toFixed(1)}秒 ・ コイン ${g.coins}/${g.total}`, vw / 2, vh / 2 + 20);
+    ctx.fillText('R キー / タップでもう一度', vw / 2, vh / 2 + 46);
+  }
+  $('hudLives').textContent = `残機 ${g.lives}`;
+  $('hudCoin').textContent = `コイン ${g.coins}/${g.total}`;
+  $('hudTime').textContent = `タイム ${(g.frames / 60).toFixed(1)}`;
+}
+
+/* ---------- モード切替 ---------- */
+function setMode(m) {
+  if (m === 'edit' && readOnly) return;
+  hideModal();
+  if (m === 'play') {
+    if (!grid.some(r => r.includes('P'))) { updateStats(); $('stats').textContent = 'テストプレイの前にスタート地点を置いてください'; return; }
+    startGame();
+  } else { game = null; }
+  mode = m;
+  $('modeEdit').setAttribute('aria-selected', m === 'edit');
+  $('modePlay').setAttribute('aria-selected', m === 'play');
+  $('hud').hidden = $('touch').hidden = m !== 'play';
+  $('paletteBox').style.visibility = m === 'play' ? 'hidden' : '';
+  for (const k in keys) keys[k] = false;
+  sizeCanvas();
+  if (m === 'play') cv.focus?.();
+}
+$('modeEdit').onclick = () => setMode('edit');
+$('modePlay').onclick = () => setMode('play');
+$('retry').onclick = () => startGame();
+$('backEdit').onclick = () => setMode('edit');
+
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', ArrowUp: 'jump', KeyW: 'jump' };
+addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea')) return;
+  if (!$('modal').hidden) {
+    if (e.code === 'Escape') { e.preventDefault(); hideModal(); }
+    else if (e.code === 'KeyR' && mode === 'play') { e.preventDefault(); startGame(); }
+    return;
+  }
+  if (mode === 'edit') {
+    const n = +e.key; if (n >= 1 && n <= PARTS.length) selectPart(PARTS[n - 1][0]);
+    return;
+  }
+  const k = KEYMAP[e.code];
+  if (k) {
+    e.preventDefault();
+    if (k === 'jump' && !e.repeat) { if (ended()) { startGame(); return; } jumpBuf = 6; }
+    keys[k] = true;
+  } else if (e.code === 'KeyR') startGame();
+  else if (e.code === 'Escape' && !readOnly) setMode('edit');
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+function bindTouch(id, k) {
+  const b = $(id);
+  const on = e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); b.classList.add('on'); if (k === 'jump') { if (ended()) { startGame(); return; } jumpBuf = 6; } keys[k] = true; };
+  const off = () => { b.classList.remove('on'); keys[k] = false; };
+  b.addEventListener('pointerdown', on);
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => b.addEventListener(ev, off));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+bindTouch('tLeft', 'left'); bindTouch('tRight', 'right'); bindTouch('tJump', 'jump');
+
+/* ---------- 設定・データ ---------- */
+const SL = [['sGravity', 'oGravity', 'gravity', 2], ['sJump', 'oJump', 'jump', 1], ['sSpeed', 'oSpeed', 'speed', 1], ['sEnemy', 'oEnemy', 'enemy', 1], ['sLives', 'oLives', 'lives', 0]];
+function syncSettings() {
+  for (const [s, o, k, d] of SL) { $(s).value = doc.settings[k]; $(o).textContent = (+doc.settings[k]).toFixed(d); }
+  $('gameTitle').value = doc.title;
+}
+for (const [s, o, k, d] of SL) $(s).addEventListener('input', () => { doc.settings[k] = +$(s).value; $(o).textContent = doc.settings[k].toFixed(d); save(); });
+$('gameTitle').addEventListener('input', () => { doc.title = $('gameTitle').value; save(); });
+$('resetSettings').onclick = () => { doc.settings = { ...DEF }; syncSettings(); save(); note('設定を初期値に戻しました'); };
+
+let noteTimer;
+function note(msg) { $('note').textContent = msg; clearTimeout(noteTimer); noteTimer = setTimeout(() => { $('note').textContent = ''; }, 4000); }
+function loadDoc(d) { doc = d; grid = doc.map.map(r => r.split('')); syncSettings(); save(); if (mode === 'play') setMode('edit'); }
+
+$('exportBtn').onclick = () => {
+  save();
+  const txt = JSON.stringify(doc, null, 1);
+  const ta = $('json'); ta.value = txt;
+  const fallback = () => { ta.focus(); ta.select(); note('JSONを選択しました。コピーして保存してください'); };
+  try {
+    navigator.clipboard.writeText(txt).then(() => note('JSONをクリップボードにコピーしました'), fallback);
+  } catch (e) { fallback(); }
+};
+$('importBtn').onclick = () => {
+  try { loadDoc(fromData(JSON.parse($('json').value))); note(`「${doc.title}」を読み込みました`); }
+  catch (e) { note('読み込めませんでした。「書き出してコピー」で作ったJSONをそのまま貼り付けてください'); }
+};
+$('sampleBtn').onclick = () => { loadDoc(sampleDoc()); note('サンプルステージに戻しました'); };
+let armed = null;
+$('clearBtn').onclick = () => {
+  const b = $('clearBtn');
+  if (!armed) { b.classList.add('armed'); b.textContent = 'もう一度押すと全消去'; armed = setTimeout(() => { armed = null; b.classList.remove('armed'); b.textContent = '全消去'; }, 3000); return; }
+  clearTimeout(armed); armed = null; b.classList.remove('armed'); b.textContent = '全消去';
+  const empty = Array.from({ length: H }, (_, y) => y >= H - 2 ? '#'.repeat(W) : dots(W));
+  loadDoc({ title: '新しいステージ', settings: { ...doc.settings }, map: empty });
+  note('ステージを空にしました（地面だけ残しています）');
+};
+
+/* ---------- 共有ポップアップ ---------- */
+let modalFrom = null;
+function openShare(title, body, shareText, noteText) {
+  const url = shareUrl(doc);
+  const text = shareText + ' #ステージ工房';
+  $('mTitle').textContent = title;
+  $('mBody').textContent = body;
+  $('mNote').textContent = noteText || '';
+  $('mNote').hidden = !noteText;
+  $('shUrl').value = url;
+  $('shX').href = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+  $('shLine').href = 'https://line.me/R/share?text=' + encodeURIComponent(text + '\n' + url);
+  $('shFb').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+  $('shCopy').textContent = 'リンクをコピー';
+  $('mRetry').hidden = mode !== 'play';
+  modalFrom = document.activeElement;
+  $('modal').hidden = false;
+  $('mClose').focus();
+}
+function hideModal() {
+  if ($('modal').hidden) return;
+  $('modal').hidden = true;
+  modalFrom?.focus?.();
+}
+function showResult(g) {
+  const sec = (g.frames / 60).toFixed(1);
+  const stat = `タイム ${sec}秒 ・ コイン ${g.coins}/${g.total}`;
+  const t = doc.title || 'ステージ';
+  if (g.state === 'clear') openShare('ステージクリア！', `「${t}」 ${stat} ・ 残機 ${g.lives}`, `「${t}」を ${sec}秒でクリア！ コイン ${g.coins}/${g.total}`);
+  else openShare('ゲームオーバー', `「${t}」 ${stat}`, `「${t}」でゲームオーバー…。クリアできる？`);
+}
+$('mClose').onclick = hideModal;
+$('mRetry').onclick = () => startGame();
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) hideModal(); });
+$('shCopy').onclick = () => {
+  const inp = $('shUrl');
+  const fallback = () => { inp.focus(); inp.select(); $('shCopy').textContent = '選択しました'; };
+  try { navigator.clipboard.writeText(inp.value).then(() => { $('shCopy').textContent = 'コピーしました'; }, fallback); }
+  catch (e) { fallback(); }
+};
+$('shUrl').addEventListener('focus', e => e.target.select());
+$('shareBtn').onclick = () => {
+  save();
+  const ok = grid.some(r => r.includes('P')) && grid.some(r => r.includes('G'));
+  if (!ok) { updateStats(); return; }
+  openShare('このステージを共有', `「${doc.title}」をプレイ専用のリンクで共有します。リンクを開いた人はすぐに遊べて、編集はできません。`,
+    `「${doc.title}」を作りました。遊んでみて！`,
+    'ステージを変えたら、もう一度ここからリンクを作り直してください。前に配ったリンクは古い内容のままです。');
+};
+$('makeOwn').onclick = () => {
+  readOnly = false;
+  document.body.classList.remove('shared');
+  $('sharedNote').hidden = true; $('makeOwn').hidden = true;
+  $('gameTitle').readOnly = false;
+  $('tagline').textContent = 'パーツを並べて2Dアクションのステージを作り、その場でテストプレイできます。';
+  loadDoc(loadOwn());
+  setMode('edit');
+  scrollTo(0, 0);
+};
+
+/* ---------- ループ ---------- */
+let last = performance.now(), acc = 0;
+function frame(now) {
+  const t = now / 1000;
+  acc = Math.min(acc + (now - last) / 1000, 0.25); last = now;
+  if (mode === 'play' && game) { while (acc >= 1 / 60) { update(); acc -= 1 / 60; } renderPlay(t); }
+  else { acc = 0; renderEdit(t); }
+  requestAnimationFrame(frame);
+}
+$('ver').textContent = 'v' + VERSION;
+syncSettings(); updateStats();
+if (readOnly) {
+  document.body.classList.add('shared');
+  $('gameTitle').readOnly = true;
+  $('tagline').textContent = '共有されたステージです。クリアを目指して遊んでみてください。';
+  const sn = $('sharedNote');
+  sn.textContent = '';
+  const st = document.createElement('strong'); st.textContent = `「${doc.title}」`;
+  sn.append(st, document.createTextNode(` ・ プレイ専用 ・ 残機 ${doc.settings.lives}`));
+  sn.hidden = false;
+  $('makeOwn').hidden = false;
+  if (grid.some(r => r.includes('P'))) setMode('play');
+  else { sn.textContent = 'このリンクのステージにはスタート地点がないため、遊べません。'; sizeCanvas(); }
+} else sizeCanvas();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
