@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ステージ工房</title>
-<meta name="description" content="パーツを並べて2Dアクションのステージを作り、その場で遊んで、リンクで友だちに共有できるブラウザゲームメーカー。">
+<meta name="description" content="ちくわくんが走る「おでん横丁」の2Dアクションステージを作って、その場で遊んで、リンクで友だちに共有できるブラウザゲームメーカー。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ステージ工房">
-<meta property="og:description" content="2Dアクションのステージを作って、遊んで、共有しよう。">
+<meta property="og:description" content="ちくわくんが走るおでん横丁のステージを作って、遊んで、共有しよう。">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2387CEEB'/%3E%3Crect y='11' width='16' height='5' fill='%238A5A3B'/%3E%3Crect y='10' width='16' height='2' fill='%234FAF4A'/%3E%3Crect x='3' y='5' width='5' height='5' rx='1.5' fill='%232B5FD9'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C9772E'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E9A55B'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFF6EA'/%3E%3C/svg%3E">
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px/1.5 system-ui,-apple-system,sans-serif}
@@ -152,7 +152,7 @@ body.shared #collect{display:none}
   <header>
     <div class="brand">
       <h1>ステージ工房<span class="ver" id="ver"></span></h1>
-      <p id="tagline">パーツを並べて2Dアクションのステージを作り、その場でテストプレイできます。</p>
+      <p id="tagline">ちくわくんが走る「おでん横丁」のステージを作って、その場で遊べます。</p>
     </div>
     <div class="hdr-r">
       <div class="wallet" id="wallet" title="持っているちくわ">
@@ -184,7 +184,7 @@ body.shared #collect{display:none}
       <div class="scroller" id="scroller"><canvas id="cv" class="edit"></canvas></div>
       <div class="hud" id="hud" hidden>
         <span id="hudLives">残機 3</span>
-        <span id="hudCoin">コイン 0/0</span>
+        <span id="hudCoin">しずく 0/0</span>
         <span id="hudTime">タイム 0.0</span>
         <span class="sp"></span>
         <button class="btn" id="retry">リトライ (R)</button>
@@ -218,8 +218,8 @@ body.shared #collect{display:none}
     <details class="rules">
       <summary>ちくわのもらい方</summary>
       <ul>
-        <li>共有されたステージを初クリア：10本。全コイン取得とノーミスで、それぞれ＋5本</li>
-        <li>サンプルステージを初クリア：10本。全コイン取得とノーミスで、それぞれ＋5本</li>
+        <li>共有されたステージを初クリア：10本。だしのしずくを全部取る、ノーミスで、それぞれ＋5本</li>
+        <li>サンプルステージを初クリア：10本。だしのしずくを全部取る、ノーミスで、それぞれ＋5本</li>
         <li>自分で作ったステージを初クリア：3本（1日5回まで）</li>
         <li>報酬は1つのステージにつき1回だけです。自分で共有したステージは、自分のステージとして数えます。</li>
       </ul>
@@ -259,7 +259,8 @@ body.shared #collect{display:none}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
-      <li><b>v1.3.0</b>（2026-10-22）ちくわとスタンプでパーツを解放する仕組みを追加。新パーツ：中間旗、雲の足場、壊れるブロック、？ブロック、氷の床</li>
+      <li><b>v1.4.0</b>（2026-10-23）世界観を「おでん横丁」に一新。主人公ちくわくん、こんにゃん、だしのしずく、のれんのゴールなど、すべてのパーツの見た目と名前をオリジナルに</li>
+      <li><b>v1.3.0</b>（2026-10-22）ちくわとスタンプでパーツを解放する仕組みを追加。新パーツ：ちょうちん、湯気の足場、おせんべい、おみくじ箱、氷の床</li>
       <li><b>v1.2.1</b>（2026-10-22）ステージの書き出しをステージコード（改ざん検出つき）に変更。共有リンクにも改ざん検出を追加</li>
       <li><b>v1.2.0</b>（2026-10-22）背景を5種類から選べるように（ある日の昼下がり、たそがれどき、流星のぐんじょう、マンマンボルケーノ、カチカチチンチン）</li>
       <li><b>v1.1.1</b>（2026-10-22）SNS共有の文面に「#ちくわげーむず」を追加</li>
@@ -295,7 +296,7 @@ body.shared #collect{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 const THEMES = {
@@ -307,27 +308,27 @@ const THEMES = {
 };
 for (const k in THEMES) THEMES[k].key = k;
 let TH = THEMES.day;
-const ALL_PARTS = [['P','スタート'],['#','地面'],['B','ブロック'],['o','コイン'],['e','敵'],['^','トゲ'],['S','ジャンプ台'],['G','ゴール'],
-  ['C','中間旗'],['=','雲の足場'],['X','壊れるブロック'],['?','？ブロック'],['I','氷の床'],['.','消しゴム']];
+const ALL_PARTS = [['P','スタート'],['#','地面'],['B','かまぼこ板'],['o','だしのしずく'],['e','こんにゃん'],['^','つまようじ山'],['S','はんぺん'],['G','のれん'],
+  ['C','ちょうちん'],['=','湯気の足場'],['X','おせんべい'],['?','おみくじ箱'],['I','氷の床'],['.','消しゴム']];
 const KEY_PARTS = { '1': 'P', '2': '#', '3': 'B', '4': 'o', '5': 'e', '6': '^', '7': 'S', '8': 'G', '9': 'C', '0': '.' };
 const UNLOCKS = [
-  { ch: 'C', name: '中間旗', cost: 10, desc: 'さわると、ミスしてもここから再開' },
-  { ch: '=', name: '雲の足場', cost: 20, desc: '下からすり抜けて、上に乗れる' },
-  { ch: 'X', name: '壊れるブロック', cost: 30, desc: '下からたたくと壊れる' },
-  { ch: '?', name: '？ブロック', cost: 40, desc: '下からたたくとコインが出る' },
+  { ch: 'C', name: 'ちょうちん', cost: 10, desc: 'さわると灯り、ミスしてもここから再開' },
+  { ch: '=', name: '湯気の足場', cost: 20, desc: '下からすり抜けて、上に乗れる' },
+  { ch: 'X', name: 'おせんべい', cost: 30, desc: '下からたたくとパリッと割れる' },
+  { ch: '?', name: 'おみくじ箱', cost: 40, desc: '下からたたくと、だしのしずくが出る' },
   { ch: 'I', name: '氷の床', cost: 50, desc: 'つるつるすべる' },
-  { name: '動く床', cost: 70, soon: true },
-  { name: '飛ぶ敵', cost: 90, soon: true },
-  { name: '1UPキノコ', cost: 110, soon: true },
+  { name: 'お盆（動く床）', cost: 70, soon: true },
+  { name: 'ぱたぱた油揚げ（飛ぶ敵）', cost: 90, soon: true },
+  { name: 'ゆでたまご（残機＋1）', cost: 110, soon: true },
   { name: 'カギと扉', cost: 140, soon: true },
-  { name: 'ワープ土管', cost: 180, soon: true }
+  { name: '竹筒（ワープ）', cost: 180, soon: true }
 ];
 const LOCKABLE = new Set(UNLOCKS.filter(u => u.ch).map(u => u.ch));
 const STAMPS = [
   { id: 'lava', name: 'マンマンボルケーノの背景でクリア', goal: 1, part: '溶岩' },
-  { id: 'stomp', name: '敵を合計30体ふむ', goal: 30, part: 'トゲの敵' },
-  { id: 'nomiss', name: 'ノーミスで3ステージクリア', goal: 3, part: '大砲' },
-  { id: 'shared', name: '他の人のステージを5つクリア', goal: 5, part: '無敵スター' }
+  { id: 'stomp', name: 'こんにゃんを合計30体ふむ', goal: 30, part: 'トゲの敵' },
+  { id: 'nomiss', name: 'ノーミスで3ステージクリア', goal: 3, part: '串発射台' },
+  { id: 'shared', name: '他の人のステージを5つクリア', goal: 5, part: 'からし（無敵）' }
 ];
 const dots = n => '.'.repeat(n);
 const SAMPLE = [
@@ -459,7 +460,7 @@ function checkStamps() {
   for (const s of STAMPS) if (!PG.got.includes(s.id) && STAMP_PROGRESS[s.id]() >= s.goal) { PG.got.push(s.id); fresh.push(s); }
   return fresh;
 }
-/* クリア時の報酬。ステージの中身から作るIDごとに、初クリア・全コイン・ノーミスを1回ずつ */
+/* クリア時の報酬。ステージの中身から作るIDごとに、初クリア・しずく全部・ノーミスを1回ずつ */
 function grantClear(g) {
   const id = stageId(doc);
   const kind = id === SAMPLE_ID ? 'sample' : (readOnly && !PG.mine.includes(id)) ? 'shared' : 'own';
@@ -474,7 +475,7 @@ function grantClear(g) {
     } else { gain += 10; lines.push([(kind === 'sample' ? 'サンプルステージ' : '共有ステージ') + 'を初クリア', 10]); }
   }
   if (kind !== 'own') {
-    if (g.total > 0 && g.coins >= g.total && !(prev & 2)) { bits |= 2; gain += 5; lines.push(['全コイン', 5]); }
+    if (g.total > 0 && g.coins >= g.total && !(prev & 2)) { bits |= 2; gain += 5; lines.push(['だしのしずくを全部取った', 5]); }
     if (nomiss && !(prev & 4)) { bits |= 4; gain += 5; lines.push(['ノーミス', 5]); }
   }
   PG.cl[id] = bits;
@@ -501,23 +502,53 @@ function rr(c, x, y, w, h, r) {
   if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h);
 }
 function drawPlayer(c, x, y, w, h, face, alpha) {
+  /* ちくわくん：焼き色のついたちくわ。上に穴、正面に顔 */
   c.save(); c.globalAlpha = alpha ?? 1;
-  c.fillStyle = '#2B5FD9'; rr(c, x, y, w, h, w * 0.3); c.fill();
-  c.fillStyle = '#F4C9A0'; rr(c, x + w * 0.12, y + h * 0.18, w * 0.76, h * 0.42, w * 0.2); c.fill();
-  c.fillStyle = '#1C2230';
+  const cx = x + w / 2;
+  c.fillStyle = '#F3DDB2'; rr(c, x, y + h * 0.06, w, h * 0.94, w * 0.42); c.fill();
+  c.fillStyle = '#C9772E'; rr(c, x, y + h * 0.06, w, h * 0.3, w * 0.42); c.fill();
+  c.fillRect(x + w * 0.04, y + h * 0.8, w * 0.92, h * 0.06);
+  c.fillStyle = '#B5651F'; c.fillRect(x + w * 0.14, y + h * 0.3, w * 0.14, h * 0.05); c.fillRect(x + w * 0.62, y + h * 0.33, w * 0.18, h * 0.04);
+  c.fillStyle = '#E9A55B'; c.beginPath(); c.ellipse(cx, y + h * 0.1, w * 0.46, h * 0.1, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#6B3A17'; c.beginPath(); c.ellipse(cx, y + h * 0.1, w * 0.24, h * 0.05, 0, 0, Math.PI * 2); c.fill();
   const ex = face < 0 ? -w * 0.08 : w * 0.08;
-  c.fillRect(x + w * 0.3 + ex, y + h * 0.3, w * 0.1, h * 0.16);
-  c.fillRect(x + w * 0.6 + ex, y + h * 0.3, w * 0.1, h * 0.16);
+  c.fillStyle = '#2A1A10';
+  c.fillRect(cx - w * 0.22 + ex, y + h * 0.44, w * 0.11, h * 0.14);
+  c.fillRect(cx + w * 0.11 + ex, y + h * 0.44, w * 0.11, h * 0.14);
+  c.fillStyle = 'rgba(236,112,100,0.55)';
+  c.fillRect(cx - w * 0.4 + ex, y + h * 0.61, w * 0.16, h * 0.06); c.fillRect(cx + w * 0.24 + ex, y + h * 0.61, w * 0.16, h * 0.06);
   c.restore();
 }
 function drawEnemy(c, x, y, w, h, t) {
-  const sq = 1 + Math.sin(t * 10) * 0.05;
-  c.fillStyle = '#7B3FA0';
-  c.beginPath(); c.ellipse(x + w / 2, y + h * 0.62, w / 2, h * 0.62 * sq, 0, Math.PI, 0); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.fill();
-  c.fillStyle = '#FFFFFF';
-  c.fillRect(x + w * 0.22, y + h * 0.3, w * 0.2, h * 0.28); c.fillRect(x + w * 0.58, y + h * 0.3, w * 0.2, h * 0.28);
-  c.fillStyle = '#1C2230';
-  c.fillRect(x + w * 0.27, y + h * 0.4, w * 0.1, h * 0.16); c.fillRect(x + w * 0.63, y + h * 0.4, w * 0.1, h * 0.16);
+  /* こんにゃん：ねこ耳のこんにゃく。ぷるぷる揺れる */
+  const sq = Math.sin(t * 8) * 0.06;
+  const ww = w * (1 + sq), hh = h * 0.8 * (1 - sq), ex = x + (w - ww) / 2, ey = y + h - hh;
+  c.fillStyle = '#8D8E96';
+  c.beginPath();
+  c.moveTo(ex + ww * 0.08, ey + 2); c.lineTo(ex + ww * 0.2, ey - h * 0.2); c.lineTo(ex + ww * 0.36, ey + 2);
+  c.moveTo(ex + ww * 0.64, ey + 2); c.lineTo(ex + ww * 0.8, ey - h * 0.2); c.lineTo(ex + ww * 0.92, ey + 2);
+  c.fill();
+  rr(c, ex, ey, ww, hh, ww * 0.18); c.fill();
+  c.fillStyle = '#5E5F68';
+  const d = Math.max(1, ww * 0.07);
+  for (const [a, b] of [[0.14, 0.72], [0.4, 0.84], [0.7, 0.7], [0.84, 0.86], [0.28, 0.58], [0.56, 0.62]]) c.fillRect(ex + ww * a, ey + hh * b, d, d);
+  c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(ex + ww * 0.1, ey + hh * 0.1, ww * 0.26, hh * 0.08);
+  c.fillStyle = '#FFFFFF'; c.fillRect(ex + ww * 0.22, ey + hh * 0.24, ww * 0.18, hh * 0.28); c.fillRect(ex + ww * 0.6, ey + hh * 0.24, ww * 0.18, hh * 0.28);
+  c.fillStyle = '#1C1D24'; c.fillRect(ex + ww * 0.27, ey + hh * 0.32, ww * 0.09, hh * 0.18); c.fillRect(ex + ww * 0.65, ey + hh * 0.32, ww * 0.09, hh * 0.18);
+}
+function drawDrop(c, cx, cy, r) {
+  /* だしのしずく */
+  c.fillStyle = '#F2B23A'; c.strokeStyle = '#A8700E'; c.lineWidth = Math.max(1, r * 0.16);
+  c.beginPath(); c.moveTo(cx, cy - r * 1.5);
+  c.bezierCurveTo(cx + r * 0.4, cy - r * 0.8, cx + r, cy - r * 0.3, cx + r, cy + r * 0.2);
+  c.arc(cx, cy + r * 0.2, r, 0, Math.PI);
+  c.bezierCurveTo(cx - r, cy - r * 0.3, cx - r * 0.4, cy - r * 0.8, cx, cy - r * 1.5);
+  c.fill(); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,0.75)'; c.beginPath(); c.ellipse(cx - r * 0.35, cy + r * 0.05, r * 0.18, r * 0.32, -0.4, 0, Math.PI * 2); c.fill();
+}
+function glyph(c, ch, x, y, size, color) {
+  c.fillStyle = color; c.font = `bold ${Math.round(size)}px "Hiragino Sans","Noto Sans JP",sans-serif`;
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, x, y); c.textBaseline = 'alphabetic';
 }
 function drawTile(c, ch, x, y, s, t, top) {
   switch (ch) {
@@ -527,76 +558,98 @@ function drawTile(c, ch, x, y, s, t, top) {
       if (top) { c.fillStyle = TH.grass; c.fillRect(x, y, s, s * 0.28); c.fillStyle = TH.grassD; c.fillRect(x, y + s * 0.28, s, s * 0.06); }
       break;
     case 'B':
-      c.fillStyle = '#D9783A'; c.fillRect(x, y, s, s);
-      c.fillStyle = '#A4532A';
-      c.fillRect(x, y + s / 2 - 1, s, 2); c.fillRect(x, y + s - 2, s, 2);
-      c.fillRect(x + s / 2 - 1, y, 2, s / 2); c.fillRect(x + s * 0.2, y + s / 2, 2, s / 2); c.fillRect(x + s * 0.75, y + s / 2, 2, s / 2);
+      /* かまぼこ板 */
+      c.fillStyle = '#EE8AA0'; c.fillRect(x, y, s, s * 0.2);
+      c.fillStyle = '#D9708A'; c.fillRect(x, y + s * 0.17, s, s * 0.03);
+      c.fillStyle = '#FFF7F0'; c.fillRect(x, y + s * 0.2, s, s * 0.52);
+      c.fillStyle = '#EDE0D6'; c.fillRect(x + s * 0.93, y + s * 0.2, s * 0.07, s * 0.52);
+      c.fillStyle = '#C99A62'; c.fillRect(x, y + s * 0.72, s, s * 0.28);
+      c.fillStyle = '#A97A45'; c.fillRect(x, y + s * 0.8, s, s * 0.04); c.fillRect(x + s * 0.2, y + s * 0.9, s * 0.5, s * 0.03);
       break;
-    case 'o': {
-      const cy = y + s / 2 + Math.sin(t * 4) * s * 0.06;
-      const rx = s * 0.26 * Math.abs(Math.cos(t * 3)) + s * 0.06;
-      c.fillStyle = '#F6C431'; c.strokeStyle = '#A9780E'; c.lineWidth = Math.max(1, s * 0.06);
-      c.beginPath(); c.ellipse(x + s / 2, cy, rx, s * 0.32, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-      break;
-    }
+    case 'o': drawDrop(c, x + s / 2, y + s * 0.58 + Math.sin(t * 4) * s * 0.06, s * 0.24); break;
     case 'e': drawEnemy(c, x + s * 0.1, y + s * 0.2, s * 0.8, s * 0.8, t); break;
     case '^':
-      c.fillStyle = '#9AA3AD'; c.strokeStyle = '#5F6872'; c.lineWidth = 1;
-      for (let i = 0; i < 2; i++) {
-        c.beginPath(); c.moveTo(x + i * s / 2, y + s); c.lineTo(x + i * s / 2 + s / 4, y + s * 0.38); c.lineTo(x + (i + 1) * s / 2, y + s); c.closePath(); c.fill(); c.stroke();
+      /* つまようじ山 */
+      c.fillStyle = '#E8D3A2'; c.strokeStyle = '#B89A62'; c.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        const px = x + s * (0.14 + i * 0.24), tip = y + s * (i % 2 ? 0.32 : 0.42);
+        c.beginPath(); c.moveTo(px - s * 0.05, y + s * 0.86); c.lineTo(px - s * 0.05, tip + s * 0.12); c.lineTo(px, tip); c.lineTo(px + s * 0.05, tip + s * 0.12); c.lineTo(px + s * 0.05, y + s * 0.86); c.closePath(); c.fill(); c.stroke();
       }
+      c.fillStyle = '#7C5A3A'; rr(c, x + s * 0.02, y + s * 0.8, s * 0.96, s * 0.2, s * 0.06); c.fill();
+      c.fillStyle = '#C24A3A'; c.fillRect(x + s * 0.06, y + s * 0.86, s * 0.88, s * 0.04);
       break;
     case 'S':
-      c.fillStyle = '#555E6A'; c.fillRect(x + s * 0.1, y + s * 0.86, s * 0.8, s * 0.14);
-      c.strokeStyle = '#8C96A3'; c.lineWidth = Math.max(1.5, s * 0.08);
-      c.beginPath(); c.moveTo(x + s * 0.3, y + s * 0.86);
-      for (let i = 0; i < 4; i++) c.lineTo(x + (i % 2 ? s * 0.3 : s * 0.7), y + s * (0.78 - i * 0.07));
-      c.stroke();
-      c.fillStyle = '#E04545'; c.fillRect(x + s * 0.05, y + s * 0.48, s * 0.9, s * 0.14);
+      /* はんぺんクッション */
+      c.fillStyle = '#DCD3C2'; rr(c, x + s * 0.06, y + s * 0.5, s * 0.88, s * 0.5, s * 0.14); c.fill();
+      c.fillStyle = '#FFFDF7'; rr(c, x + s * 0.06, y + s * 0.42, s * 0.88, s * 0.5, s * 0.14); c.fill();
+      c.fillStyle = '#EDE6D8';
+      for (const [a, b] of [[0.2, 0.55], [0.5, 0.5], [0.75, 0.6], [0.3, 0.78], [0.65, 0.8]]) c.fillRect(x + s * a, y + s * b, s * 0.05, s * 0.05);
+      c.fillStyle = '#7A6A55'; c.fillRect(x + s * 0.36, y + s * 0.6, s * 0.06, s * 0.09); c.fillRect(x + s * 0.58, y + s * 0.6, s * 0.06, s * 0.09);
       break;
     case 'G': {
-      c.fillStyle = '#DDE3EA'; c.fillRect(x + s * 0.28, y, s * 0.1, s);
-      c.fillStyle = '#F6C431'; c.beginPath(); c.arc(x + s * 0.33, y + s * 0.05, s * 0.09, 0, Math.PI * 2); c.fill();
-      const wv = Math.sin(t * 5) * s * 0.06;
-      c.fillStyle = '#2FA36B'; c.beginPath(); c.moveTo(x + s * 0.38, y + s * 0.1); c.lineTo(x + s * 0.95, y + s * 0.28 + wv); c.lineTo(x + s * 0.38, y + s * 0.48); c.fill();
-      c.fillStyle = '#4C5560'; c.fillRect(x + s * 0.15, y + s * 0.9, s * 0.36, s * 0.1);
+      /* のれん（ゴール） */
+      c.fillStyle = '#7A5230'; c.fillRect(x - s * 0.04, y + s * 0.04, s * 1.08, s * 0.08);
+      const wv = Math.sin(t * 3);
+      for (let i = 0; i < 3; i++) {
+        const px = x + s * (0.02 + i * 0.33), sw = s * 0.3, bend = wv * s * 0.05 * (i - 1);
+        c.fillStyle = '#2F4A86'; c.strokeStyle = 'rgba(236,240,250,0.85)'; c.lineWidth = Math.max(1, s * 0.035);
+        c.beginPath(); c.moveTo(px, y + s * 0.12); c.lineTo(px + sw, y + s * 0.12); c.lineTo(px + sw + bend, y + s * 0.88); c.lineTo(px + bend, y + s * 0.88); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = '#E9EEF8'; c.fillRect(px + bend, y + s * 0.8, sw, s * 0.08);
+      }
+      c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(x + s * 0.5, y + s * 0.42, s * 0.15, 0, Math.PI * 2); c.fill();
+      glyph(c, 'お', x + s * 0.5, y + s * 0.43, s * 0.2, '#2F4A86');
       break;
     }
     case 'C': case 'c': {
-      c.fillStyle = '#8C96A3'; c.fillRect(x + s * 0.3, y + s * 0.08, s * 0.08, s * 0.92);
-      c.fillStyle = '#4C5560'; c.fillRect(x + s * 0.18, y + s * 0.9, s * 0.32, s * 0.1);
-      const on = ch === 'c', wv = on ? Math.sin(t * 6) * s * 0.05 : 0;
-      c.fillStyle = on ? '#F08A3A' : '#AEB7C2';
-      c.beginPath(); c.moveTo(x + s * 0.38, y + s * 0.1); c.lineTo(x + s * 0.88, y + s * 0.24 + wv); c.lineTo(x + s * 0.38, y + s * 0.4); c.fill();
+      /* ちょうちん（中間地点）。さわると灯る */
+      const on = ch === 'c', cx = x + s * 0.5, cy = y + s * 0.52;
+      c.fillStyle = '#5A4632'; c.fillRect(cx - s * 0.03, y, s * 0.06, s * 0.14);
+      if (on) glow(c, cx, cy, s * 0.1, s * 0.8, '255,170,80', 0.45 + 0.1 * Math.sin(t * 5));
+      c.fillStyle = on ? '#E8483A' : '#8C6A62';
+      c.beginPath(); c.ellipse(cx, cy, s * 0.3, s * 0.32, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = on ? '#B32E24' : '#6E5049'; c.lineWidth = Math.max(1, s * 0.035);
+      for (const k of [-0.14, 0, 0.14]) { const hw = s * 0.3 * Math.sqrt(1 - (k / 0.32) ** 2); c.beginPath(); c.moveTo(cx - hw, cy + s * k); c.lineTo(cx + hw, cy + s * k); c.stroke(); }
+      if (on) { c.fillStyle = 'rgba(255,230,160,0.55)'; c.beginPath(); c.ellipse(cx - s * 0.08, cy - s * 0.06, s * 0.08, s * 0.12, 0, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#2A2420'; c.fillRect(cx - s * 0.16, cy - s * 0.36, s * 0.32, s * 0.07); c.fillRect(cx - s * 0.16, cy + s * 0.29, s * 0.32, s * 0.07);
       break;
     }
-    case '=':
-      c.fillStyle = 'rgba(90,120,160,0.35)'; c.fillRect(x + s * 0.06, y + s * 0.36, s * 0.88, s * 0.1);
-      c.fillStyle = '#FFFFFF';
-      c.beginPath(); c.arc(x + s * 0.25, y + s * 0.2, s * 0.2, 0, Math.PI * 2); c.arc(x + s * 0.55, y + s * 0.16, s * 0.22, 0, Math.PI * 2); c.arc(x + s * 0.8, y + s * 0.22, s * 0.18, 0, Math.PI * 2); c.fill();
-      c.fillRect(x + s * 0.05, y + s * 0.18, s * 0.9, s * 0.2);
+    case '=': {
+      /* 湯気の足場 */
+      const dx = Math.sin(t * 2 + x * 0.05) * s * 0.04;
+      c.fillStyle = 'rgba(90,120,160,0.3)'; c.fillRect(x + s * 0.06, y + s * 0.36, s * 0.88, s * 0.08);
+      c.fillStyle = 'rgba(255,255,255,0.92)';
+      c.beginPath(); c.arc(x + s * 0.22 + dx, y + s * 0.24, s * 0.18, 0, Math.PI * 2); c.arc(x + s * 0.5 - dx, y + s * 0.18, s * 0.22, 0, Math.PI * 2); c.arc(x + s * 0.78 + dx, y + s * 0.25, s * 0.17, 0, Math.PI * 2); c.fill();
+      c.fillRect(x + s * 0.06, y + s * 0.22, s * 0.88, s * 0.16);
+      c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = Math.max(1, s * 0.05);
+      c.beginPath();
+      c.moveTo(x + s * 0.35, y + s * 0.66); c.quadraticCurveTo(x + s * 0.25 - dx, y + s * 0.56, x + s * 0.35, y + s * 0.46);
+      c.moveTo(x + s * 0.65, y + s * 0.7); c.quadraticCurveTo(x + s * 0.75 + dx, y + s * 0.58, x + s * 0.65, y + s * 0.48);
+      c.stroke();
       break;
+    }
     case 'X':
-      c.fillStyle = '#C9A27A'; c.fillRect(x, y, s, s);
-      c.fillStyle = '#9C7650'; c.fillRect(x, y, s, s * 0.08); c.fillRect(x, y + s * 0.92, s, s * 0.08);
-      c.strokeStyle = '#6E4F33'; c.lineWidth = Math.max(1, s * 0.06);
-      c.beginPath(); c.moveTo(x + s * 0.2, y + s * 0.15); c.lineTo(x + s * 0.45, y + s * 0.45); c.lineTo(x + s * 0.35, y + s * 0.7); c.lineTo(x + s * 0.55, y + s * 0.9);
-      c.moveTo(x + s * 0.45, y + s * 0.45); c.lineTo(x + s * 0.8, y + s * 0.35); c.stroke();
+      /* おせんべい（のり巻き）。下からたたくと割れる */
+      c.fillStyle = '#B9732F'; c.beginPath(); c.arc(x + s / 2, y + s / 2, s * 0.49, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#D99A52'; c.beginPath(); c.arc(x + s / 2, y + s / 2, s * 0.41, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#9A5A24';
+      for (const [a, b] of [[0.25, 0.3], [0.7, 0.25], [0.28, 0.7], [0.72, 0.68], [0.2, 0.5]]) c.fillRect(x + s * a, y + s * b, s * 0.06, s * 0.06);
+      c.fillStyle = '#1F3B2A'; c.fillRect(x + s * 0.4, y + s * 0.05, s * 0.2, s * 0.9);
+      c.strokeStyle = '#6E3E16'; c.lineWidth = Math.max(1, s * 0.05);
+      c.beginPath(); c.moveTo(x + s * 0.14, y + s * 0.32); c.lineTo(x + s * 0.3, y + s * 0.44); c.lineTo(x + s * 0.24, y + s * 0.58); c.stroke();
       break;
-    case '?': {
-      c.fillStyle = '#F2B33D'; c.fillRect(x, y, s, s);
-      c.fillStyle = '#B87A12'; c.fillRect(x, y + s * 0.9, s, s * 0.1); c.fillRect(x + s * 0.9, y, s * 0.1, s);
-      c.fillStyle = '#FFF1C2'; c.fillRect(x, y, s, s * 0.08); c.fillRect(x, y, s * 0.08, s);
-      const u = s / 8;
-      c.fillStyle = '#8A4F06';
-      for (const [a, b, w, h] of [[3, 1.2, 2, 1], [2, 2, 1, 1.2], [5, 2, 1, 1.8], [4, 3.6, 1, 1], [3, 4.4, 1, 1.1], [3, 6, 1, 1]]) c.fillRect(x + u * a, y + u * b, u * w, u * h);
+    case '?':
+      /* おみくじ箱。下からたたくと、だしのしずくが出る */
+      c.fillStyle = '#C8322B'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#E2B44A'; c.fillRect(x, y, s, s * 0.1); c.fillRect(x, y + s * 0.9, s, s * 0.1);
+      c.fillStyle = '#8E1F1A'; c.fillRect(x + s * 0.92, y + s * 0.1, s * 0.08, s * 0.8);
+      c.fillStyle = '#FFFFFF'; c.fillRect(x + s * 0.32, y + s * 0.18, s * 0.36, s * 0.6);
+      glyph(c, '吉', x + s * 0.5, y + s * 0.48, s * 0.28, '#C8322B');
       break;
-    }
     case 'U':
-      c.fillStyle = '#9C7A55'; c.fillRect(x, y, s, s);
-      c.fillStyle = '#7A5C3D'; c.fillRect(x, y + s * 0.9, s, s * 0.1); c.fillRect(x + s * 0.9, y, s * 0.1, s);
-      c.fillStyle = '#6A4E33';
-      for (const [a, b] of [[0.2, 0.2], [0.68, 0.2], [0.2, 0.68], [0.68, 0.68]]) c.fillRect(x + s * a, y + s * b, s * 0.1, s * 0.1);
+      /* 引いたあとのおみくじ箱 */
+      c.fillStyle = '#7A3A2E'; c.fillRect(x, y, s, s);
+      c.fillStyle = '#9E8048'; c.fillRect(x, y, s, s * 0.1); c.fillRect(x, y + s * 0.9, s, s * 0.1);
+      c.fillStyle = '#4A1E18'; c.fillRect(x + s * 0.92, y + s * 0.1, s * 0.08, s * 0.8); c.fillRect(x + s * 0.32, y + s * 0.44, s * 0.36, s * 0.1);
       break;
     case 'I':
       c.fillStyle = '#BFE9F7'; c.fillRect(x, y, s, s);
@@ -780,7 +833,7 @@ function renderProgress() {
   for (const u of UNLOCKS) {
     const li = document.createElement('li');
     const owned = !!u.ch && PG.u.includes(u.ch);
-    li.append(rowText(u.name, u.soon ? `ちくわ${u.cost}本 ・ v1.4.0で登場` : `ちくわ${u.cost}本 ・ ${u.desc}`));
+    li.append(rowText(u.name, u.soon ? `ちくわ${u.cost}本 ・ v1.5.0で登場` : `ちくわ${u.cost}本 ・ ${u.desc}`));
     if (owned) li.append(pill('解放済み', 'done'));
     else if (u.soon) { li.classList.add('soon'); li.append(pill('近日登場')); }
     else if (!nextShown) {
@@ -797,7 +850,7 @@ function renderProgress() {
   for (const s of STAMPS) {
     const v = Math.min(s.goal, STAMP_PROGRESS[s.id]()), done = PG.got.includes(s.id);
     const li = document.createElement('li');
-    const txt = rowText(s.name, `ごほうび：${s.part}（v1.4.0で登場）`);
+    const txt = rowText(s.name, `ごほうび：${s.part}（v1.5.0で登場）`);
     if (!done) { const bar = document.createElement('div'); bar.className = 'bar'; const i = document.createElement('i'); i.style.width = (v / s.goal * 100) + '%'; bar.append(i); txt.append(bar); }
     li.append(txt, done ? pill('スタンプ獲得', 'done') : pill(`${v} / ${s.goal}`));
     sl.append(li);
@@ -897,7 +950,7 @@ function updateStats() {
   for (const r of grid) for (const ch of r) { if (ch === 'o') coins++; else if (ch === 'e') enemies++; else if (ch === 'G') goals++; else if (ch === 'P') start++; }
   const el = $('stats');
   el.classList.toggle('warn', !start || !goals);
-  el.textContent = !start ? 'スタート地点がありません' : !goals ? 'ゴールがありません' : `コイン ${coins} ・ 敵 ${enemies} ・ ゴール ${goals}`;
+  el.textContent = !start ? 'スタート地点がありません' : !goals ? 'ゴールの「のれん」がありません' : `しずく ${coins} ・ こんにゃん ${enemies} ・ のれん ${goals}`;
 }
 
 /* ---------- テストプレイ ---------- */
@@ -912,7 +965,7 @@ function solidAt(tx, ty) {
 }
 const inMap = (tx, ty) => tx >= 0 && tx < W && ty >= 0 && ty < H;
 const groundAt = (tx, ty) => solidAt(tx, ty) || (inMap(tx, ty) && game.map[ty][tx] === '=');
-/* 雲の足場は、上から落ちてきたときだけ乗れる */
+/* 湯気の足場は、上から落ちてきたときだけ乗れる */
 function blocks(e, tx, ty, dy) {
   if (solidAt(tx, ty)) return true;
   return dy > 0 && inMap(tx, ty) && game.map[ty][tx] === '=' && e.y + e.h - dy <= ty * T + 0.01;
@@ -1012,7 +1065,7 @@ function update() {
     if (ch === 'o') { g.map[ty][tx] = '.'; g.coins++; g.pops.push({ x: bx + T / 2, y: by, life: 30 }); }
     else if (ch === '^' && overlap(p, { x: bx + 3, y: by + T * 0.45, w: T - 6, h: T * 0.55 })) return die();
     else if (ch === 'S' && p.vy >= 0 && overlap(p, { x: bx + 2, y: by + T * 0.5, w: T - 4, h: T * 0.5 })) { p.vy = -s.jump * 1.55; g.springT[ty + ',' + tx] = 12; }
-    else if (ch === 'C' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.map[ty][tx] = 'c'; g.start = { x: bx + 3, y: by + 2 }; g.pops.push({ x: bx + T / 2, y: by, life: 40, txt: '中間！' }); }
+    else if (ch === 'C' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.map[ty][tx] = 'c'; g.start = { x: bx + 3, y: by + 2 }; g.pops.push({ x: bx + T / 2, y: by, life: 40, txt: '灯った！' }); }
     else if (ch === 'G' && overlap(p, { x: bx + 4, y: by, w: T - 8, h: T })) { g.state = 'clear'; g.reward = grantClear(g); finish(g); return; }
   }
 
@@ -1052,13 +1105,13 @@ function renderPlay(t) {
     if (bt) { ctx.save(); ctx.translate(0, -T * 0.3 * Math.sin(bt / 8 * Math.PI)); drawTile(ctx, ch, x * T, y * T, T, t); ctx.restore(); continue; }
     drawTile(ctx, ch, x * T, y * T, T, t, ch === '#' && (y === 0 || g.map[y - 1][x] !== '#'));
   }
-  ctx.fillStyle = '#B98A5C';
+  ctx.fillStyle = '#C98A45';
   for (const d of g.debris) ctx.fillRect(d.x, d.y, 7, 7);
   for (const e of g.enemies) if (e.alive) drawEnemy(ctx, e.x, e.y, e.w, e.h, t);
   if (g.state !== 'dead' || Math.floor(t * 8) % 2) drawPlayer(ctx, p.x, p.y, p.w, p.h, p.face, 1);
   ctx.font = '12px DotGothic16, monospace'; ctx.textAlign = 'center';
   for (const q of g.pops) {
-    if (q.coin) { ctx.fillStyle = '#F6C431'; ctx.beginPath(); ctx.ellipse(q.x, q.y - (30 - q.life) * 1.3, 6 * Math.abs(Math.cos(q.life / 3)) + 1, 8, 0, 0, Math.PI * 2); ctx.fill(); continue; }
+    if (q.coin) { drawDrop(ctx, q.x, q.y - (30 - q.life) * 1.3, 6); continue; }
     ctx.fillStyle = `rgba(${TH.ink},${Math.min(1, q.life / 30)})`; ctx.fillText(q.txt || '+1', q.x, q.y - (30 - q.life) * 0.8);
   }
   ctx.restore();
@@ -1074,11 +1127,11 @@ function renderPlay(t) {
     ctx.font = '36px DotGothic16, monospace';
     ctx.fillText(g.state === 'clear' ? 'ステージクリア！' : 'ゲームオーバー', vw / 2, vh / 2 - 14);
     ctx.font = '15px DotGothic16, monospace';
-    ctx.fillText(`タイム ${(g.frames / 60).toFixed(1)}秒 ・ コイン ${g.coins}/${g.total}`, vw / 2, vh / 2 + 20);
+    ctx.fillText(`タイム ${(g.frames / 60).toFixed(1)}秒 ・ しずく ${g.coins}/${g.total}`, vw / 2, vh / 2 + 20);
     ctx.fillText('R キー / タップでもう一度', vw / 2, vh / 2 + 46);
   }
   $('hudLives').textContent = `残機 ${g.lives}`;
-  $('hudCoin').textContent = `コイン ${g.coins}/${g.total}`;
+  $('hudCoin').textContent = `しずく ${g.coins}/${g.total}`;
   $('hudTime').textContent = `タイム ${(g.frames / 60).toFixed(1)}`;
 }
 
@@ -1207,10 +1260,10 @@ function hideModal() {
 }
 function showResult(g) {
   const sec = (g.frames / 60).toFixed(1);
-  const stat = `タイム ${sec}秒 ・ コイン ${g.coins}/${g.total}`;
+  const stat = `タイム ${sec}秒 ・ だしのしずく ${g.coins}/${g.total}`;
   const t = doc.title || 'ステージ';
-  if (g.state === 'clear') openShare('ステージクリア！', `「${t}」 ${stat} ・ 残機 ${g.lives}`, `「${t}」を ${sec}秒でクリア！ コイン ${g.coins}/${g.total}`);
-  else openShare('ゲームオーバー', `「${t}」 ${stat}`, `「${t}」でゲームオーバー…。クリアできる？`);
+  if (g.state === 'clear') openShare('ステージクリア！', `「${t}」 ${stat} ・ 残機 ${g.lives}`, `おでん横丁「${t}」を ${sec}秒でクリア！ だしのしずく ${g.coins}/${g.total}`);
+  else openShare('ゲームオーバー', `「${t}」 ${stat}`, `おでん横丁「${t}」でゲームオーバー…。クリアできる？`);
   const r = g.reward, rw = $('mReward');
   if (g.state !== 'clear' || !r) return;
   rw.textContent = '';
@@ -1237,7 +1290,7 @@ $('shareBtn').onclick = () => {
   if (!ok) { updateStats(); return; }
   markMine(stageId(doc));
   openShare('このステージを共有', `「${doc.title}」をプレイ専用のリンクで共有します。リンクを開いた人はすぐに遊べて、編集はできません。`,
-    `「${doc.title}」を作りました。遊んでみて！`,
+    `おでん横丁のステージ「${doc.title}」を作りました。遊んでみて！`,
     'ステージを変えたら、もう一度ここからリンクを作り直してください。前に配ったリンクは古い内容のままです。');
 };
 $('makeOwn').onclick = () => {
@@ -1245,7 +1298,7 @@ $('makeOwn').onclick = () => {
   document.body.classList.remove('shared');
   $('sharedNote').hidden = true; $('makeOwn').hidden = true;
   $('gameTitle').readOnly = false;
-  $('tagline').textContent = 'パーツを並べて2Dアクションのステージを作り、その場でテストプレイできます。';
+  $('tagline').textContent = 'ちくわくんが走る「おでん横丁」のステージを作って、その場で遊べます。';
   loadDoc(loadOwn());
   setMode('edit');
   scrollTo(0, 0);
