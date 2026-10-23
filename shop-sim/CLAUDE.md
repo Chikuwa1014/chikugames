@@ -36,6 +36,7 @@
 | `js/amazake.js` | かまくらボーナスの日（`kamaTick`）と甘酒ミニゲーム（`amaStart`・`syncAma`・`amaClose`） |
 | `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`） |
 | `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`、ボタン処理 |
+| `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。ほかの関数を包んで記録するだけ（ui.js の後に読む） |
 | `js/main.js` | 起動 |
 
 ## 4. 保存キー
@@ -51,7 +52,9 @@
 
 ## 6. テスト
 
-- 専用のテストスクリプトはまだ無い。Playwright で `index.html` を開き、スマホ幅のスクリーンショットで確認する。
+- `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
+- `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
+- それ以外は Playwright で `index.html` を開き、スマホ幅のスクリーンショットで確認する。
 - 公開用の 1 ファイルは `python3 build.py` で `dist/shop-sim.html` に作る（アーティファクト版の元にもなる）。
 - 動きを変えない整理（リファクタリング）は、変更前後で結果が一致することを確かめる。
 
@@ -65,6 +68,13 @@
 ## 8. 残りのタスク
 
 `claude/未実装タスク.md` で管理（issue と機能）。
+
+## 付録：デバッグログ（v1.1.1〜）
+
+- 設定タブの「🐞 デバッグログを送る」→ `POST /shop-sim/debug`（`worker/index.js` の `saveDebugLog`）→ D1 `chikuwa-debug`（id `85202db5-5844-4a6e-963c-e4b4778011fe`）の `debug_logs` に保存し、6文字の受付番号を返す。
+- 中身（`body` 列の JSON）：`note`（ユーザーのメモ）、`why`（送信時の投資できない理由）、`state` 全体、`log`（`ev`・時刻 `t`・日 `d`・フェーズ `ph`/`ph0`・所持金 `m`・増減 `dm`・無視された理由 `ign`・病気 `sk`・うつ `dp`・かまくら `km` など）。
+- 読むとき：Cloudflare の MCP で `SELECT id, code, version, note, at FROM debug_logs ORDER BY id DESC LIMIT 20`、受付番号で `body` を取る。
+- 上限：1件 300KB、全体で 1日 300件（`DEBUG_MAX_*`）。アーティファクト版からは送れない（公開サイトのみ）。
 
 ## 付録：ゲームの仕様（実装済み）
 
