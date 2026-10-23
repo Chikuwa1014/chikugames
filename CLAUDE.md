@@ -149,6 +149,6 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 | `shop-sim/` | ちいさなお店（商品販売シミュレーター） | `shop-sim/js/data.js` の `KEY` |
 | `stage-kobo/` | つくれ！おでん横丁（旧名：ステージ工房） | `stage-kobo-v1`・`stage-kobo-progress` |
 | `roulette/` | まわせ！ちくわルーレット | `chikuwa-roulette-v1`・`chikuwa-roulette-name` |
-| `battle-othello/` | バトルオセロ（ベータ版） | なし |
+| `battle-othello/` | バトルオセロ | `battle-othello-name`・`battle-othello-board`・`battle-othello-debuglog` |
 
 トップページ自体の確認用アーティファクト：https://claude.ai/artifact/1XrN4ECSd153KpLVQuPYDG （`index.html` と各ゲームの `card.js` を載せたもの。ゲームへのリンクは動かない）
