@@ -29,7 +29,7 @@
   - フォルダ名は英小文字とハイフン（例：`shop-sim`、`stage-kobo`、`roulette`）。これがそのまま URL（`/roulette/`）になる。
   - **公開後はフォルダ名（URL）とブラウザの保存キーを変えない。** 共有リンクとセーブが消えるため。ゲームの名前を変えても URL はそのまま。
 - `main` に push すると Cloudflare Workers Builds（Worker：`chikuwa-games`）が 1 分ほどで自動公開する。
-- 静的ファイルは Workers の assets がそのまま配信する。サーバー処理が必要なときだけ `worker/index.js` に足す（いまはマルチプレイの仲介だけ）。
+- 静的ファイルは Workers の assets がそのまま配信する。サーバー処理が必要なときだけ `worker/index.js` に足す（いまはマルチプレイの仲介と、デバッグログの受け口 `/<フォルダ>/debug` → D1 `chikuwa-debug`。対象は `DEBUG_GAMES`）。
 - 公開しないファイルは `.assetsignore` に書く。`CLAUDE.md`・`README.md`・`CHANGELOG.md`・`dev/`・`claude/`・`build.py`・`dist/`・`worker/`・`.artifact/` は登録済み。各ゲームの `card.js` はトップページが読むので公開する。
 
 ## 3. ゲームを追加するときにやること

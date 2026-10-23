@@ -24,10 +24,54 @@ export default {
       return env.ROOMS.get(id).fetch(request);
     }
 
+    // デバッグログの受け口（例：/shop-sim/debug）。D1 の debug_logs に保存し、受付番号を返す
+    const dm = url.pathname.match(/^\/([a-z0-9-]+)\/debug$/);
+    if (dm && DEBUG_GAMES.includes(dm[1])) {
+      return saveDebugLog(request, env, dm[1]);
+    }
+
     // それ以外は通常の静的配信（見つからなければ 404）
     return env.ASSETS.fetch(request);
   },
 };
+
+// デバッグログを受け付けるゲーム（フォルダ名）
+const DEBUG_GAMES = ["shop-sim"];
+// 1件の上限（バイト）と、1日に受け付ける件数の上限（いたずら対策）
+const DEBUG_MAX_BYTES = 300 * 1024;
+const DEBUG_MAX_PER_DAY = 300;
+
+const json = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json; charset=utf-8" } });
+
+async function saveDebugLog(request, env, game) {
+  if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
+  if (!env.DEBUG_DB) return json({ ok: false, error: "保存先が未設定です" }, 503);
+  const text = await request.text();
+  if (text.length > DEBUG_MAX_BYTES) return json({ ok: false, error: "ログが大きすぎます" }, 413);
+  let data;
+  try { data = JSON.parse(text); } catch (e) { return json({ ok: false, error: "形式が正しくありません" }, 400); }
+  if (!data || typeof data !== "object") return json({ ok: false, error: "形式が正しくありません" }, 400);
+  const cnt = await env.DEBUG_DB.prepare(
+    "SELECT COUNT(*) AS n FROM debug_logs WHERE at >= datetime('now', '-1 day')"
+  ).first("n");
+  if (cnt >= DEBUG_MAX_PER_DAY) return json({ ok: false, error: "混み合っています。時間をおいて送ってください" }, 429);
+  // 受付番号：紛らわしい文字（0/O/1/I）を除いた6文字
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const rnd = crypto.getRandomValues(new Uint8Array(6));
+  const code = Array.from(rnd, (b) => A[b % A.length]).join("");
+  await env.DEBUG_DB.prepare(
+    "INSERT INTO debug_logs (game, version, code, note, body, ua) VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind(
+    game,
+    String(data.version || "").slice(0, 20),
+    code,
+    String(data.note || "").slice(0, 500),
+    text,
+    (request.headers.get("user-agent") || "").slice(0, 300)
+  ).run();
+  return json({ ok: true, code });
+}
 
 export class MultiRoom {
   constructor(state) {
