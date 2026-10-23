@@ -1,12 +1,13 @@
 # ちくわゲームズ
 
-ブラウザですぐ遊べる、ちいさなゲームのあつまりです。Cloudflare Workers（`chikuwa-games`）の静的配信で公開しています。`main` に push すると自動でデプロイされます。
+ブラウザですぐ遊べる、ちいさなゲームのあつまりです。Cloudflare Workers（`chikuwa-games`）の静的配信で公開しています。静的ファイルは assets が返し、assets に無いパス（いまはマルチプレイの仲介 `/roulette/ws` だけ）を `worker/index.js` が受けます（Durable Objects `MultiRoom`）。`main` に push すると自動でデプロイされます。
 
 | パス | 内容 |
 |---|---|
 | `/` | トップページ（ゲーム一覧）`index.html` |
 | `/shop-sim/` | ちいさなお店（商品販売シミュレーター） |
 | `/stage-kobo/` | つくれ！おでん横丁（ちくわくんの2Dアクションステージメーカー。旧名：ステージ工房） |
+| `/roulette/` | まわせ！ちくわルーレット（ひとり：すごろくRPG／みんな：最大8人の決めごとルーレット） |
 
 ## ゲームを一覧に追加する
 
