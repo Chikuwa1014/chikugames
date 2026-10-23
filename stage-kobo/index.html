@@ -50,12 +50,14 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-s
 @media (max-width:760px){.layout{grid-template-columns:minmax(0,1fr)}}
 .palette{display:flex;flex-direction:column;gap:12px}
 .tiles{display:grid;grid-template-columns:1fr;gap:6px}
-@media (max-width:760px){.tiles{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile kbd{display:none}}
 .tile{display:flex;align-items:center;gap:10px;font:inherit;font-size:14px;text-align:left;padding:6px 10px 6px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
 .tile canvas{width:32px;height:32px;border-radius:4px;flex:none;image-rendering:pixelated}
 .tile kbd{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
 .hint{margin:0;font-size:13px;color:var(--muted)}
+.genre{width:100%;font:inherit;font-size:15px;font-weight:700;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+.genre:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .stage{display:flex;flex-direction:column;gap:10px;min-width:0}
 .stagebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .stagebar input{font:inherit;font-family:var(--f-display);font-size:18px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink);padding:2px 6px;min-width:0;flex:1 1 220px}
@@ -100,6 +102,8 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
 .changelog{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 .changelog h2{color:var(--ink)}
 .changelog ul{margin:0;padding-left:1.2em}
+.changelog details summary{cursor:pointer;color:var(--ink);font-weight:700;margin-top:2px}
+.changelog details ul{margin-top:4px}
 .changelog b{font-family:var(--f-mono);font-weight:500;color:var(--ink)}
 .modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(10,14,22,.55);padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet{background:var(--surface);color:var(--ink);border-radius:16px;padding:22px;width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
@@ -142,7 +146,7 @@ body.shared .layout{grid-template-columns:minmax(0,1fr)}
 .reward strong{font-family:var(--f-display);font-weight:400;font-size:18px;color:var(--play)}
 .reward ul{margin:4px 0 0;padding-left:1.2em;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:12px;font-size:14px;font-weight:700;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
-body.shared #collect{display:none}
+body.shared #collect,body.shared #bgPanel{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -169,8 +173,9 @@ body.shared #collect{display:none}
   <main class="layout">
     <aside class="palette" id="paletteBox">
       <h2>パーツ</h2>
+      <select id="genre" class="genre" aria-label="パーツの種類"></select>
       <div class="tiles" id="palette"></div>
-      <p class="hint">クリックかドラッグで配置。右クリックで消去。数字キーでパーツを切り替え。</p>
+      <p class="hint">上のプルダウンでパーツの種類を切り替え。クリックかドラッグで配置、右クリックで消去。数字キーでもパーツを選べます。</p>
       <p class="hint" id="lockHint" role="status"></p>
     </aside>
 
@@ -200,6 +205,12 @@ body.shared #collect{display:none}
     </section>
   </main>
 
+  <section class="panel" id="bgPanel">
+    <h2>背景</h2>
+    <p>ステージの雰囲気を選びます。選んだ背景は共有リンクにも引き継がれます。</p>
+    <div class="bgs" id="bgs" role="radiogroup" aria-label="背景"></div>
+  </section>
+
   <section class="panel collect" id="collect">
     <div class="collect-head">
       <h2>ちくわとスタンプ</h2>
@@ -228,11 +239,6 @@ body.shared #collect{display:none}
 
   <section class="panels">
     <div class="panel">
-      <h2>背景</h2>
-      <p>ステージの雰囲気を選びます。選んだ背景は共有リンクにも引き継がれます。</p>
-      <div class="bgs" id="bgs" role="radiogroup" aria-label="背景"></div>
-    </div>
-    <div class="panel">
       <h2>ゲーム設定</h2>
       <p>動きの手ざわりを調整します。変更はすぐテストプレイに反映されます。</p>
       <label class="row" for="sGravity">重力<input id="sGravity" type="range" min="0.2" max="0.9" step="0.01"><output id="oGravity"></output></label>
@@ -259,18 +265,24 @@ body.shared #collect{display:none}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
-      <li><b>v1.5.0</b>（2026-10-23）新パーツを10種類追加。ちくわで解放：お盆（動く床）、ぱたぱた油揚げ（飛ぶ敵）、ゆでたまご（残機＋1）、カギと扉、竹筒（ワープ）。スタンプで解放：溶岩、トゲの敵、串発射台、からし（無敵）</li>
-      <li><b>v1.4.3</b>（2026-10-23）背景の町並みの下の基礎を、石積みから下に行くほど暗くなるグラデーションに変更</li>
-      <li><b>v1.4.2</b>（2026-10-23）背景の町並みの下に濃い灰色の石積みの基礎を追加し、家が浮いて見えないように</li>
-      <li><b>v1.4.1</b>（2026-10-23）ゲーム名を「つくれ！おでん横丁」に変更（旧名：ステージ工房）。5種類の背景の奥に、屋台や町家、ちょうちんの列が並ぶ横丁の町並みを追加</li>
-      <li><b>v1.4.0</b>（2026-10-23）世界観を「おでん横丁」に一新。主人公ちくわくん、こんにゃん、だしのしずく、のれんのゴールなど、すべてのパーツの見た目と名前をオリジナルに</li>
-      <li><b>v1.3.0</b>（2026-10-22）ちくわとスタンプでパーツを解放する仕組みを追加。新パーツ：ちょうちん、湯気の足場、おせんべい、おみくじ箱、氷の床</li>
-      <li><b>v1.2.1</b>（2026-10-22）ステージの書き出しをステージコード（改ざん検出つき）に変更。共有リンクにも改ざん検出を追加</li>
-      <li><b>v1.2.0</b>（2026-10-22）背景を5種類から選べるように（ある日の昼下がり、たそがれどき、流星のぐんじょう、マンマンボルケーノ、カチカチチンチン）</li>
-      <li><b>v1.1.1</b>（2026-10-22）SNS共有の文面に「#ちくわげーむず」を追加</li>
-      <li><b>v1.1.0</b>（2026-10-22）ステージの共有リンク、クリア・ゲームオーバー時の共有ポップアップ、残機数の設定を追加</li>
-      <li><b>v1.0.0</b>（2026-10-22）初期バージョン。ステージ編集、テストプレイ、ゲーム設定、JSONの書き出しと読み込み</li>
+      <li><b>v1.5.1</b>（2026-10-23）スマホでも使いやすいように、パーツを種類ごと（基本／足場・しかけ／アイテム／敵・きけん）にプルダウンで切り替える形に。背景の選択を「ちくわとスタンプ」の上に移動。更新履歴は最新だけ表示し、過去の分は開いて見られるように。こおりの背景の名前を「カチンコチンコ」に変更</li>
     </ul>
+    <details>
+      <summary>過去の更新履歴</summary>
+      <ul>
+        <li><b>v1.5.0</b>（2026-10-23）新パーツを10種類追加。ちくわで解放：お盆（動く床）、ぱたぱた油揚げ（飛ぶ敵）、ゆでたまご（残機＋1）、カギと扉、竹筒（ワープ）。スタンプで解放：溶岩、トゲの敵、串発射台、からし（無敵）</li>
+        <li><b>v1.4.3</b>（2026-10-23）背景の町並みの下の基礎を、石積みから下に行くほど暗くなるグラデーションに変更</li>
+        <li><b>v1.4.2</b>（2026-10-23）背景の町並みの下に濃い灰色の石積みの基礎を追加し、家が浮いて見えないように</li>
+        <li><b>v1.4.1</b>（2026-10-23）ゲーム名を「つくれ！おでん横丁」に変更（旧名：ステージ工房）。5種類の背景の奥に、屋台や町家、ちょうちんの列が並ぶ横丁の町並みを追加</li>
+        <li><b>v1.4.0</b>（2026-10-23）世界観を「おでん横丁」に一新。主人公ちくわくん、こんにゃん、だしのしずく、のれんのゴールなど、すべてのパーツの見た目と名前をオリジナルに</li>
+        <li><b>v1.3.0</b>（2026-10-22）ちくわとスタンプでパーツを解放する仕組みを追加。新パーツ：ちょうちん、湯気の足場、おせんべい、おみくじ箱、氷の床</li>
+        <li><b>v1.2.1</b>（2026-10-22）ステージの書き出しをステージコード（改ざん検出つき）に変更。共有リンクにも改ざん検出を追加</li>
+        <li><b>v1.2.0</b>（2026-10-22）背景を5種類から選べるように（ある日の昼下がり、たそがれどき、流星のぐんじょう、マンマンボルケーノ、カチカチチンチン）</li>
+        <li><b>v1.1.1</b>（2026-10-22）SNS共有の文面に「#ちくわげーむず」を追加</li>
+        <li><b>v1.1.0</b>（2026-10-22）ステージの共有リンク、クリア・ゲームオーバー時の共有ポップアップ、残機数の設定を追加</li>
+        <li><b>v1.0.0</b>（2026-10-22）初期バージョン。ステージ編集、テストプレイ、ゲーム設定、JSONの書き出しと読み込み</li>
+      </ul>
+    </details>
   </footer>
 </div>
 
@@ -300,7 +312,7 @@ body.shared #collect{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 const THEMES = {
@@ -308,7 +320,7 @@ const THEMES = {
   dusk:  { label: '夕方',       name: 'たそがれどき',       base: '#C9707A', ground: '#7A4E36', groundD: '#623D2A', grass: '#5E9A3E', grassD: '#4A7D2F', grid: 'rgba(60,20,40,0.14)',   ink: '60,20,40',    cursor: '#2A1630' },
   night: { label: '夜',         name: '流星のぐんじょう',   base: '#14286B', ground: '#4C3A34', groundD: '#3B2C27', grass: '#2E7A52', grassD: '#225E3E', grid: 'rgba(200,215,255,0.12)', ink: '235,240,255', cursor: '#E8EEFF' },
   magma: { label: 'マグマ',     name: 'マンマンボルケーノ', base: '#4E1209', ground: '#3A2320', groundD: '#291715', grass: '#E0662A', grassD: '#9E3A16', grid: 'rgba(255,190,150,0.12)', ink: '255,236,220', cursor: '#FFE2C8' },
-  ice:   { label: 'こおり',     name: 'カチカチチンチン',   base: '#CDEBFA', ground: '#7F98AE', groundD: '#6A8399', grass: '#F4FBFF', grassD: '#B9DCEE', grid: 'rgba(30,70,110,0.12)',  ink: '28,50,80',    cursor: '#1C2E48' }
+  ice:   { label: 'こおり',     name: 'カチンコチンコ',     base: '#CDEBFA', ground: '#7F98AE', groundD: '#6A8399', grass: '#F4FBFF', grassD: '#B9DCEE', grid: 'rgba(30,70,110,0.12)',  ink: '28,50,80',    cursor: '#1C2E48' }
 };
 for (const k in THEMES) THEMES[k].key = k;
 let TH = THEMES.day;
@@ -986,9 +998,30 @@ function drawIcon(b) {
     c.fillStyle = '#2A3040'; c.fillRect(30, 36, 4, 8);
   }
 }
+/* パーツのジャンル。消しゴムはどのジャンルにも出す */
+const GENRES = [
+  { id: 'basic', name: '基本', parts: 'P#BG' },
+  { id: 'gimmick', name: '足場・しかけ', parts: 'S=XI?MCDW' },
+  { id: 'item', name: 'アイテム', parts: 'oEKY' },
+  { id: 'danger', name: '敵・きけん', parts: 'eFT^LR' }
+];
+const GENRE_OF = {};
+for (const gr of GENRES) for (const ch of gr.parts) GENRE_OF[ch] = gr.id;
+let genre = 'basic';
+const gsel = $('genre');
+for (const gr of GENRES) { const o = document.createElement('option'); o.value = gr.id; o.textContent = `${gr.name}（${gr.parts.length}）`; gsel.append(o); }
+gsel.addEventListener('change', () => {
+  genre = gsel.value; buildPalette();
+  /* ジャンルを変えたら、そのジャンルで使える最初のパーツを選ぶ */
+  const first = [...GENRES.find(x => x.id === genre).parts].find(isUnlocked);
+  if (first) selectPart(first);
+});
+function markPressed() { pal.querySelectorAll('.tile').forEach(b => b.setAttribute('aria-pressed', b.dataset.ch === current ? 'true' : 'false')); }
 function buildPalette() {
   pal.textContent = '';
+  const shown = GENRES.find(x => x.id === genre).parts + '.';
   for (const [ch, name] of ALL_PARTS) {
+    if (!shown.includes(ch)) continue;
     const b = document.createElement('button');
     b.className = 'tile'; b.dataset.ch = ch;
     const ic = document.createElement('canvas'); ic.width = 64; ic.height = 64;
@@ -1005,7 +1038,8 @@ function buildPalette() {
     drawIcon(b);
     pal.append(b);
   }
-  selectPart(isUnlocked(current) ? current : '#');
+  if (!isUnlocked(current)) current = '#';
+  markPressed();
 }
 function selectPart(ch) {
   if (!isUnlocked(ch)) {
@@ -1015,7 +1049,10 @@ function selectPart(ch) {
   }
   $('lockHint').textContent = '';
   current = ch;
-  pal.querySelectorAll('.tile').forEach(b => b.setAttribute('aria-pressed', b.dataset.ch === ch ? 'true' : 'false'));
+  /* 数字キーなどで別のジャンルのパーツを選んだら、そのジャンルに切り替える */
+  const gid = GENRE_OF[ch];
+  if (gid && gid !== genre) { genre = gid; gsel.value = gid; buildPalette(); }
+  else markPressed();
 }
 buildPalette();
 
