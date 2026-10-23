@@ -43,7 +43,7 @@ export default {
 };
 
 // デバッグログを受け付けるゲーム（フォルダ名）
-const DEBUG_GAMES = ["shop-sim"];
+const DEBUG_GAMES = ["shop-sim", "battle-othello"];
 // 1件の上限（バイト）と、1日に受け付ける件数の上限（いたずら対策）
 const DEBUG_MAX_BYTES = 300 * 1024;
 const DEBUG_MAX_PER_DAY = 300;
