@@ -1,8 +1,21 @@
 // Cloudflare Workers の設定：リポジトリのファイルをそのまま静的サイトとして公開する
+// 静的ファイルは assets が先に返す。assets に無いパス（/roulette/ws）だけ worker/index.js が受ける
 {
   "name": "chikuwa-games",
+  "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "."
-  }
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  // マルチプレイの部屋（WebRTC の接続情報を交換するだけ）
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "MultiRoom" }
+    ]
+  },
+  // 無料プランでは SQLite 版の Durable Objects を使う
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["MultiRoom"] }
+  ]
 }
