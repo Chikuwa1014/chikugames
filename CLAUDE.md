@@ -51,8 +51,9 @@
 2. 画面の左上に、トップページ（`../`）へ戻るリンク「← ちくわゲームズ」を置く。
 3. トップページに出すカード `<フォルダ>/card.js` を作る（`order`・`href`・`kicker`・`title`・`sub`・`desc`・`tags`・`version`・`updated` と、160×90 のサムネイルを描く `draw(c, t)`。ドット絵風・少し動くもの）。書き方は既存のゲームの `card.js` が手本。
 4. トップページ `index.html` の「ゲームの一覧」に `<script src="./<フォルダ>/card.js"></script>` を 1 行足す（並び順は `order`）。
-5. `<フォルダ>/CLAUDE.md`（引き継ぎメモ。見出しは 12 章）、`<フォルダ>/README.md`（短い紹介）、`<フォルダ>/claude/未実装タスク.md`、`<フォルダ>/dev/artifact.json` を作る。
-6. リポジトリ直下の `README.md` のゲーム一覧表と、この `CLAUDE.md` 末尾のゲーム一覧に 1 行足す。
+5. SNS 共有・セーブの持ち運び・デバッグ報告・オンライン対戦は、**共通部品 `common/v1/` を使う**（14 章）。自分で書き直さない。
+6. `<フォルダ>/CLAUDE.md`（引き継ぎメモ。見出しは 12 章）、`<フォルダ>/README.md`（短い紹介）、`<フォルダ>/claude/未実装タスク.md`、`<フォルダ>/dev/artifact.json` を作る。
+7. リポジトリ直下の `README.md` のゲーム一覧表と、この `CLAUDE.md` 末尾のゲーム一覧に 1 行足す。
 
 ### ベータ版として公開するとき
 
@@ -100,7 +101,8 @@
   - 新しいゲームでは `worker/index.js` の `WS_GAMES` に「フォルダ名: 1部屋の台数」を 1 行足すだけ。`/<フォルダ>/ws` で受け、部屋の名前にゲーム名が付くので、ほかのゲームと部屋は混ざらない（例：`battle-othello: 2`）。
 - ゲームの進行（乱数・勝ち負け・時間）は親が決めて配る。子は操作を送るだけにする。
 - 招待はリンク（`?room=1234` を開くと自動で参加）・部屋コード・QR コード（cdnjs の qrcodejs）の 3 つを用意する。
-- 実装の手本は `roulette/index.html` の「みんなで決める」と、`roulette/CLAUDE.md` の「マルチプレイの仕組み」。
+- **新しいゲームは共通部品 `common/v1/room.js`（14 章）を使う。** 部屋を作る・参加・招待（リンク／コード／QR）・メンバー一覧・親子の接続までできているので、ゲーム側はメッセージの処理だけ書く。
+- 仕組みの詳しい説明は `roulette/CLAUDE.md` の「マルチプレイの仕組み」（ルーレット・バトルオセロは共通部品より前に作ったので、自前の同じ処理を持っている）。
 
 ## 9. 確認とテスト
 
@@ -128,7 +130,7 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 - **リポジトリの取得**：セッションに chikugames を追加してから `git clone --depth 1`。git の名前が既定では Claude になっているので、コミット時に `git -c user.name=Chikuwa1014 -c user.email=…` を付ける。
 - **バックグラウンドで動かしたサーバー（`dev/server.mjs` など）は時間の上限で止まる**。テストの途中で止まったら起動し直す。
 - 日本語を含むファイルの一部を書き換えるときは、Python で「置き換え前の文字列がちょうど 1 か所あること」を確かめてから置き換えると安全。
-- 本番の公開 URL（ドメイン）は未記入（`dev/site.json` の `origin`。ルート `claude/未実装タスク.md` 参照）。
+- 本番の公開 URL は `dev/site.json` の `origin`（https://chikuwa-games.chikuwa-hookah.workers.dev）。アーティファクト版の共有リンク・招待リンクに使う。
 
 ## 12. 各ゲームの CLAUDE.md の見出し
 
@@ -157,6 +159,26 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 - 手をつけてよいのは【許可済み】だけ。【保留】を実装するときは、あらためて確認をとる。
 - 不具合は「issue」、新しい機能は「機能」の見出しの下に分けて書く。
 - 既存の書き方（`shop-sim` の未実装タスク）はそのままでよい。新しく足す行からこの形にする。
+
+## 14. 共通部品（フレームワーク）`common/v1/`
+
+どのゲームでも使う処理をまとめたもの。各ゲームは `<script src="../common/v1/xxx.js">` で読み込む（`window.CG` の下に入るので、ゲームの名前とぶつからない）。
+アーティファクト版を作るときは `dev/make-artifact.py`（と shop-sim の `build.py`）が中身を埋め込むので、そのままでよい。詳しい使い方は各ファイルの先頭と `common/README.md`。
+
+| ファイル | 中身 | 主な使い方 |
+|---|---|---|
+| `core.js`（必ず最初） | ゲーム情報・保存の読み書き（try/catch 済み）・コピー・ダウンロード・トースト | `CG.init({ game:'<フォルダ>', title, version })`、`CG.ls.get/set/getJSON/setJSON`、`CG.copy(t)`、`CG.toast(t)` |
+| `share.js` | SNS 共有（5 章どおり。`#ちくわげーむず` を必ず付ける） | `CG.share.open({ msg, tags, url }, 画像)`、`.text()`・`.links()`・`.copy()` |
+| `save.js` | セーブデータのファイル書き出し・読み込みと**セーブコード**（`CK1.〜`、圧縮＋チェック値。別ゲーム・書き換えははじく） | `CG.save.wrap(data, 版)`、`.toFile()`・`.fromFile()`・`.toCode()`・`.fromCode()` |
+| `debug.js` | **デバッグ報告**：操作・エラーを端末に記録し、メモ付きで送って受付番号を返す | `CG.debug.init({ snap })`、`.add()`・`.wrap()`・`.send()`・`.mount(el)`。`worker/index.js` の `DEBUG_GAMES` にフォルダ名を足す |
+| `room.js` | **オンライン対戦のルーム作成**（8 章の方式）。ロビー画面つき | `CG.room.create({ max, name, onMessage… })`、`CG.room.lobby(el, room, { nameKey })`。`WS_GAMES` にフォルダ名を足す |
+| `common.css` | ロビー画面・送信欄の見た目（`--cg-accent` などで色を変えられる） | `room.js` のロビーか `debug.js` の `mount` を使うときだけ読む |
+
+- **v1 のふるまいを変えない。** 使っているゲームが壊れる変更が必要になったら `common/v2/` を作り、ゲームごとに移る。足すだけの変更（新しい関数）は v1 に足してよい。
+- 共通部品を直したら、使っているゲームをすべて確かめる（下の一覧）。共通部品だけの変更でプレイに影響が無ければ、ゲームの版数は上げなくてよい。
+- **β版で使うときは、β リポジトリ（chikugames-beta）に `common/` をコピーする**（本番から読み込まない。本番の push を待たずに β で使えるように）。β の push のときに本番の `common/` と同じ中身にそろえる。
+- テスト：`common/dev/room-test.html`（ルームの見本）と `python3 common/dev/test-room.py`（`node roulette/dev/server.mjs` を先に起動）。
+- 使っているゲーム：`shop-sim`（core・share・save・debug）。
 
 ## ゲーム一覧（フォルダ・保存キー）
 

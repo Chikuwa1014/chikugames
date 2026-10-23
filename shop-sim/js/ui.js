@@ -242,6 +242,19 @@ document.addEventListener('click', e => {
     }
     if (a === 'fok')
         applyLoad();
+    if (a === 'ccopy')
+        makeCode();
+    if (a === 'cin' || a === 'cno') {
+        svIn = a === 'cin';
+        svCode = '';
+        svMsg = null;
+        syncSave();
+        const t = byId('svci');
+        if (t)
+            t.focus();
+    }
+    if (a === 'cread')
+        readCode();
     if (a === 'fno') {
         svPend = null;
         svMsg = null;
@@ -280,15 +293,18 @@ document.addEventListener('click', e => {
     if (a === 'reset') {
         if (!window.rs) {
             window.rs = 1;
-            b.textContent = 'もう一度押すとリセットします';
+            b.textContent = '⚠ もう一度押すとリセットします';
+            b.classList.add('arm');
             setTimeout(() => {
                 window.rs = 0;
                 b.textContent = '最初からやり直す';
+                b.classList.remove('arm');
             }, 4000);
         }
         else {
             window.rs = 0;
             b.textContent = '最初からやり直す';
+            b.classList.remove('arm');
             restart();
         }
     }
@@ -390,7 +406,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);

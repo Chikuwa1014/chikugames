@@ -10,6 +10,8 @@
 これを Artifact ツールで公開する。2 回目以降は <フォルダ>/dev/artifact.json の url のアーティファクトを更新する。
 
 変換の中身（どのゲームでも同じ）:
+  0. 手元のファイルを読み込む <script src="…"> と <link rel="stylesheet" href="…">（共通部品 ../common/v1/ など）を、
+     中身を埋め込んだ <script> / <style> に置き換える（http で始まる外部のものはそのまま）
   1. <head> から <title>、Google Fonts の <link>、<style>、<script> だけを残す
      （<meta>・favicon などはアーティファクト側が用意するので消す）
   2. viewport-fit=cover なら <meta name="claude:viewport-fit-sides" content="cover"> を足す
@@ -51,6 +53,31 @@ def load_json(p):
         fail(f"{p.relative_to(ROOT)} の書き方がまちがっています（{e}）")
 
 
+def inline_local(html, base):
+    """手元のファイルを読む <script src> と <link rel="stylesheet"> を中身に置き換える（base は元の HTML のフォルダ）"""
+    def body(src):
+        f = (base / src).resolve()
+        if not f.is_file() or ROOT not in f.parents:
+            fail(f"埋め込むファイルが見つかりません: {src}")
+        return f.read_text(encoding="utf-8")
+
+    def js(m):
+        src = m.group(1)
+        if re.match(r"^(https?:)?//", src):
+            return m.group(0)
+        return "<script>\n" + body(src) + "</script>"
+
+    def css(m):
+        href = m.group(1)
+        if re.match(r"^(https?:)?//", href):
+            return m.group(0)
+        return "<style>\n" + body(href) + "</style>"
+
+    html = re.sub(r'<script\s+src="([^"]+)"\s*></script>', js, html)
+    html = re.sub(r'<link\s+rel="stylesheet"\s+href="([^"]+)"\s*/?>', css, html)
+    return html
+
+
 def convert(html):
     html = re.sub(r"<!--\s*artifact:skip\s*-->.*?<!--\s*/artifact:skip\s*-->\n?", "", html, flags=re.S)
     m_head = re.search(r"<head[^>]*>(.*?)</head>", html, re.S | re.I)
@@ -85,7 +112,8 @@ def main():
         if r.returncode:
             fail(f"build（{cfg['build']}）が失敗しました")
 
-    html = (gdir / cfg.get("source", "index.html")).read_text(encoding="utf-8")
+    src = gdir / cfg.get("source", "index.html")
+    html = inline_local(src.read_text(encoding="utf-8"), src.parent)
     out = convert(html)
 
     url = cfg.get("url", "")
