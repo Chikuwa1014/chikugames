@@ -327,6 +327,53 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
+/* =====================================================================
+   調整用の数値（難しさ・値段・ルーレットの手ざわり）はここにまとめる
+   s はステージ番号（1〜5）、lv はレベル
+   ===================================================================== */
+const TUNING = {
+  // ルーレットの回り方：摩擦 dω/dt = -(A + B·ω)。とめるボタンを押すと BRAKE に切り替える
+  friction: { A: 0.6, B: 0.35 },
+  brake: { A: 4.2, B: 1.3 },
+  spinSpeed: () => 13 + Math.random() * 5,      // まわし始めの速さ（rad/s）。ひとり・マルチ共通
+
+  // ---- ひとりで冒険 ----
+  boardLen: 24,                                  // スタート＋22マス＋ボス
+  squares: (stage) => ({ E: 4 + Math.floor(stage / 2), H: 3, C: 4, T: 2 + Math.floor(stage / 2), Q: 3 }),  // stage は 0 始まり
+  maxHp: (lv, hpUp) => 20 + (lv - 1) * 3 + hpUp * 6,
+  levelUpHeal: 3,
+  expNeed: (lv) => lv * 10,
+  attackValues: [2, 3, 3, 4, 4, 5],              // こうげきルーレットのダメージ（＋ボーナス）
+  critBase: 6,                                   // かいしん＝(critBase＋ボーナス)×2
+  counterBase: 3,                                // はんげき＝counterBase＋ボーナス
+  enemy: {
+    hp: (s, boss) => boss ? 14 + 11 * s : 5 + 5 * s + rnd(0, 2),
+    atk: (s, boss) => boss ? 4 + 3 * s : 2 + Math.round(1.5 * s) + rnd(0, 1),
+    exp: (s, boss) => boss ? 10 + 5 * s : 2 + 3 * s,
+    coin: (s, boss) => boss ? 10 + 2 * s : 2 + s,
+  },
+  healRate: 0.4,                                 // だしの湯：さいだいHPの割合
+  coinSquare: (s) => rnd(2, 3) + s,
+  trapDamage: (s) => 2 + s,
+  event: { coin: (s) => 4 + s, damage: (s) => 3 + s, rates: [0.3, 0.55, 0.8] },  // ？マス：ちくわ／全回復／おい風／からし の境目
+  gameOverKeep: 0.5,                             // ゲームオーバーで残るちくわの割合
+  upgrades: [
+    { id: "crit",  name: "かいしんマス＋1",   desc: "こうげきルーレットに「かいしん」を1マス追加", cost: 10, max: 3 },
+    { id: "miss",  name: "ミスマスを消す",     desc: "こうげきルーレットの「ミス」をなくす",        cost: 14, max: 1 },
+    { id: "guard", name: "ガードマス＋1",      desc: "ぼうぎょルーレットに「ガード」を1マス追加",   cost: 10, max: 3 },
+    { id: "hp",    name: "さいだいHP＋6",      desc: "体力の上限が6ふえる",                         cost: 8,  max: 5 },
+    { id: "pow",   name: "こうげき力＋1",      desc: "こうげきのダメージがすべて＋1",               cost: 12, max: 3 },
+  ],
+
+  // ---- みんなで決める ----
+  maxPlayers: 8,
+  maxItems: 256,
+  itemMaxLen: 16,
+  guards: 3,            // 1回のルーレットで使える「はじく」の回数
+  kick: 3.4,            // はじいたときに足される回転の速さ
+  hitWindow: 220,       // 針がNG項目を通り過ぎてからも成功にする猶予（ミリ秒・通信の遅れ分）
+};
+
 const SCREENS = ["scr-title", "scr-solo", "scr-mlobby", "scr-mroom"];
 function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; window.scrollTo(0, 0); }
 
@@ -340,9 +387,8 @@ function textOn(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? "#2A1A10" : "#FFFFFF";
 }
 
-// 摩擦：dω/dt = -(A + B·ω)。とめるボタンを押すと強いブレーキに切り替える
-const FRICTION = { A: 0.6, B: 0.35 };
-const BRAKE = { A: 4.2, B: 1.3 };
+const FRICTION = TUNING.friction;
+const BRAKE = TUNING.brake;
 
 class Wheel {
   constructor(canvas) {
@@ -610,17 +656,10 @@ const STAGES = [
   { name: "マンマンボルケーノ",   enemies: ["suji", "atsuage", "gobo"], boss: "boss4", tint: "#5A2A1E" },
   { name: "カチカチ氷室",         enemies: ["kombu", "tamagon", "hanpen"], boss: "boss5", tint: "#24485A" },
 ];
-const BOARD_LEN = 24;      // スタート＋22マス＋ボス
+const BOARD_LEN = TUNING.boardLen;
 const SAVE_KEY = "chikuwa-roulette-v1";
 
-// 強化（ショップ）
-const UPGRADES = [
-  { id: "crit",  name: "かいしんマス＋1",   desc: "こうげきルーレットに「かいしん」を1マス追加", cost: 10, max: 3 },
-  { id: "miss",  name: "ミスマスを消す",     desc: "こうげきルーレットの「ミス」をなくす",        cost: 14, max: 1 },
-  { id: "guard", name: "ガードマス＋1",      desc: "ぼうぎょルーレットに「ガード」を1マス追加",   cost: 10,  max: 3 },
-  { id: "hp",    name: "さいだいHP＋6",      desc: "体力の上限が6ふえる",                         cost: 8,  max: 5 },
-  { id: "pow",   name: "こうげき力＋1",      desc: "こうげきのダメージがすべて＋1",               cost: 12, max: 3 },
-];
+const UPGRADES = TUNING.upgrades;
 
 function newSave() {
   return { stage: 0, lv: 1, exp: 0, coins: 0, up: { crit: 0, miss: 0, guard: 0, hp: 0, pow: 0 }, clear: false };
@@ -637,9 +676,9 @@ const G = {
   mode: "move",       // move | atk | def | busy
   spinning: false, braking: false, enemy: null, extraMove: false,
 };
-const maxHp = () => 20 + (G.sv.lv - 1) * 3 + G.sv.up.hp * 6;
+const maxHp = () => TUNING.maxHp(G.sv.lv, G.sv.up.hp);
 const bonus = () => (G.sv.lv - 1) + G.sv.up.pow;
-const expNeed = () => G.sv.lv * 10;
+const expNeed = () => TUNING.expNeed(G.sv.lv);
 function saveGame() { lsSet(SAVE_KEY, JSON.stringify(G.sv)); }
 
 // 決まった並びの盤を作る（同じステージはやり直しても同じ盤）
@@ -656,8 +695,9 @@ function makeBoard(stage) {
       b[i] = type; n++;
     }
   };
-  place("E", 4 + Math.floor(stage / 2));
-  place("H", 3); place("C", 4); place("T", 2 + Math.floor(stage / 2)); place("Q", 3);
+  const n = TUNING.squares(stage);
+  place("E", n.E);
+  place("H", n.H); place("C", n.C); place("T", n.T); place("Q", n.Q);
   return b;
 }
 const SQ_LABEL = { S: "S", ".": "", E: "敵", H: "湯", C: "ち", T: "罠", Q: "？", B: "ボス" };
@@ -666,8 +706,8 @@ const SQ_LABEL = { S: "S", ".": "", E: "敵", H: "湯", C: "ち", T: "罠", Q: "
 function attackItems() {
   const u = G.sv.up, list = [];
   if (!u.miss) list.push({ label: "ミス", k: "miss" });
-  for (const v of [2, 3, 3, 4, 4, 5]) list.push({ label: String(v + bonus()), k: "dmg", v: v + bonus() });
-  for (let i = 0; i <= u.crit; i++) list.push({ label: "かいしん", k: "crit", v: (6 + bonus()) * 2 });
+  for (const v of TUNING.attackValues) list.push({ label: String(v + bonus()), k: "dmg", v: v + bonus() });
+  for (let i = 0; i <= u.crit; i++) list.push({ label: "かいしん", k: "crit", v: (TUNING.critBase + bonus()) * 2 });
   // かいしんが固まらないよう混ぜる（毎回同じ並び）
   return interleave(list);
 }
@@ -768,7 +808,7 @@ function setSoloBtn(text, disabled) { $("soloBtn").textContent = text; $("soloBt
 $("soloBtn").onclick = () => {
   if (G.mode === "busy") return;
   if (!G.spinning) {
-    soloWheel.win = -1; soloWheel.fr = FRICTION; soloWheel.omega = 13 + Math.random() * 5;
+    soloWheel.win = -1; soloWheel.fr = FRICTION; soloWheel.omega = TUNING.spinSpeed();
     G.spinning = true; G.braking = false;
     setSoloBtn("とめる", false);
   } else if (!G.braking) {
@@ -808,21 +848,22 @@ async function landEffect() {
   const t = G.board[G.pos], s = G.sv.stage + 1;
   if (G.done.has(G.pos)) return afterTurn();
   if (t === "H") {
-    const v = Math.ceil(maxHp() * 0.4); G.hp += v; floatText(`+${v}`, "#8FD0FF", $("hpBar")); log(`だしの湯でひとやすみ。HPが ${v} かいふく`);
+    const v = Math.ceil(maxHp() * TUNING.healRate); G.hp += v; floatText(`+${v}`, "#8FD0FF", $("hpBar")); log(`だしの湯でひとやすみ。HPが ${v} かいふく`);
     markDone();
   } else if (t === "C") {
-    const v = rnd(2, 3) + s; G.sv.coins += v; floatText(`ちくわ+${v}`, "#F2B23A", $("stCoin")); log(`ちくわを ${v} 本ひろった！`);
+    const v = TUNING.coinSquare(s); G.sv.coins += v; floatText(`ちくわ+${v}`, "#F2B23A", $("stCoin")); log(`ちくわを ${v} 本ひろった！`);
     markDone();
   } else if (t === "T") {
-    const v = 2 + s; G.hp -= v; floatText(`-${v}`, "#FF6A55", $("hpBar")); $("scr-solo").classList.add("shake"); log(`つまようじのわな！ ${v} のダメージ`);
+    const v = TUNING.trapDamage(s); G.hp -= v; floatText(`-${v}`, "#FF6A55", $("hpBar")); $("scr-solo").classList.add("shake"); log(`つまようじのわな！ ${v} のダメージ`);
     setTimeout(() => $("scr-solo").classList.remove("shake"), 400);
   } else if (t === "Q") {
     markDone();
     const r = Math.random();
-    if (r < 0.3) { const v = 4 + s; G.sv.coins += v; log(`？マス：屋台のおばちゃんから ちくわ ${v} 本！`); }
-    else if (r < 0.55) { G.hp = maxHp(); log("？マス：あつあつのおでんを食べてHPぜんかい！"); }
-    else if (r < 0.8) { G.extraMove = true; log("？マス：おい風！もう一回いどうできる"); }
-    else { const v = 3 + s; G.hp -= v; log(`？マス：からしが目にしみた… ${v} のダメージ`); }
+    const [r1, r2, r3] = TUNING.event.rates;
+    if (r < r1) { const v = TUNING.event.coin(s); G.sv.coins += v; log(`？マス：屋台のおばちゃんから ちくわ ${v} 本！`); }
+    else if (r < r2) { G.hp = maxHp(); log("？マス：あつあつのおでんを食べてHPぜんかい！"); }
+    else if (r < r3) { G.extraMove = true; log("？マス：おい風！もう一回いどうできる"); }
+    else { const v = TUNING.event.damage(s); G.hp -= v; log(`？マス：からしが目にしみた… ${v} のダメージ`); }
   } else {
     log("なにもないマス。");
   }
@@ -842,8 +883,8 @@ function afterTurn() {
 function startBattle(isBoss) {
   const st = STAGES[G.sv.stage], s = G.sv.stage + 1;
   const key = isBoss ? st.boss : st.enemies[rnd(0, st.enemies.length - 1)];
-  const hp = isBoss ? 14 + 11 * s : 5 + 5 * s + rnd(0, 2);
-  const atk = isBoss ? 4 + 3 * s : 2 + Math.round(1.5 * s) + rnd(0, 1);
+  const hp = TUNING.enemy.hp(s, isBoss);
+  const atk = TUNING.enemy.atk(s, isBoss);
   G.enemy = { key, hp, max: hp, atk, boss: isBoss, hurt: 0 };
   $("boardWrap").hidden = true; $("battleWrap").hidden = false;
   $("enName").textContent = MONSTERS[key].name + (isBoss ? "（ボス）" : "");
@@ -878,7 +919,7 @@ async function doDefense(it) {
   else if (it.k === "half") { dmg = Math.ceil(e.atk / 2); log(`うまく受けた！ ダメージ半分の ${dmg}`); }
   else if (it.k === "guard") log("ガード！ ダメージなし");
   else {
-    const c = 3 + bonus(); e.hp -= c; e.hurt = performance.now(); updateEnemy();
+    const c = TUNING.counterBase + bonus(); e.hp -= c; e.hurt = performance.now(); updateEnemy();
     floatText(`-${c}`, "#B5FF8F", $("enemyCv")); log(`はんげき！ ${c} のダメージをお返し！`);
   }
   if (dmg) { G.hp -= dmg; floatText(`-${dmg}`, "#FF6A55", $("hpBar")); $("scr-solo").classList.add("shake"); setTimeout(() => $("scr-solo").classList.remove("shake"), 400); }
@@ -892,10 +933,10 @@ async function doDefense(it) {
 }
 async function winBattle() {
   const e = G.enemy, s = G.sv.stage + 1;
-  const exp = e.boss ? 10 + 5 * s : 2 + 3 * s, coin = e.boss ? 10 + 2 * s : 2 + s;
+  const exp = TUNING.enemy.exp(s, e.boss), coin = TUNING.enemy.coin(s, e.boss);
   G.sv.exp += exp; G.sv.coins += coin;
   let msg = `${MONSTERS[e.key].name}をたおした！\nEXP +${exp}　ちくわ +${coin}`;
-  while (G.sv.exp >= expNeed()) { G.sv.exp -= expNeed(); G.sv.lv++; G.hp += 3; msg += `\nレベルアップ！ LV ${G.sv.lv}`; }
+  while (G.sv.exp >= expNeed()) { G.sv.exp -= expNeed(); G.sv.lv++; G.hp += TUNING.levelUpHeal; msg += `\nレベルアップ！ LV ${G.sv.lv}`; }
   G.done.add(G.pos); G.enemy = null;
   updateStatus(); log(msg);
   await sleep(1300);
@@ -909,7 +950,7 @@ function stageClear() {
 }
 function gameOver() {
   G.mode = "busy";
-  const lost = Math.floor(G.sv.coins / 2);
+  const lost = G.sv.coins - Math.ceil(G.sv.coins * TUNING.gameOverKeep);
   G.sv.coins -= lost; saveGame();
   dialog("ちくわくんは力つきた…", `ちくわを ${lost} 本おとしてしまった。<br>このステージの最初からやり直そう。`, [
     { text: "やり直す", fn: () => { closeDialog(); beginStage(); } },
@@ -994,12 +1035,12 @@ $("soloQuit").onclick = () => { if (G.spinning) return; goTitle(); };
 const DEFAULT_SIGNAL_URL = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/roulette/ws`;
 const SIGNAL_URL = new URLSearchParams(location.search).get("signal") || DEFAULT_SIGNAL_URL;
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
-const MAX_PLAYERS = 8;
-const MAX_ITEMS = 256;
-const ITEM_MAXLEN = 16;
-const GUARDS = 3;            // 1回のルーレットで使える「はじく」の回数
-const KICK = 3.4;            // はじいたときに足される回転の速さ
-const HIT_WINDOW = 220;      // 針がNG項目を通り過ぎてからも成功にする猶予（ミリ秒・通信の遅れ分）
+const MAX_PLAYERS = TUNING.maxPlayers;
+const MAX_ITEMS = TUNING.maxItems;
+const ITEM_MAXLEN = TUNING.itemMaxLen;
+const GUARDS = TUNING.guards;
+const KICK = TUNING.kick;
+const HIT_WINDOW = TUNING.hitWindow;
 const NAME_KEY = "chikuwa-roulette-name";
 
 const NET = { ws: null, role: null, myId: null, code: null, peers: new Map(), pc: null, dc: null, pendingIce: [], connected: false, chain: Promise.resolve(), leaving: false, mode: null };
@@ -1307,7 +1348,7 @@ $("spinBtn").onclick = () => {
   M.phase = "spin"; M.result = -1;
   for (const p of M.players) { p.guards = GUARDS; if (p.ng === -1) p.ng = -2; }
   multiWheel.win = -1; multiWheel.fr = FRICTION;
-  multiWheel.omega = 13 + Math.random() * 5;
+  multiWheel.omega = TUNING.spinSpeed();
   spinHist = []; lastBeat = 0;
   hostBroadcastState();
   broadcast({ t: "s", a: multiWheel.angle, w: multiWheel.omega });

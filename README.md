@@ -15,6 +15,6 @@
 
 ## ゲームを一覧に追加する
 
-`index.html` の `GAMES` 配列に1件追加します。サムネイルは同じファイルの描画関数（`DRAW_shop` など）を `DRAW` に登録して、`thumb` に名前を書きます。バージョンを上げたときは `version` と `updated` も更新してください。
+ゲームのフォルダに `card.js`（カードの中身とサムネイル）を作り、`index.html` の「ゲームの一覧」に `<script src>` を1行足します。バージョンを上げたときは、そのゲームの `card.js` の `version` と `updated` を更新します。
 
 `README.md`・`CLAUDE.md` などは `.assetsignore` で公開対象から外しています。

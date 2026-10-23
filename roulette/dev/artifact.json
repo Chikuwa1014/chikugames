@@ -1,0 +1,14 @@
+{
+  "source": "index.html",
+  "url": "https://claude.ai/artifact/UZmr5E7B6ndj3JRwL2Yvki",
+  "replace": [
+    {
+      "find": "  const u = new URL(location.origin + location.pathname);",
+      "replace": "  const u = new URL(\"{SITE_ORIGIN}/roulette/\");   // 招待は本番のサイトへ（同じ仲介なので一緒に遊べる）"
+    },
+    {
+      "find": "    const url = location.origin + location.pathname;",
+      "replace": "    const url = \"{SITE_ORIGIN}/roulette/\";"
+    }
+  ]
+}

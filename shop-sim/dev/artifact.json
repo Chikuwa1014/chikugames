@@ -1,0 +1,11 @@
+{
+  "source": "dist/shop-sim.html",
+  "build": "python3 build.py",
+  "url": "https://claude.ai/artifact/7tJ3jh24KBASU4bug4mhhB",
+  "replace": [
+    {
+      "find": "const shareUrl = () => location.href.split('#')[0];",
+      "replace": "const shareUrl = () => '{SITE_ORIGIN}/shop-sim/';"
+    }
+  ]
+}
