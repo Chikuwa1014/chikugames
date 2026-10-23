@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ルームのテスト（共通部品 room.js）</title>
+<link rel="stylesheet" href="../v1/common.css">
+<style>
+  body { font-family: sans-serif; max-width: 420px; margin: 0 auto; padding: 12px; }
+  #game { margin-top: 16px; padding: 12px; border: 1px dashed #aaa; border-radius: 10px; }
+  #taps { font-size: 28px; font-weight: 800; }
+</style>
+</head>
+<body>
+<!-- 公開しない確認用ページ（common/dev/ は .assetsignore の **/dev で除外）。
+     node roulette/dev/server.mjs で動かし、http://localhost:8787/common/dev/room-test.html を開く。
+     ?game=<フォルダ>&max=<台数> で仲介の宛先と台数を変えられる（既定は roulette・3 台） -->
+<div id="lobby"></div>
+<div id="game" hidden>
+  <div>みんなのタップ数（親が数えて配る）：<span id="taps">0</span></div>
+  <button id="tap" class="cg-room-btn">タップ</button>
+  <div id="last"></div>
+</div>
+<script src="../v1/core.js"></script>
+<script src="../v1/share.js"></script>
+<script src="../v1/room.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+CG.init({ game: q.get('game') || 'roulette', title: 'ルームのテスト', version: 'test' });
+const NAME_KEY = 'cg-room-test-name';
+let taps = 0;
+const room = CG.room.create({
+  max: +(q.get('max') || 3),
+  name: CG.room.lobbyName({ nameKey: NAME_KEY }),
+  onReady() { document.getElementById('game').hidden = false; },
+  onClose() { document.getElementById('game').hidden = true; },
+  onMessage(from, m) {
+    document.getElementById('last').textContent = '最後に受けた：' + from + ' ' + JSON.stringify(m);
+    if (room.role === 'host' && m.t === 'tap') { taps++; room.broadcast({ t: 'taps', n: taps }); show(); }
+    if (room.role === 'guest' && m.t === 'taps') { taps = m.n; show(); }
+  }
+});
+function show() { document.getElementById('taps').textContent = taps; }
+document.getElementById('tap').onclick = () => {
+  if (room.role === 'host') { taps++; room.broadcast({ t: 'taps', n: taps }); show(); }
+  else room.send({ t: 'tap' });
+};
+CG.room.lobby(document.getElementById('lobby'), room, { nameKey: NAME_KEY, inviteMsg: 'テストしよう！' });
+</script>
+</body>
+</html>

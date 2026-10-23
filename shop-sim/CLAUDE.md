@@ -6,7 +6,7 @@
 ## 1. 概要
 
 季節や天気、お客さんの動きを読んで商品を仕入れて売る経営シミュレーション。稼いだお金で商品を増やし、棚を広げてお店を育てる。
-ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先）。現在のバージョンは `js/data.js` の `VERSION`（履歴は `claude/未実装タスク.md` の「バージョン履歴」）。
+ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（リポジトリ直下 `CLAUDE.md` の 14 章）。現在のバージョンは `js/data.js` の `VERSION`（履歴は `claude/未実装タスク.md` の「バージョン履歴」）。
 仕様の詳しい中身は末尾の「付録：ゲームの仕様」。
 
 ## 2. URL
@@ -15,16 +15,16 @@
 - アーティファクト（push 前の確認用）：https://claude.ai/artifact/7tJ3jh24KBASU4bug4mhhB
   - アーティファクトではファイルの保存（セーブデータの書き出し・リザルト画像の保存）が働かない。そこはサイト版で確認する
 - アーティファクト版は `python3 dev/make-artifact.py shop-sim` で作る（先に `build.py` で 1 ファイルの `dist/shop-sim.html` を作り、それを変換する）。
-  サイト版との違い（`dev/artifact.json`）：共有する URL（`js/share.js` の `shareUrl`）を本番の `/shop-sim/` にする（公開 URL が未設定のあいだはとばされる）。
+  サイト版との違い（`dev/artifact.json`）：共有する URL（`js/share.js` の `shareUrl`）を本番の `/shop-sim/` にする（本番の URL は `dev/site.json`）。
 - トップページのカードは `card.js`。
 
 ## 3. コードの地図
 
 | ファイル | 役割 |
 |---|---|
-| `index.html` | 骨組み。css/js を読み込む（順番を変えない。`main.js` が最後） |
+| `index.html` | 骨組み。css/js を読み込む（順番を変えない。共通部品 `../common/v1/`（core・share・save・debug）が最初、`main.js` が最後） |
 | `css/style.css` | 見た目。ダークモードは `:root` の変数で切り替え |
-| `js/data.js` | 数値表（商品・季節・天気・難易度・セキュリティ・アップグレード名）、ヘルプ文 `HELP` |
+| `js/data.js` | 数値表（商品・季節・天気・難易度・セキュリティ・アップグレード名）、ヘルプ文 `HELP`、共通部品への `CG.init` |
 | `js/util.js` | 共通関数（`byId`, `fmt`, `r100`, `clamp100`, `seaOf`, `roll`）、ヘルプの？ `helpIcon`・`showHelp`・`hideHelp` |
 | `js/state.js` | 状態 `state` の初期化・読み込み・保存（localStorage）、ログ |
 | `js/rules.js` | 計算（購買力・費用・ノルマ・難易度・店員レベル） |
@@ -32,17 +32,17 @@
 | `js/actions.js` | 操作（補充・投資・融資・預金・開店・新規ゲーム） |
 | `js/engine.js` | 時間の進行（`tick` 営業中1秒、`endDay` 閉店・月末、`nextDay` 翌日） |
 | `js/pixel.js` | ドット絵（192×92 の canvas） |
-| `js/share.js` | 倒産ポップアップ `syncOver`・SNS共有（リザルト画像・Xへの投稿・文面のコピー） |
+| `js/share.js` | 倒産ポップアップ `syncOver`・SNS共有（リザルト画像・Xへの投稿・文面のコピー。文面と共有は `CG.share`） |
 | `js/amazake.js` | かまくらボーナスの日（`kamaTick`）と甘酒ミニゲーム（`amaStart`・`syncAma`・`amaClose`） |
-| `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`） |
+| `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`）、セーブコード（`makeCode`・`readCode`）。作り方・読み方は `CG.save` |
 | `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`、ボタン処理 |
-| `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。ほかの関数を包んで記録するだけ（ui.js の後に読む） |
+| `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動 |
 
 ## 4. 保存キー
 
 - 自動保存：localStorage の `js/data.js` の `KEY`。項目名を変えたときは `KEY` を変える（古いセーブと混ざらないように）。
-- `state` の形を変えたときは `js/save.js` の `SAVE_VER` を上げ、`loadFix` に古いファイルの移行処理を書く。
+- `state` の形を変えたときは `js/save.js` の `SAVE_VER` を上げ、`loadFix` に古いファイルの移行処理を書く（ファイルとセーブコードの両方に効く）。
 - セーブデータのファイル書き出し・読み込みは付録の「セーブデータ」。
 
 ## 5. 調整用の数値
@@ -54,6 +54,7 @@
 
 - `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
+- `python3 shop-sim/dev/test-v120.py [出力先]`：セーブコード（コピー・やり直し・復元・書き換えの拒否）、v1.1.x 形式のファイル読み込み、書き出し、やり直しの2回押し、横画面（上のサーバーを先に起動）。
 - それ以外は Playwright で `index.html` を開き、スマホ幅のスクリーンショットで確認する。
 - 公開用の 1 ファイルは `python3 build.py` で `dist/shop-sim.html` に作る（アーティファクト版の元にもなる）。
 - 動きを変えない整理（リファクタリング）は、変更前後で結果が一致することを確かめる。
@@ -143,7 +144,7 @@
 - 全棚の在庫が0で資金がマイナス（「もうダメだ…」）。
 - 倒産すると画面中央にポップアップ（理由・リザルト画像・共有欄・最初からやり直す・閉じる）。
 - 閉じると `state.ovx = true`。営業タブの「結果を見る・シェアする」で再表示。
-- 「設定」タブの「最初からやり直す」（2回押し）でも再開できる。
+- 「設定」タブの「🔄 最初からやり直す」（赤い枠のカード。2回押し。1回目でボタンが赤くなる）でも再開できる。
 
 ### 倒産時のSNS共有（`js/share.js`）
 - 倒産ポップアップの中に共有欄：「結果をシェア」「画像を保存」、文面の窓（読み取り専用）と「文面をコピー」。
@@ -152,15 +153,17 @@
 - リザルト画像は1200×630：ドット絵（3倍）、倒産理由、難易度・営業日数・累計売上（`state.tot`）・最終所持金・預金・棚の数。倒産時に先に作っておく。
 
 ### セーブデータ（`js/save.js`、「⚙設定」タブ）
-- 自動保存は localStorage（`KEY`）。ファイルは端末をまたぐバックアップ用。
-- 書き出し：`{ game:'shop-sim', v:SAVE_VER, key, at, state }` の .json。ファイル名は `ちいさなお店_難易度_○ヶ月目_日時.json`。
+- 自動保存は localStorage（`KEY`）。ファイルとセーブコードは端末をまたぐバックアップ用。
+- 書き出し：`{ game:'shop-sim', v:SAVE_VER, at, data:state, key }` の .json（v1.1.x までは `data` の代わりに `state`。読み込みは両方できる）。ファイル名は `ちいさなお店_難易度_○ヶ月目_日時.json`。
 - 読み込み：ファイルを選ぶと概要（難易度・時期・所持金・保存日時）を表示 →「このデータで再開」で反映。別ゲーム・壊れたファイル・新しい版はエラー表示。
 - 足りない項目は `fresh()` の初期値で埋める。反映後に `applyDiff`・`applyUp` で再計算し、営業タブへ。
 - 営業中（開店〜閉店）は不可。開業前・開店準備・閉店後・倒産後は可。
 - `SAVE_VER` 2：土嚢・かまくら（`prep`・`kama`・`mbDay`）を追加。
+- セーブコード（v1.2.0〜）：「📋 コードをコピー」で同じ包みを `CK1.<deflate＋base64url>.<チェック値>`（約750文字〜）にしてコピーし、欄にも出す（コピーできない端末は長押しで）。「⌨ コードで読み込む」に貼ると、ファイルと同じ確認（概要→「このデータで再開」）。欠け・書き換え・別ゲームのコードはチェック値ではじく。
 
 ### 画面
 - 上部固定：屋根・所持金・日付・ドット絵（店・季節・天気・夜・店員・お客さん・セキュリティ）・速度・タブ。
+- 横画面（横向きで高さ 560px 以下）：左に上部固定の部分、右にタブの中身（`css/style.css` の末尾の `@media`）。
 - タブ：🏪営業・🛒投資・💰お金・⚙設定。スクロールはタブの下だけ。
 - 操作の説明文は画面に出さず、小さな「？」（`helpIcon(キー)`）を触ったときだけフロートで表示。文言は `js/data.js` の `HELP`。ほかを触る・スクロール・タブ切り替えで閉じる。
 - 設定タブの一番下に「ちいさなお店 v（`VERSION`）」と著作権表記（`COPYRIGHT`、© 2026 ちくわげーむず）。

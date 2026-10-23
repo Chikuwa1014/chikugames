@@ -1,4 +1,4 @@
 {
-  "origin": "",
-  "_note": "本番の公開 URL（例 https://chikuwa-games.example.workers.dev）。未設定のあいだは空"
+  "origin": "https://chikuwa-games.chikuwa-hookah.workers.dev",
+  "_note": "本番の公開 URL（正式版）。アーティファクト版の共有リンク・招待リンクに使う"
 }
