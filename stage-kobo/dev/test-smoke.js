@@ -1,0 +1,17 @@
+const fs=require('fs');
+const html=fs.readFileSync(process.argv[2],'utf8'); const a=html.indexOf('<script>')+8,b=html.lastIndexOf('</script>');
+const code=html.slice(a,b);
+const mk=(name)=>{const f=function(){return mk(name+'()')};return new Proxy(f,{get(t,k){if(k===Symbol.toPrimitive)return()=>0;if(k==='then')return undefined;if(k in t&&k!=='name')return t[k];if(k==='getContext')return()=>ctx;if(k==='querySelectorAll')return()=>[];if(k==='getBoundingClientRect')return()=>({left:0,top:0,width:960,height:360});if(k==='classList')return{add(){},remove(){},toggle(){}};if(k==='dataset')return t.__ds||(t.__ds={});if(k==='style')return t.__st||(t.__st={});if(k==='hidden'||k==='readOnly')return t['__'+k];return mk(name+'.'+String(k))},set(t,k,v){t['__'+k]=v;if(k==='dataset')t.__ds=v;return true}})};
+const calls={};
+const ctx=new Proxy({},{get(t,k){if(k in t)return t[k];if(['createLinearGradient','createRadialGradient'].includes(k))return()=>({addColorStop(){}});return(...args)=>{calls[k]=(calls[k]||0)+1;for(const x of args)if(typeof x==='number'&&!isFinite(x))throw new Error('NaN in '+k)}},set(t,k,v){t[k]=v;return true}});
+const els={};
+global.document={getElementById:id=>els[id]||(els[id]=mk('#'+id)),createElement:()=>mk('el'),createTextNode:()=>mk('txt'),body:mk('body'),activeElement:null};
+global.localStorage={getItem:()=>process.env.DOC||null,setItem(){}};
+global.location={hash:process.argv[3]||'',origin:'https://x',pathname:'/stage-kobo/'};
+global.addEventListener=()=>{};global.scrollTo=()=>{};
+let frames=0;global.requestAnimationFrame=fn=>{if(frames++<400)setImmediate(()=>fn(frames*16.7))};
+global.performance={now:()=>0};global.matchMedia=()=>({matches:false});
+global.navigator={};
+const g=new Function(code+'');
+g();
+setTimeout(()=>console.log('ok frames',frames,'fillRect',calls.fillRect),300);
