@@ -259,6 +259,7 @@ body.shared #collect{display:none}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
+      <li><b>v1.4.2</b>（2026-10-23）背景の町並みの下に濃い灰色の石積みの基礎を追加し、家が浮いて見えないように</li>
       <li><b>v1.4.1</b>（2026-10-23）ゲーム名を「つくれ！おでん横丁」に変更（旧名：ステージ工房）。5種類の背景の奥に、屋台や町家、ちょうちんの列が並ぶ横丁の町並みを追加</li>
       <li><b>v1.4.0</b>（2026-10-23）世界観を「おでん横丁」に一新。主人公ちくわくん、こんにゃん、だしのしずく、のれんのゴールなど、すべてのパーツの見た目と名前をオリジナルに</li>
       <li><b>v1.3.0</b>（2026-10-22）ちくわとスタンプでパーツを解放する仕組みを追加。新パーツ：ちょうちん、湯気の足場、おせんべい、おみくじ箱、氷の床</li>
@@ -297,7 +298,7 @@ body.shared #collect{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.4.1';
+const VERSION = '1.4.2';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 const THEMES = {
@@ -760,11 +761,11 @@ const SKY = {
 };
 /* ---------- 横丁の町並み（背景の奥の層）。屋台と町家が並び、ちょうちんの列が渡る ---------- */
 const STREET = {
-  day:   { alpha: 0.48, wall: '#E8D6B8', wall2: '#D6BE98', roof: '#646C7E', wood: '#A8794E', noren: ['#2F4A86', '#B8433A', '#3E7A5A'], lit: false, win: '#93ABC2', lamp: '#D8584A', steam: 'rgba(255,255,255,0.75)', sign: '#7A5230', ink: '#FFF4E0', snow: false },
-  dusk:  { alpha: 0.86, wall: '#6E4A6E', wall2: '#5C3C60', roof: '#3A2846', wood: '#5A3A4A', noren: ['#2A2E5E', '#8E2E3A', '#2E4A48'], lit: true,  win: '#FFC27A', lamp: '#FF7A45', steam: 'rgba(255,220,200,0.45)', sign: '#4A2E3A', ink: '#FFD9A8', snow: false },
-  night: { alpha: 0.95, wall: '#1E2A55', wall2: '#17214A', roof: '#0B1130', wood: '#26305A', noren: ['#3A4C9A', '#9A3A4A', '#2E6A5A'], lit: true,  win: '#FFD27A', lamp: '#FF6A3D', steam: 'rgba(220,230,255,0.35)', sign: '#121A3E', ink: '#FFE2A0', snow: false },
-  magma: { alpha: 0.95, wall: '#3A1712', wall2: '#2C110D', roof: '#170605', wood: '#4A1E14', noren: ['#5A1A12', '#8E3A12', '#3A2A1A'], lit: true,  win: '#FF9A4A', lamp: '#FF5A2A', steam: 'rgba(255,160,120,0.35)', sign: '#220908', ink: '#FFB070', snow: false },
-  ice:   { alpha: 0.66, wall: '#DCE8F2', wall2: '#C6D8E8', roof: '#5C7A96', wood: '#8DA2B6', noren: ['#2F4A86', '#B8433A', '#3E7A5A'], lit: true,  win: '#FFE2A8', lamp: '#E8584A', steam: 'rgba(255,255,255,0.85)', sign: '#5C6E84', ink: '#FFFFFF', snow: true }
+  day:   { found: '#55595F', alpha: 0.48, wall: '#E8D6B8', wall2: '#D6BE98', roof: '#646C7E', wood: '#A8794E', noren: ['#2F4A86', '#B8433A', '#3E7A5A'], lit: false, win: '#93ABC2', lamp: '#D8584A', steam: 'rgba(255,255,255,0.75)', sign: '#7A5230', ink: '#FFF4E0', snow: false },
+  dusk:  { found: '#45404B', alpha: 0.86, wall: '#6E4A6E', wall2: '#5C3C60', roof: '#3A2846', wood: '#5A3A4A', noren: ['#2A2E5E', '#8E2E3A', '#2E4A48'], lit: true,  win: '#FFC27A', lamp: '#FF7A45', steam: 'rgba(255,220,200,0.45)', sign: '#4A2E3A', ink: '#FFD9A8', snow: false },
+  night: { found: '#2A2C35', alpha: 0.95, wall: '#1E2A55', wall2: '#17214A', roof: '#0B1130', wood: '#26305A', noren: ['#3A4C9A', '#9A3A4A', '#2E6A5A'], lit: true,  win: '#FFD27A', lamp: '#FF6A3D', steam: 'rgba(220,230,255,0.35)', sign: '#121A3E', ink: '#FFE2A0', snow: false },
+  magma: { found: '#2F2727', alpha: 0.95, wall: '#3A1712', wall2: '#2C110D', roof: '#170605', wood: '#4A1E14', noren: ['#5A1A12', '#8E3A12', '#3A2A1A'], lit: true,  win: '#FF9A4A', lamp: '#FF5A2A', steam: 'rgba(255,160,120,0.35)', sign: '#220908', ink: '#FFB070', snow: false },
+  ice:   { found: '#5A626C', alpha: 0.66, wall: '#DCE8F2', wall2: '#C6D8E8', roof: '#5C7A96', wood: '#8DA2B6', noren: ['#2F4A86', '#B8433A', '#3E7A5A'], lit: true,  win: '#FFE2A8', lamp: '#E8584A', steam: 'rgba(255,255,255,0.85)', sign: '#5C6E84', ink: '#FFFFFF', snow: true }
 };
 const hash = n => { n = Math.imul(n ^ 0x5bd1e995, 0x27d4eb2d); n ^= n >>> 15; return (n >>> 0) % 1000; };
 function lantern(c, x, y, r, P, t, k) {
@@ -814,7 +815,21 @@ function machiya(c, x, base, P, t, k, tall) {
 }
 function yokocho(c, w, h, camX, t, P) {
   const base = h - 48, unit = 104, off = camX * 0.5, first = Math.floor(off / unit);
-  c.save(); c.globalAlpha = P.alpha;
+  c.save();
+  /* 基礎：町並みの下に濃い灰色の石積みを通して、家が地面に建っているように見せる */
+  c.globalAlpha = Math.max(P.alpha, 0.9);
+  c.fillStyle = P.found; c.fillRect(0, base - 6, w, h - base + 6);
+  c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(0, base - 6, w, 2);
+  c.fillStyle = 'rgba(0,0,0,0.22)';
+  for (let row = 0; row * 12 < h - base + 6; row++) {
+    const y = base - 6 + row * 12; c.fillRect(0, y + 11, w, 1);
+    for (let x = -wrap(off, 32) + (row % 2) * 16; x < w; x += 32) c.fillRect(x, y, 1, 12);
+  }
+  /* 下に行くほど暗く：地面の穴は奥行きのある暗がりに見せ、床と見分けられるように */
+  const fade = c.createLinearGradient(0, base + 8, 0, h);
+  fade.addColorStop(0, 'rgba(10,10,14,0)'); fade.addColorStop(1, 'rgba(10,10,14,0.6)');
+  c.fillStyle = fade; c.fillRect(0, base + 8, w, h - base - 8);
+  c.globalAlpha = P.alpha;
   const xs = [];
   for (let i = -1; i < Math.ceil(w / unit) + 2; i++) {
     const k = i + first, x = i * unit - wrap(off, unit), type = hash(k) % 3;
