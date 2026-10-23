@@ -44,6 +44,9 @@
 ### ベータ版として公開するとき
 
 - `card.js` に `beta: true` を書く。トップページの「Beta」欄に並ぶ（「Games」欄と、上の「◯タイトル」の数には入らない）。
+- βのゲームは別リポジトリ `Chikuwa1014/chikugames-beta`（専用 Worker `chikuwagames-beta`：https://chikuwagames-beta.chikuwa-hookah.workers.dev/）に置く。カードは β リポジトリ直下の `cards.js` に 1 件足す（`href` は β の絶対 URL）。本番トップがそれを読み込むので、本番側の変更はいらない。
+- 正式版にするときは、本番に同じ名前のフォルダを移して `card.js` を作り、`cards.js` からは消す。
+- **限定公開**（ゆるい鍵）にするときは、カードに `lock: '<パスワードの SHA-256（16進）>'` を書く（`printf 'パスワード' | sha256sum`）。トップでは鍵つきで表示され、パスワードが合うとその端末で開く（localStorage `chikuwa-unlock:<href>`）。ゲームの URL を直接開いたときは聞かない。カードごとに別のパスワードにできる。
 - 版数は頭に `β` を付ける（例：`β0.1.0`）。ゲーム内の `VERSION` 定数・更新履歴・`README.md`・`card.js` の `version` もすべて `β` 付きにそろえる。上げ方は 4 章と同じ。
 - **正式版にするとき**は、`card.js` の `beta: true` を消し、頭の `β` を外して版数を `1.0.0` にする（4 章の「そろえるもの」をすべて更新）。フォルダ名（URL）と保存キーは変えない。
 

@@ -98,6 +98,22 @@ a{color:inherit}
 .card.is-beta{border-style:dashed}
 .card.is-beta:hover{border-color:transparent}
 
+/* 限定公開（card.js に lock があるカード）。パスワードが合うまでは中身を伏せる */
+.card.is-locked{cursor:default}
+.card.is-locked:hover{transform:none;box-shadow:var(--shadow);border-color:var(--line)}
+.card.is-locked .thumb canvas{filter:blur(6px) saturate(.6);opacity:.55}
+.lockmark{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink)}
+.lockmark span{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow)}
+.lockmark svg{width:16px;height:16px}
+.unlock{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:8px}
+.unlock input{flex:1 1 160px;min-width:0;font:inherit;font-size:15px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--sunk);color:var(--ink)}
+.unlock input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.unlock button{font:inherit;font-weight:700;font-size:15px;padding:9px 18px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);cursor:pointer}
+.unlock button:hover{background:var(--accent);color:var(--accent-ink)}
+.unlock button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.unlock-msg{flex-basis:100%;margin:0;font-size:13px;color:var(--muted);min-height:1.5em}
+.unlock-msg.ng{color:#C2412D}
+
 footer{border-top:1px solid var(--line);padding-block:26px 34px;color:var(--muted);font-size:13px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
 footer a{text-decoration:none}
@@ -161,6 +177,8 @@ footer a:hover{color:var(--ink)}
 <script src="./stage-kobo/card.js"></script>
 <script src="./roulette/card.js"></script>
 <script src="./battle-othello/card.js"></script>
+<!-- βのゲーム（別リポジトリ chikugames-beta の cards.js。βを増やすときは本番を触らず、あちらに足す） -->
+<script src="https://chikuwagames-beta.chikuwa-hookah.workers.dev/cards.js"></script>
 <script>
 (() => {
 /* ゲームの一覧は各ゲームのフォルダの card.js（このファイルの下の <script src> で読み込む）。
@@ -175,11 +193,34 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const thumbs = [];
 /* 版数の表示：正式版は v1.0.0、ベータ版は β0.1.0（version に β が付いていなくても付ける） */
 const verText = g => g.beta ? 'β' + String(g.version).replace(/^β/, '') : 'v' + g.version;
-function addCard(g, grid) {
-  const a = document.createElement('a');
-  a.className = g.beta ? 'card is-beta' : 'card'; a.href = g.href;
-  a.innerHTML = `
-    <div class="thumb"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="${g.beta ? 'ver beta' : 'ver'}">${esc(verText(g))}</span></div>
+//ゆるい限定公開なんだゾ…
+/* 限定公開：card.js の lock にパスワードの SHA-256（16進）を書いたカードは、合うまで鍵つきで表示する。
+   合ったらその端末に覚える（localStorage）。ゆるい限定公開なので、ゲームの URL を直接開けば遊べる */
+const lockIcon = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.6"/></svg>';
+const unlockKey = g => 'chikuwa-unlock:' + g.href;
+const isUnlocked = g => { try { return localStorage.getItem(unlockKey(g)) === g.lock; } catch (e) { return false; } };
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function addCard(g, grid, before) {
+  const locked = g.lock && !isUnlocked(g);
+  const a = document.createElement(locked ? 'div' : 'a');
+  a.className = (g.beta ? 'card is-beta' : 'card') + (locked ? ' is-locked' : '');
+  if (!locked) a.href = g.href;
+  const head = `
+    <div class="thumb"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="${g.beta ? 'ver beta' : 'ver'}">${esc(verText(g))}</span>${locked ? `<div class="lockmark"><span>${lockIcon}限定公開</span></div>` : ''}</div>`;
+  a.innerHTML = locked ? head + `
+    <div class="body">
+      <span class="kicker">${esc(g.kicker)}</span>
+      <h3>${esc(g.title)}<small>${esc(g.sub)}</small></h3>
+      <p class="desc">パスワードを知っている人だけが遊べるゲームです。</p>
+      <form class="unlock" autocomplete="off">
+        <input type="password" id="unlock-${esc(g.href.replace(/\W+/g, '-'))}" aria-label="${esc(g.title)} のパスワード" placeholder="パスワード">
+        <button type="submit">ひらく</button>
+        <p class="unlock-msg" aria-live="polite"></p>
+      </form>
+    </div>` : head + `
     <div class="body">
       <span class="kicker">${esc(g.kicker)}</span>
       <h3>${esc(g.title)}<small>${esc(g.sub)}</small></h3>
@@ -187,9 +228,24 @@ function addCard(g, grid) {
       <ul class="tags">${g.tags.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <div class="play"><span>更新 ${esc(g.updated)}</span><span class="btn">${g.beta ? '試す' : '遊ぶ'} ${arrow}</span></div>
     </div>`;
-  grid.append(a);
+  grid.insertBefore(a, before || null);
   const c = a.querySelector('canvas');
-  thumbs.push({ ctx: c.getContext('2d'), draw: g.draw });
+  const th = { ctx: c.getContext('2d'), draw: g.draw };
+  thumbs.push(th);
+  if (locked) {
+    const form = a.querySelector('form'), input = form.querySelector('input'), msg = form.querySelector('.unlock-msg');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      let h = '';
+      try { h = await sha256(input.value.trim()); } catch (err) { msg.textContent = 'このブラウザでは確認できません'; msg.className = 'unlock-msg ng'; return; }
+      if (h !== g.lock) { msg.textContent = 'パスワードがちがいます'; msg.className = 'unlock-msg ng'; input.select(); return; }
+      try { localStorage.setItem(unlockKey(g), g.lock); } catch (err) {}
+      thumbs.splice(thumbs.indexOf(th), 1);
+      g.lock = null;                 /* この表示中は鍵を外す（保存できないブラウザでも開ける） */
+      addCard(g, grid, a); a.remove();
+      if (still) drawAll(0);
+    });
+  }
 }
 const grid = document.getElementById('grid');
 GAMES.forEach(g => addCard(g, grid));
@@ -208,9 +264,10 @@ document.getElementById('updated').textContent = '最終更新 ' + latest;
 /* ---------- アニメーション（動きを減らす設定では静止画） ---------- */
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const start = performance.now();
+function drawAll(t) { for (const th of thumbs) { try { th.draw(th.ctx, t); } catch (e) {} } }
 function loop(now) {
   const t = (now - start) / 1000;
-  for (const th of thumbs) { try { th.draw(th.ctx, t); } catch (e) {} }
+  drawAll(t);
   if (!still) requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
