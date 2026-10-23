@@ -91,6 +91,13 @@ a{color:inherit}
 .card:hover .btn{background:var(--accent);color:var(--accent-ink)}
 .card:hover .btn svg{transform:translateX(3px)}
 
+/* ベータ版の欄（card.js に beta: true があるゲーム） */
+.beta-sec{padding-top:8px}
+.beta-note{margin:-6px 0 16px;color:var(--muted);font-size:14px}
+.ver.beta{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.card.is-beta{border-style:dashed}
+.card.is-beta:hover{border-color:transparent}
+
 footer{border-top:1px solid var(--line);padding-block:26px 34px;color:var(--muted);font-size:13px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
 footer a{text-decoration:none}
@@ -131,6 +138,15 @@ footer a:hover{color:var(--ink)}
     </div>
     <div class="grid" id="grid"></div>
   </section>
+
+  <section class="wrap beta-sec" id="beta-sec" aria-labelledby="beta-h" hidden>
+    <div class="section-head">
+      <h2 id="beta-h">Beta</h2>
+      <span id="beta-count"></span>
+    </div>
+    <p class="beta-note">試作中のゲームです。内容が変わったり、セーブが消えたりすることがあります。</p>
+    <div class="grid" id="beta-grid"></div>
+  </section>
 </main>
 
 <footer>
@@ -147,31 +163,44 @@ footer a:hover{color:var(--ink)}
 <script>
 (() => {
 /* ゲームの一覧は各ゲームのフォルダの card.js（このファイルの下の <script src> で読み込む）。
-   ゲームを追加するときは、そのフォルダに card.js を作り、下の一覧に <script src> を1行足すだけ */
-const GAMES = (window.CHIKUWA_GAMES || []).slice().sort((a, b) => a.order - b.order);
+   ゲームを追加するときは、そのフォルダに card.js を作り、下の一覧に <script src> を1行足すだけ。
+   card.js に beta: true があるゲームは「Beta」欄に並ぶ（正式版にするときは beta を消す） */
+const ALL = (window.CHIKUWA_GAMES || []).slice().sort((a, b) => a.order - b.order);
+const GAMES = ALL.filter(g => !g.beta);
+const BETAS = ALL.filter(g => g.beta);
 
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const grid = document.getElementById('grid');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const thumbs = [];
-GAMES.forEach(g => {
+/* 版数の表示：正式版は v1.0.0、ベータ版は β0.1.0（version に β が付いていなくても付ける） */
+const verText = g => g.beta ? 'β' + String(g.version).replace(/^β/, '') : 'v' + g.version;
+function addCard(g, grid) {
   const a = document.createElement('a');
-  a.className = 'card'; a.href = g.href;
+  a.className = g.beta ? 'card is-beta' : 'card'; a.href = g.href;
   a.innerHTML = `
-    <div class="thumb"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="ver">v${esc(g.version)}</span></div>
+    <div class="thumb"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="${g.beta ? 'ver beta' : 'ver'}">${esc(verText(g))}</span></div>
     <div class="body">
       <span class="kicker">${esc(g.kicker)}</span>
       <h3>${esc(g.title)}<small>${esc(g.sub)}</small></h3>
       <p class="desc">${esc(g.desc)}</p>
       <ul class="tags">${g.tags.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
-      <div class="play"><span>更新 ${esc(g.updated)}</span><span class="btn">遊ぶ ${arrow}</span></div>
+      <div class="play"><span>更新 ${esc(g.updated)}</span><span class="btn">${g.beta ? '試す' : '遊ぶ'} ${arrow}</span></div>
     </div>`;
   grid.append(a);
   const c = a.querySelector('canvas');
   thumbs.push({ ctx: c.getContext('2d'), draw: g.draw });
-});
+}
+const grid = document.getElementById('grid');
+GAMES.forEach(g => addCard(g, grid));
+if (BETAS.length) {
+  const bg = document.getElementById('beta-grid');
+  BETAS.forEach(g => addCard(g, bg));
+  document.getElementById('beta-count').textContent = BETAS.length + ' 本';
+  document.getElementById('beta-sec').hidden = false;
+}
+/* タイトル数はベータ版を含めない。最終更新はベータ版も含める */
 document.getElementById('count').textContent = GAMES.length;
-const latest = GAMES.map(g => g.updated).sort().pop();
+const latest = ALL.map(g => g.updated).sort().pop();
 document.getElementById('updated').textContent = '最終更新 ' + latest;
 
 
