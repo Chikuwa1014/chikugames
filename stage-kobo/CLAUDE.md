@@ -6,7 +6,7 @@
 
 ちくわくんが走る「おでん横丁」の 2D アクションステージを作り、テストプレイし、リンクで共有するブラウザゲームメーカー。
 クリアでもらえるちくわとスタンプでパーツを解放していく。
-現在 **v1.5.3**（2026-10-23）。更新履歴は `CHANGELOG.md` と、`index.html` 末尾の「更新履歴」欄。
+現在 **v1.5.4**（2026-10-23）。更新履歴は `CHANGELOG.md` と、`index.html` 末尾の「更新履歴」欄。
 
 ## 2. URL
 
@@ -38,7 +38,8 @@
 | `drawPlayer` / `drawEnemy` / `drawFly` / `drawSpiky` / `drawSkewer` / `drawDrop` / `drawTile` | 描画。パーツ記号ごとの見た目は `drawTile` の `switch` |
 | `STREET` / `yokocho` / `SKY` | 背景。空（`SKY.<テーマ>`）の上に横丁の町並み `yokocho()` を重ねる。町並みの下に基礎（濃い灰色→下ほど暗いグラデーション） |
 | `solidAt` / `blocks` / `bonk` / `move` / `update` | 当たり判定と物理。湯気の足場は上からだけ乗れる。下からたたくとおせんべいが割れ、おみくじ箱からしずくが出る。`startGame` でお盆・飛ぶ敵・トゲの敵・串発射台・竹筒を `game` の中の一覧に移す |
-| `fingers` / `gesture` / `applyGesture` / `drag` / `moveMode`（編集の `pointerdown` 〜 `endPaint`） | 編集画面の入力。一本指はパーツを置く。二本指はドラッグで画面移動・ピンチで拡大縮小（1 フレームにまとめて `applyGesture` で処理。1 本目で置いた分は `snap` から戻す）。PC は「移動モード」（`#moveBtn`）でドラッグ移動 |
+| `fingers` / `gesture` / `applyGesture` / `drag` / `moveMode`（編集の `pointerdown` 〜 `endPaint`） | 編集画面の入力。一本指はパーツを置く。二本指はドラッグで画面移動・ピンチで拡大縮小（1 フレームにまとめて `applyGesture` で処理。1 本目で置いた分は `snap` から戻す）。PC は「移動モード」（`#moveBtn`）でドラッグ移動。画面を動かす量は `screenX/Y` で測る（`clientX/Y` だとページが動くたびにずれて揺れる）。スマホの移動モードは JS で動かさず、`touch-action: pan-x pan-y` でブラウザのスクロールに任せる |
+| `TIPS`（`#palTip` / `#keysTip`、`.tip` / `.tipBox`） | 「？」のヒント（パーツ棚、テストプレイの操作）。新しく足すときは `TIPS` に id を足す。`@media (hover:hover)` のときはマウスを重ねて表示、それ以外は `.open` をタップで切り替え |
 | `ZOOMS` / `zoom` / `setZoom` / `scrollStage` / `#zoombar` | 編集画面の拡大・縮小（35%〜200%。－／＋ は `ZOOMS` の段階、ピンチはなめらか）。`sizeCanvas` が `cv.style` の幅・高さを倍率で決める。拡大中は `#scroller` の高さを 15 マス分に制限し、枠の中で上下にスクロール |
 | `beginPlay` / `#startBtn` | 共有リンクで開くとプレイ画面で止まった状態（`game.state = 'ready'`）になり、「プレイ」ボタンで始まる。リトライは止めずにすぐ始まる |
 
