@@ -4,7 +4,7 @@ const fs = require('fs');
 const html = fs.readFileSync(process.argv[2], 'utf8');
 const a = html.indexOf('<script>') + 8, b = html.lastIndexOf('</script>');
 const src = html.slice(a, b), end = src.lastIndexOf('})();');
-const hook = `globalThis.__t={get game(){return game},get doc(){return doc},get PG(){return PG},get readOnly(){return readOnly},get mode(){return mode},startGame,update,keys,isUnlocked,sealed,fromData,jump(){jumpBuf=6}};\n`;
+const hook = `globalThis.__t={get game(){return game},get doc(){return doc},get PG(){return PG},get readOnly(){return readOnly},get mode(){return mode},startGame,update,keys,isUnlocked,beginPlay,sealed,fromData,jump(){jumpBuf=6}};\n`;
 const code = src.slice(0, end) + hook + src.slice(end);
 
 // ブラウザの代わり（test-gameplay.js と同じ最小限のもの）
@@ -48,7 +48,12 @@ ok(g.trays.length === 1 && g.trays[0].w === 72, 'お盆が動く床として出�
 ok(g.enemies.some(e => e.kind === 'fly') && g.enemies.some(e => e.kind === 'spike'), 'ぱたぱた油揚げとトゲの敵が敵として出る');
 ok(g.shooters.length === 1 && g.warps.length === 2 && g.hasKey, '串発射台・竹筒2つ・カギが配置どおり');
 ok(g.map[12][31] === 'D' && g.map[11][31] === 'D' && g.map[8][2] === 'E' && g.map[8][18] === 'Y' && g.map[13][20] === 'L', 'ゆでたまご・からし・扉・溶岩が配置どおり');
-const tx0 = g.trays[0].x; for (let i = 0; i < 60; i++) t.update();
+const tx0 = g.trays[0].x, px0 = g.p.x;
+t.keys.right = true; for (let i = 0; i < 60; i++) t.update(); t.keys.right = false;
+ok(g.state === 'ready' && g.trays[0].x === tx0 && g.p.x === px0 && g.frames === 0, '開いた直後は止まっていて、プレイボタンを押すまで始まらない');
+t.beginPlay();
+ok(g.state === 'run', 'プレイボタンでスタート');
+for (let i = 0; i < 60; i++) t.update();
 ok(g.trays[0].x !== tx0, 'お盆が動いている');
 // 竹筒：スタートのすぐ右の竹筒に入ると、もう一方へワープ
 t.keys.right = true; for (let i = 0; i < 40 && g.p.x < 26 * 24; i++) t.update(); t.keys.right = false;
