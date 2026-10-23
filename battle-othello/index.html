@@ -62,7 +62,7 @@
 
   .board-wrap { position: relative; }
   .toss {
-    position: absolute; inset: 0; border-radius: 8px; background: rgba(8, 18, 14, .82);
+    position: absolute; inset: 0; border-radius: 8px; background: rgba(8, 18, 14, .82); z-index: 6;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
     perspective: 600px;
   }
@@ -89,7 +89,7 @@
   .disc.hurt { box-shadow: 0 0 0 2px rgba(255,90,70,var(--hurt)), 0 2px 3px rgba(0,0,0,.4); }
 
   .battle {
-    position: absolute; inset: 0; border-radius: 8px; background: rgba(8, 18, 14, .78);
+    position: absolute; inset: 0; border-radius: 8px; background: rgba(8, 18, 14, .78); z-index: 5;   /* ダメージ数値（.dmg）より上に出す */
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer; padding: 16px; text-align: center;
   }
@@ -97,7 +97,32 @@
   .gauge { width: 85%; height: 26px; border-radius: 13px; background: #0c1814; overflow: hidden; border: 2px solid #3b5a4f; }
   #gaugeFill { height: 100%; width: 0%; background: linear-gradient(90deg, #f3c14b, #ff7a6b); }
   .battle-value { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .battle.defend { background: rgba(40, 10, 10, .78); }
+  .battle.defend { background: rgba(40, 10, 10, .78); gap: 8px; }
+  /* 防御の輪：この輪の上を円を描くようになぞる */
+  .ring { width: 56%; aspect-ratio: 1; border-radius: 50%; position: relative; flex: none;
+    border: 14px solid rgba(255, 210, 120, calc(.25 + var(--ring, 0) * .6)); box-shadow: 0 0 calc(var(--ring, 0) * 26px) rgba(255, 170, 60, .8); }
+  .ring.hit { animation: ringHit .25s; }
+  @keyframes ringHit { 50% { transform: scale(1.06); } }
+  .ring-count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: var(--muted); }
+  .battle.defend .battle-value { font-size: 34px; }
+
+  /* 盤面の色（ロビーで選ぶ。#board の data-theme） */
+  #board[data-theme="brown"] { --board: #9a6838; --board-line: #5c3a1c; }
+  #board[data-theme="shogi"] { --board: #e2b866; --board-line: #2c2014; gap: 1px; padding: 1px; }
+  #board[data-theme="chikuwa"] { --board: #f3ddb2; --board-line: #c9772e; }
+  #board[data-theme="chikuwa"] .cell { background: radial-gradient(circle at 30% 30%, rgba(201,119,46,.28) 0 12%, transparent 13%), radial-gradient(circle at 72% 64%, rgba(201,119,46,.22) 0 9%, transparent 10%), var(--board); }
+  #board[data-theme="shogi"] .cell.can::after, #board[data-theme="chikuwa"] .cell.can::after { background: rgba(60,30,10,.3); }
+  .stars { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .stars i { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #2c2014; }
+  .disc.w { border: 1px solid rgba(0,0,0,.25); }
+
+  #themeSeg button { padding: 10px 4px; white-space: nowrap; font-size: 14px; }
+  .name-input { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid #3b5a4f; background: #0c1814; color: var(--text); margin: 4px 0 12px; }
+  .pname { font-size: 12px; font-weight: 700; color: var(--muted); max-width: 6.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dbg { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .dbg summary { cursor: pointer; padding: 4px 0; }
+  .dbg textarea { width: 100%; min-height: 64px; font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid #3b5a4f; background: #0c1814; color: var(--text); margin: 6px 0 8px; }
+  .dbg .msg { margin-top: 6px; }
 
   .shock {
     position: absolute; pointer-events: none; border-radius: 50%; opacity: 0;
@@ -144,12 +169,21 @@
   <!-- ロビー -->
   <section id="lobby">
     <div class="card">
+      <label class="muted" for="nameInput">あなたの名前</label>
+      <input id="nameInput" class="name-input" maxlength="10" autocomplete="off" placeholder="未入力なら ちくわ／こんにゃん">
       <div class="muted">ルール</div>
       <div class="seg" id="modeSeg">
         <button data-mode="normal" class="on">通常オセロ</button>
         <button data-mode="battle">バトルオセロ</button>
       </div>
       <div id="modeHelp" class="muted help">いつものオセロです。</div>
+      <div class="muted">盤面</div>
+      <div class="seg" id="themeSeg">
+        <button data-theme="green" class="on">緑</button>
+        <button data-theme="brown">茶色</button>
+        <button data-theme="shogi">将棋</button>
+        <button data-theme="chikuwa">ちくわ</button>
+      </div>
       <button id="createBtn">部屋を作る</button>
       <div class="or">または部屋コードで参加</div>
       <div class="row">
@@ -160,8 +194,9 @@
     </div>
     <p class="muted">2台の端末でこのページを開き、片方が部屋を作って、招待リンクを送るかコードを伝えてください。リンクを開いた相手は自動で参加します。</p>
     <details class="about">
-      <summary>ベータ版 <span id="verText"></span>・更新履歴</summary>
+      <summary>バージョン <span id="verText"></span>・更新履歴</summary>
       <ul>
+        <li>1.0.0（2026-10-24）：正式版。防御は連打と「輪を円を描くようになぞる」に（擦る防御はなくした）、プレイヤー名、盤面の色（緑・茶色・将棋・ちくわ）、不具合の報告。攻撃・防御の画面にダメージの数字が重なるのを修正</li>
         <li>β0.1.0（2026-10-23）：ちくわゲームズにベータ版として公開（通常オセロ・バトルオセロの通信対戦）</li>
       </ul>
     </details>
@@ -191,9 +226,9 @@
   <!-- 対戦 -->
   <section id="game" class="hidden">
     <div class="score">
-      <div id="sideB" class="side"><span class="chip b"></span><span id="countB">2</span></div>
+      <div id="sideB" class="side"><span class="chip b"></span><span id="countB">2</span><span id="nameB" class="pname"></span></div>
       <div id="youAre" class="muted center" style="white-space:pre-line"></div>
-      <div id="sideW" class="side"><span id="countW">2</span><span class="chip w"></span></div>
+      <div id="sideW" class="side"><span id="nameW" class="pname"></span><span id="countW">2</span><span class="chip w"></span></div>
     </div>
     <div class="timer">
       <div class="timer-bar"><div id="timerFill"></div></div>
@@ -201,10 +236,12 @@
     </div>
     <div class="board-wrap">
       <div id="board"></div>
+      <div id="stars" class="stars hidden"><i style="left:25%;top:25%"></i><i style="left:75%;top:25%"></i><i style="left:25%;top:75%"></i><i style="left:75%;top:75%"></i></div>
       <div id="shock" class="shock"></div>
       <div id="battle" class="battle hidden">
         <div id="battleTitle" class="battle-title"></div>
         <div id="gauge" class="gauge"><div id="gaugeFill"></div></div>
+        <div id="ring" class="ring hidden"><div id="ringCount" class="ring-count"></div></div>
         <div id="battleValue" class="battle-value"></div>
         <div id="battleTime" class="muted"></div>
       </div>
@@ -219,12 +256,21 @@
       <button id="leaveBtn" class="sub">退出</button>
     </div>
   </section>
+
+  <details class="dbg" id="dbgBox">
+    <summary>不具合の報告（デバッグログを送る）</summary>
+    <div>操作と通信の記録（この端末の直近300件）を送ります。何が起きたかを書いてもらえると助かります。</div>
+    <label for="dbgNote" class="muted" style="display:block;margin-top:6px">メモ（なくてもOK）</label>
+    <textarea id="dbgNote" maxlength="500" placeholder="例：防御の輪をなぞっても数字が増えなかった"></textarea>
+    <button id="dbgSend" class="sub">デバッグログを送る</button>
+    <div id="dbgMsg" class="msg"></div>
+  </details>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 // ===== 設定 =====
-const VERSION = "β0.1.0";   // ベータ版は β 付き。正式版で β を外して 1.0.0 にする
+const VERSION = "1.0.0";
 document.getElementById("verText").textContent = VERSION;
 // 接続先は自動で「このページと同じドメインの /battle-othello/ws」（ちくわゲームズ共通の仲介 worker/index.js。1部屋2台まで）。
 // ?signal=ws://localhost:8787/battle-othello/ws のようにURLで上書きもできる。
@@ -233,6 +279,46 @@ const SIGNAL_URL = new URLSearchParams(location.search).get("signal") || DEFAULT
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
 
 const $ = (id) => document.getElementById(id);
+
+// ===== 保存（localStorage は必ず try/catch） =====
+const KEY_NAME = "battle-othello-name", KEY_THEME = "battle-othello-board", KEY_DBG = "battle-othello-debuglog";
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+// ===== デバッグログ（不具合の報告用。この端末の直近 DBG_MAX 件を localStorage に残す） =====
+const DBG_MAX = 300;
+let dbgLog = [];
+try { dbgLog = JSON.parse(localStorage.getItem(KEY_DBG)) || []; } catch (e) {}
+if (!Array.isArray(dbgLog)) dbgLog = [];
+function dbg(ev, extra) {
+  let r = null, ph = "";
+  try { r = role; ph = phase; } catch (e) {}   // 読み込み途中（まだ宣言前）でも記録できるように
+  dbgLog.push(Object.assign({ t: Date.now(), ev, role: r, ph }, extra || {}));
+  if (dbgLog.length > DBG_MAX) dbgLog = dbgLog.slice(-DBG_MAX);
+  save(KEY_DBG, JSON.stringify(dbgLog));
+}
+addEventListener("error", (e) => dbg("error", { msg: String(e.message), src: (e.filename || "").split("/").pop() + ":" + e.lineno + ":" + e.colno, st: e.error && e.error.stack ? String(e.error.stack).slice(0, 800) : undefined }));
+addEventListener("unhandledrejection", (e) => dbg("error", { msg: "promise: " + String(e.reason).slice(0, 300) }));
+
+// ===== プレイヤー名 =====
+const DEFAULT_NAME = { host: "ちくわ", guest: "こんにゃん" };
+let oppName = "";
+$("nameInput").value = load(KEY_NAME, "");
+$("nameInput").addEventListener("change", () => save(KEY_NAME, $("nameInput").value.trim()));
+function myName() { return $("nameInput").value.trim().slice(0, 10) || DEFAULT_NAME[role] || "ちくわ"; }
+function theirName() { return oppName || DEFAULT_NAME[role === "host" ? "guest" : "host"]; }
+
+// ===== 盤面の色 =====
+function setTheme(t) {
+  if (!["green", "brown", "shogi", "chikuwa"].includes(t)) t = "green";
+  $("board").dataset.theme = t;
+  $("stars").classList.toggle("hidden", t !== "shogi");
+  for (const x of document.querySelectorAll("#themeSeg button")) x.classList.toggle("on", x.dataset.theme === t);
+  save(KEY_THEME, t);
+}
+for (const b of document.querySelectorAll("#themeSeg button")) b.onclick = () => setTheme(b.dataset.theme);
+setTheme(load(KEY_THEME, "green"));
+
 function show(id) {
   for (const s of ["lobby", "waiting", "game"]) $(s).classList.toggle("hidden", s !== id);
 }
@@ -346,6 +432,7 @@ function makePeer() {
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal({ type: "ice", c: e.candidate }); };
   pc.ondatachannel = (e) => { dc = e.channel; setupChannel(dc); };
   pc.onconnectionstatechange = () => {
+    if (pc) dbg("pc", { st: pc.connectionState });
     if (pc && pc.connectionState === "failed") onLost("接続できませんでした（ネットワークを確認してください）");
   };
 }
@@ -353,19 +440,23 @@ function makePeer() {
 function setupChannel(ch) {
   ch.onopen = () => {
     connected = true;
+    dbg("open");
+    ch.send(JSON.stringify({ t: "name", n: myName() }));
     try { ws && ws.close(); } catch (e) {}   // 仲介はもう不要
     ws = null;
     startGame();
   };
-  ch.onmessage = (e) => onGameMessage(JSON.parse(e.data));
-  ch.onclose = () => { if (connected) onLost("相手との接続が切れました"); };
+  ch.onmessage = (e) => { const m = JSON.parse(e.data); if (m.t !== "name") dbg("recv", { m }); onGameMessage(m); };
+  ch.onclose = () => { dbg("close", { connected }); if (connected) onLost("相手との接続が切れました"); };
 }
 
 function sendGame(obj) {
+  dbg("send", { m: obj, ok: !!(dc && dc.readyState === "open") });
   if (dc && dc.readyState === "open") dc.send(JSON.stringify(obj));
 }
 
 function onLost(text) {
+  dbg("lost", { text });
   if (!$("game").classList.contains("hidden")) {
     $("status").textContent = text;
     $("againBtn").classList.add("hidden");
@@ -382,7 +473,7 @@ let gameMode = "normal";   // "normal" | "battle"（ホストが選び、開始�
 const MODE_NAME = { normal: "通常オセロ", battle: "バトルオセロ" };
 const MODE_HELP = {
   normal: "いつものオセロです。",
-  battle: "打つときにゲージで力を込め、相手は連打か擦りで防御。力で勝つと衝撃波が周りのコマ（敵味方すべて）にダメージを与え、80たまるとひっくり返ります。",
+  battle: "打つときにゲージで力を込め、相手は連打か、輪を円を描くようになぞって防御。力で勝つと衝撃波が周りのコマ（敵味方すべて）にダメージを与え、80たまるとひっくり返ります。",
 };
 for (const b of document.querySelectorAll("#modeSeg button")) {
   b.onclick = () => {
@@ -479,7 +570,7 @@ $("createBtn").onclick = () => { lobbyMsg(""); createRoom(); };
 $("joinBtn").onclick = joinRoom;
 $("codeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") joinRoom(); });
 $("cancelBtn").onclick = () => { resetConn(); show("lobby"); };
-$("leaveBtn").onclick = () => { connected = false; resetConn(); show("lobby"); };
+$("leaveBtn").onclick = () => { dbg("leave"); connected = false; resetConn(); oppName = ""; me = 0; show("lobby"); };
 $("againBtn").onclick = () => {
   $("againBtn").classList.add("hidden");
   if (role === "host") doToss();
@@ -493,10 +584,12 @@ const TURN_LIMIT = 60;   // 1手の持ち時間（秒）
 const GRACE = 3;         // 相手側が時間切れを判定するまでの猶予（通信の遅れ分）
 
 // ----- バトルオセロの調整値 -----
-const BATTLE_MS = 3000;      // 攻撃（ゲージ）と防御（連打・擦り）の時間
+const BATTLE_MS = 3000;      // 攻撃（ゲージ）と防御（連打・円）の時間
 const GAUGE_PERIOD = 1000;   // ゲージが 0→100→0 と1往復する時間（ミリ秒）
 const TAP_POWER = 3;         // 連打1回あたりの防御力
-const RUB_POWER = 4;         // 画面幅1つ分擦るごとの防御力
+const CIRCLE_POWER = 4;      // 輪を1周なぞるごとの防御力（25段階：25周で100）
+const CIRCLE_MAX = 25;       // 数える周の上限
+const RING_IN = 0.45, RING_OUT = 1.45;   // 輪の半径に対して、なぞったと認める距離の範囲（内側・外側）
 const FLIP_DAMAGE = 80;      // この値までダメージがたまるとひっくり返る
 
 let board, damage, turn, me, lastMove, locked, gameOver;
@@ -539,7 +632,7 @@ function finishTurn() {
   if (legalMoves(board, next).length) {
     turn = next;
   } else if (legalMoves(board, turn).length) {
-    passNote = (next === me ? "あなた" : "相手") + "は置ける場所がないのでパス";
+    passNote = (next === me ? myName() : theirName()) + "は置ける場所がないのでパス";
   } else {
     gameOver = true;
     phase = "over";
@@ -573,6 +666,7 @@ function applyShock(center, level) {
 
 // 接続できたら呼ばれる。コイントスはホストが行い、結果をゲストへ送る
 function startGame() {
+  me = 0; showNames();
   show("game");
   resetBoard();
   if (role === "host") doToss();
@@ -602,10 +696,18 @@ function doToss() {
   beginMatch(hostColor, gameMode);
 }
 
+function showNames() {
+  if (!me) { $("nameB").textContent = $("nameW").textContent = ""; return; }
+  $("nameB").textContent = me === BLACK ? myName() : theirName();
+  $("nameW").textContent = me === WHITE ? myName() : theirName();
+}
+
 function beginMatch(hostColor, mode) {
   gameMode = mode || "normal";
   resetBoard();
   me = role === "host" ? hostColor : 3 - hostColor;
+  dbg("start", { mode: gameMode, me, my: myName(), opp: theirName() });
+  showNames();
   $("youAre").textContent = "";
   $("againBtn").classList.add("hidden");
 
@@ -621,10 +723,10 @@ function beginMatch(hostColor, mode) {
 
   clearTimeout(tossTimer);
   tossTimer = setTimeout(() => {
-    $("tossText").textContent = me === BLACK ? "あなたが先攻（黒）！" : "あなたは後攻（白）";
+    $("tossText").textContent = me === BLACK ? `${myName()}が先攻（黒）！` : `${myName()}は後攻（白）\n${theirName()}が先攻`;
     tossTimer = setTimeout(() => {
       $("toss").classList.add("hidden");
-      $("youAre").textContent = (me === BLACK ? "あなた：黒（先攻）" : "あなた：白（後攻）") + (gameMode === "battle" ? "\nバトル" : "");
+      $("youAre").textContent = `あなた：${myName()}\n` + (me === BLACK ? "黒（先攻）" : "白（後攻）") + (gameMode === "battle" ? "・バトル" : "");
       phase = "play";
       turnStartedAt = Date.now();
       render();
@@ -633,6 +735,11 @@ function beginMatch(hostColor, mode) {
 }
 
 function onGameMessage(msg) {
+  if (msg.t === "name") {
+    oppName = String(msg.n || "").slice(0, 10);
+    showNames();
+    return;
+  }
   if (msg.t === "move") {
     if (phase !== "play" || turn === me) return;   // 相手の番以外の手は無視
     if (placeMove(msg.i)) finishTurn();
@@ -672,31 +779,46 @@ function startBattle(i, isAttacker) {
   resultNote = "";
   placeMove(i);                       // 石を置いて通常どおり裏返す
   phase = "battle";
-  battle = { i, isAttacker, atk: null, def: null, startedAt: Date.now(), taps: 0, rub: 0, lastX: null, lastY: null, done: false };
+  battle = { i, isAttacker, atk: null, def: null, startedAt: Date.now(), taps: 0, circles: 0, turn: 0, lastA: null, done: false };
   render();
 
   const ov = $("battle");
   ov.classList.remove("hidden");
   ov.classList.toggle("defend", !isAttacker);
   $("gauge").classList.toggle("hidden", !isAttacker);
-  $("battleTitle").textContent = isAttacker ? "力を込めろ！ タップでゲージを止める" : "防御！ 連打か擦って耐えろ！";
+  $("battleTitle").textContent = isAttacker ? "力を込めろ！ タップでゲージを止める" : "防御！ 連打するか、輪をなぞって円を描け！";
   $("battleValue").textContent = isAttacker ? "" : "0";
+  $("ring").classList.toggle("hidden", isAttacker);
+  $("ring").style.setProperty("--ring", 0);
+  $("ringCount").textContent = isAttacker ? "" : "0 / " + CIRCLE_MAX;
 
   const b = battle;
   ov.onpointerdown = (e) => {
     if (battle !== b || b.done) return;
     if (b.isAttacker) { lockPower(b); return; }
-    b.taps++; b.lastX = e.clientX; b.lastY = e.clientY;
+    b.taps++;
+    b.lastA = ringAngle(e); b.turn = 0;
     showGuard(b);
   };
   ov.onpointermove = (e) => {
-    if (battle !== b || b.done || b.isAttacker || b.lastX === null) return;
+    if (battle !== b || b.done || b.isAttacker || b.lastA === null) return;
     if (e.pointerType === "mouse" && !e.buttons) return;
-    b.rub += Math.hypot(e.clientX - b.lastX, e.clientY - b.lastY);
-    b.lastX = e.clientX; b.lastY = e.clientY;
+    const a = ringAngle(e);
+    if (a === null) { b.lastA = null; b.turn = 0; return; }   // 輪から外れたら、その周はやり直し
+    let d = a - b.lastA;
+    if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
+    if (Math.sign(d) !== Math.sign(b.turn) && b.turn !== 0 && Math.abs(d) > 0.02) b.turn = 0;   // 逆回りは数え直し
+    b.turn += d; b.lastA = a;
+    if (Math.abs(b.turn) >= 2 * Math.PI) {
+      b.turn -= Math.sign(b.turn) * 2 * Math.PI;
+      if (b.circles < CIRCLE_MAX) {
+        b.circles++;
+        const r = $("ring"); r.classList.remove("hit"); void r.offsetWidth; r.classList.add("hit");
+      }
+    }
     showGuard(b);
   };
-  ov.onpointerup = ov.onpointercancel = () => { if (battle === b) b.lastX = null; };
+  ov.onpointerup = ov.onpointercancel = () => { if (battle === b) { b.lastA = null; b.turn = 0; } };
 
   const loop = () => {
     if (battle !== b || b.done) return;
@@ -723,11 +845,22 @@ function gaugeAt(ms) {
   const p = (ms % GAUGE_PERIOD) / GAUGE_PERIOD;   // 0→100→0 の往復
   return Math.round((p < 0.5 ? p * 2 : (1 - p) * 2) * 100);
 }
-function guardPower(b) {
-  const w = Math.max(320, window.innerWidth || 400);
-  return Math.min(100, Math.round(b.taps * TAP_POWER + (b.rub / w) * RUB_POWER));
+// 指の位置が輪の上なら、輪の中心から見た角度を返す（輪から外れていれば null）
+function ringAngle(e) {
+  const r = $("ring").getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2;
+  const dx = e.clientX - cx, dy = e.clientY - cy, dist = Math.hypot(dx, dy);
+  if (!R || dist < R * RING_IN || dist > R * RING_OUT) return null;
+  return Math.atan2(dy, dx);
 }
-function showGuard(b) { $("battleValue").textContent = guardPower(b); }
+function guardPower(b) {
+  return Math.min(100, b.taps * TAP_POWER + b.circles * CIRCLE_POWER);
+}
+function showGuard(b) {
+  $("battleValue").textContent = guardPower(b);
+  $("ringCount").textContent = b.circles + " / " + CIRCLE_MAX;
+  $("ring").style.setProperty("--ring", Math.min(1, b.circles / CIRCLE_MAX + Math.abs(b.turn) / (2 * Math.PI) / CIRCLE_MAX));
+}
 
 function lockPower(b) {
   if (b.done) return;
@@ -744,6 +877,7 @@ function lockGuard(b) {
   if (b.done) return;
   b.done = true;
   b.def = guardPower(b);
+  dbg("guard", { taps: b.taps, circles: b.circles, def: b.def });
   $("battleValue").textContent = b.def;
   $("battleTitle").textContent = "防御完了！";
   $("battleTime").textContent = "";
@@ -759,6 +893,7 @@ function tryResolve() {
 
   const level = shockLevel(b.atk, b.def);
   const flipped = level ? applyShock(b.i, level) : [];
+  dbg("battle", { i: b.i, atk: b.atk, def: b.def, level, flipped: flipped.length, me: b.isAttacker ? "atk" : "def" });
   const attackerIsMe = b.isAttacker;
   if (level) {
     resultNote = `攻撃${b.atk} vs 防御${b.def} → 衝撃波 Lv${level}` + (flipped.length ? `（${flipped.length}枚ひっくり返った！）` : "");
@@ -782,6 +917,7 @@ function tryResolve() {
 
 function endBattleUI() {
   $("battle").classList.add("hidden");
+  $("ring").classList.add("hidden");
   $("battle").onpointerdown = $("battle").onpointermove = $("battle").onpointerup = $("battle").onpointercancel = null;
 }
 
@@ -827,7 +963,7 @@ function updateTimer(left) {
   $("timerFill").style.width = `${Math.max(0, left) / TURN_LIMIT * 100}%`;
   $("timerFill").classList.toggle("warn", warn);
   $("timerText").classList.toggle("warn", warn);
-  $("timerText").textContent = `${turn === me ? "あなた" : "相手"} ${sec}秒`;
+  $("timerText").textContent = `${turn === me ? myName() : theirName()} ${sec}秒`;
 }
 setInterval(tick, 200);
 
@@ -870,18 +1006,47 @@ function render() {
   if (phase === "over") {
     const mine = me === BLACK ? nb : nw, theirs = me === BLACK ? nw : nb;
     if (timeoutLoser) {
-      $("status").textContent = timeoutLoser === me ? "時間切れ… あなたの負け" : "相手の時間切れ！ あなたの勝ち";
+      $("status").textContent = timeoutLoser === me ? `時間切れ… ${theirName()}の勝ち` : `${theirName()}の時間切れ！ ${myName()}の勝ち`;
     } else {
-      $("status").textContent = mine > theirs ? `あなたの勝ち！（${mine} - ${theirs}）`
-        : mine < theirs ? `あなたの負け（${mine} - ${theirs}）` : `引き分け（${mine} - ${theirs}）`;
+      const sc = `（${myName()} ${mine} - ${theirs} ${theirName()}）`;
+      $("status").textContent = mine > theirs ? `${myName()}の勝ち！${sc}`
+        : mine < theirs ? `${theirName()}の勝ち…${sc}` : `引き分け${sc}`;
     }
     $("againBtn").classList.remove("hidden");
   } else {
     const head = [resultNote, passNote].filter(Boolean).join("\n");
-    $("status").textContent = (head ? head + "\n" : "") + (turn === me ? "あなたの番です" : "相手の番です");
+    $("status").textContent = (head ? head + "\n" : "") + (turn === me ? `あなた（${myName()}）の番です` : `${theirName()}の番です`);
     $("againBtn").classList.add("hidden");
   }
 }
+
+// ===== 不具合の報告：デバッグログを送る（worker/index.js の /battle-othello/debug → D1 chikuwa-debug） =====
+let dbgBusy = false;
+$("dbgSend").onclick = async () => {
+  if (dbgBusy) return;
+  dbgBusy = true; $("dbgSend").disabled = true;
+  const msg = $("dbgMsg"); msg.classList.remove("err"); msg.textContent = "送っています…";
+  const body = {
+    game: "battle-othello", version: VERSION, note: $("dbgNote").value.trim(), at: new Date().toISOString(),
+    screen: innerWidth + "x" + innerHeight, role, mode: gameMode, phase, me, turn, my: myName(), opp: theirName(),
+    connected, dc: dc ? dc.readyState : null, pc: pc ? pc.connectionState : null, theme: $("board").dataset.theme,
+    board, damage, log: dbgLog,
+  };
+  try {
+    const r = await fetch("debug", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    let j = null; try { j = await r.json(); } catch (e) {}
+    if (r.ok && j && j.ok) {
+      msg.textContent = `送りました。受付番号：${j.code}`;
+      dbg("sent", { code: j.code }); $("dbgNote").value = "";
+    } else {
+      msg.textContent = (j && j.error) || `送れませんでした（${r.status}）。公開サイトから送ってください。`; msg.classList.add("err");
+    }
+  } catch (e) {
+    msg.textContent = "送れませんでした。通信の状態を確かめてください。"; msg.classList.add("err");
+  }
+  dbgBusy = false; $("dbgSend").disabled = false;
+};
+dbg("boot", { v: VERSION, ua: navigator.userAgent.slice(0, 120) });
 </script>
 </body>
 </html>
