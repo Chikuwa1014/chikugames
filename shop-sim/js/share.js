@@ -1,5 +1,6 @@
 /**
  * share.js — 倒産時のポップアップとSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
+ * 共有の文面・共有メニュー・X の投稿画面・コピーは共通部品 common/v1/share.js（CG.share）。
  */
 
 /** 共有する文面とハッシュタグ */
@@ -9,8 +10,11 @@ const SHARE_TAG = 'ちくわげーむず';
 /** ゲームのURL（今開いているページ。#以降は除く） */
 const shareUrl = () => location.href.split('#')[0];
 
+/** CG.share に渡す中身（#ちくわげーむず は CG.share が付ける） */
+const shareData = () => ({ msg: SHARE_MSG, url: shareUrl() });
+
 /** コピー用・共有メニュー用の文面（URL込み） */
-const shareText = () => SHARE_MSG + '\n#' + SHARE_TAG + '\n' + shareUrl();
+const shareText = () => CG.share.text(shareData());
 
 /** 作成済みのリザルト画像（ゲームが変わったら作り直す） */
 let shareFile = null, shareFor = null;
@@ -161,56 +165,26 @@ function syncOver() {
     }
 }
 
-/** Xの投稿画面を開く（画像は添付できない） */
-function openX() {
-    window.open('https://x.com/intent/tweet?text=' + encodeURIComponent(SHARE_MSG) + '&url=' + encodeURIComponent(shareUrl()) + '&hashtags=' + encodeURIComponent(SHARE_TAG), '_blank', 'noopener');
-}
-
-/** 共有：使えれば端末の共有メニュー（画像付き）、だめならXの投稿画面 */
+/** 共有：使えれば端末の共有メニュー（画像付き）、だめならXの投稿画面（画像は手で添付） */
 function shareResult() {
-    const data = shareFile ? { text: shareText(), files: [shareFile] } : null;
-    if (data && navigator.canShare && navigator.canShare(data)) {
-        navigator.share(data).catch(e => {
-            if (e && e.name !== 'AbortError')
-                openX();
-        });
-        return;
-    }
-    openX();
+    if (shareFile)
+        CG.share.open(shareData(), shareFile);
+    else
+        CG.share.x(shareData());
 }
 
 /** リザルト画像を保存（ダウンロード） */
 function saveResultImage() {
     resultImage().toBlob(b => {
-        if (!b)
-            return;
-        const u = URL.createObjectURL(b), a = document.createElement('a');
-        a.href = u;
-        a.download = 'chiisana-omise.png';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(u), 10000);
+        if (b)
+            CG.download('chiisana-omise.png', b);
     }, 'image/png');
 }
 
 /** 文面をコピー */
 function copyShareText(b) {
-    const done = () => {
-        b.textContent = '✅ コピーしました';
+    CG.share.copy(shareData()).then(ok => {
+        b.textContent = ok ? '✅ コピーしました' : '⚠ 文面を長押ししてコピーしてください';
         setTimeout(() => b.textContent = '📋 文面をコピー', 2000);
-    };
-    const old = () => {
-        const t = byId('shtx');
-        t.select();
-        try {
-            document.execCommand('copy');
-            done();
-        }
-        catch (e) { }
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText)
-        navigator.clipboard.writeText(shareText()).then(done, old);
-    else
-        old();
+    });
 }

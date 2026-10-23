@@ -712,6 +712,87 @@ details .meta {
   font-size:12px;
   text-decoration:underline;
 }
+
+/* ---- v1.2.0：セーブコード ---- */
+.svsub {
+  margin-top:10px;
+  font-weight:700;
+  font-size:14px;
+}
+
+textarea.svcode {
+  width:100%;
+  box-sizing:border-box;
+  margin:6px 0;
+  font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;
+  padding:6px;
+  border-radius:8px;
+  border:1.5px solid var(--line);
+  background:var(--bg);
+  color:var(--ink);
+  word-break:break-all;
+  resize:vertical;
+}
+
+/* ---- v1.2.0：最初からやり直す（目立たせる） ---- */
+.rst {
+  border:1.5px solid var(--red);
+}
+
+.rst b {
+  color:var(--red);
+}
+
+button.big.rstb {
+  margin:8px 0 0;
+  background:transparent;
+  color:var(--red);
+  border:2px solid var(--red);
+}
+
+button.big.rstb.arm {
+  background:var(--red);
+  color:#fff;
+}
+
+/* ---- v1.2.0：横画面（スマホを横にしたとき）は左に店の様子、右にタブの中身 ---- */
+@media (orientation:landscape) and (max-height:560px) {
+  body {
+    max-width:none;
+    display:grid;
+    grid-template-columns:minmax(260px,42%) minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+    column-gap:14px;
+    padding-left:max(12px,env(safe-area-inset-left,0px));
+    padding-right:max(12px,env(safe-area-inset-right,0px));
+  }
+
+  .awning {
+    grid-column:1 / -1;
+    margin:0 calc(-1 * max(12px,env(safe-area-inset-left,0px))) 0 calc(-1 * max(12px,env(safe-area-inset-right,0px)));
+  }
+
+  #top {
+    grid-column:1;
+    grid-row:2;
+    margin:0;
+    padding:2px 0 8px;
+    box-shadow:none;
+    overflow-y:auto;
+    min-height:0;
+  }
+
+  #scr {
+    grid-column:2;
+    grid-row:2;
+    padding-top:6px;
+  }
+
+  #px {
+    max-height:42vh;
+    object-fit:contain;
+  }
+}
 </style>
 </head>
 <body>
@@ -734,7 +815,523 @@ details .meta {
 <div id="up"></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="dbg"></div>
-<div class="foot"><button data-a="reset">最初からやり直す</button><div class="ver" id="ver"></div></div>
+<div class="card rst"><b>🔄 最初からやり直す</b><div class="meta">今のお店をたたんで、難易度えらびからやり直します。セーブデータを残したいときは、先に書き出してください。</div><button class="big rstb" data-a="reset">最初からやり直す</button></div>
+<div class="foot"><div class="ver" id="ver"></div></div>
+<!-- ちくわゲームズ共通部品（common/v1）。build.py・make-artifact.py が中に埋め込む -->
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — core.js（いちばん最初に読み込む）
+ *
+ * どのゲームでも使う小さな道具をまとめたもの。ほかの共通部品（share・save・debug・room）はこれを前提にする。
+ * すべて window.CG（ちくわゲームズ）の下に置き、ゲームの変数や関数と名前がぶつからないようにする。
+ *
+ *   読み込み：ゲームの HTML で script タグの src に ../common/v1/core.js を書く（ほかの共通部品より先）
+ *   ※ 共通部品のコメントには閉じタグ（スラッシュ＋script）を書かない。1 ファイルに埋め込んだとき、そこで script が終わってしまう
+ *   CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: '1.2.0' });
+ *
+ * 仕様を変えて古いゲームが動かなくなるときは v1 を直さず、common/v2/ を作る（公開済みのゲームを壊さない）。
+ * 使い方の全体はリポジトリ直下の CLAUDE.md「14. 共通部品」と common/README.md。
+ */
+(function () {
+    const CG = window.CG || (window.CG = {});
+    CG.LIB = 'v1';
+
+    /** ゲームの情報（init で決める）。game はフォルダ名＝URL、デバッグ送信・マルチの宛先にも使う */
+    CG.info = { game: '', title: '', version: '' };
+    CG.init = function (o) {
+        Object.assign(CG.info, o || {});
+        return CG;
+    };
+
+    /** localStorage の読み書き（失敗しても止まらない。プライベートモードなど） */
+    CG.ls = {
+        get(k, d = null) {
+            try {
+                const v = localStorage.getItem(k);
+                return v === null ? d : v;
+            }
+            catch (e) {
+                return d;
+            }
+        },
+        set(k, v) {
+            try {
+                localStorage.setItem(k, v);
+                return true;
+            }
+            catch (e) {
+                return false;
+            }
+        },
+        del(k) {
+            try {
+                localStorage.removeItem(k);
+            }
+            catch (e) { }
+        },
+        getJSON(k, d = null) {
+            const v = CG.ls.get(k, null);
+            if (v === null)
+                return d;
+            try {
+                return JSON.parse(v);
+            }
+            catch (e) {
+                return d;
+            }
+        },
+        setJSON(k, v) {
+            return CG.ls.set(k, JSON.stringify(v));
+        }
+    };
+
+    /** HTML に埋め込むときの書き換え（< と & と "） */
+    CG.esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+    /** 2桁ゼロ埋め */
+    CG.p2 = n => String(n).padStart(2, '0');
+
+    /** いま開いているゲームの公開 URL（? と # は付けない） */
+    CG.pageUrl = () => location.origin + location.pathname;
+
+    /**
+     * 文字列をコピーする。成功なら true。
+     * 新しい方法（clipboard）がだめなら、見えない入力欄を使う昔の方法を試す。prompt() は使わない（アーティファクトで働かない）
+     */
+    CG.copy = async function (text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        }
+        catch (e) { }
+        const t = document.createElement('textarea');
+        t.value = text;
+        t.setAttribute('readonly', '');
+        t.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+        document.body.append(t);
+        t.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        }
+        catch (e) { }
+        t.remove();
+        return ok;
+    };
+
+    /** ファイルとして保存（ダウンロード）。data は文字列か Blob */
+    CG.download = function (name, data, type = 'application/json') {
+        const blob = data instanceof Blob ? data : new Blob([data], { type });
+        const u = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = u;
+        a.download = name;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 10000);
+    };
+
+    /** ファイルを文字列で読む（Promise） */
+    CG.readText = file => new Promise((ok, ng) => {
+        const r = new FileReader();
+        r.onload = () => ok(String(r.result));
+        r.onerror = () => ng(new Error('ファイルを読み取れませんでした。'));
+        r.readAsText(file);
+    });
+
+    /** 画面の下に短いお知らせを出す（ms ミリ秒で消える） */
+    let toastTimer = 0;
+    CG.toast = function (msg, ms = 2200) {
+        let el = document.getElementById('cg-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'cg-toast';
+            el.setAttribute('role', 'status');
+            el.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;' +
+                'max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:rgba(30,30,30,.92);color:#fff;font-size:14px;' +
+                'line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.3);transition:opacity .2s;pointer-events:none;text-align:center';
+            document.body.append(el);
+        }
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.style.opacity = '0', ms);
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — share.js（SNS 共有）。core.js の後に読む。
+ *
+ * 共通ルール「5. SNS 共有」をそのまま形にしたもの。#ちくわげーむず は必ず付く（書き忘れても足す）。
+ *
+ *   const s = { msg: 'ちいさなお店を開いたけど倒産しちゃった！', tags: ['ちいさなお店'], url: CG.pageUrl() };
+ *   CG.share.text(s)         // 文面（URL 込み）。コピー用の窓などに
+ *   CG.share.open(s, file)   // 端末の共有メニュー（画像 file があれば添付）。使えなければ X の投稿画面
+ *   CG.share.links(s)        // { x, line, facebook } のリンク先
+ *   CG.share.copy(s)         // 文面をコピー（成功なら true）
+ *
+ * tags は # を付けずに書く。ゲーム固有のタグを先に、ちくわげーむず が最後に来る。
+ */
+(function () {
+    const CG = window.CG;
+    const SITE_TAG = 'ちくわげーむず';
+
+    /** タグの並び（# なし、重複なし、ちくわげーむず を最後に） */
+    function tagList(s) {
+        const t = (s.tags || []).map(x => String(x).replace(/^#/, '')).filter(x => x && x !== SITE_TAG);
+        return [...new Set(t), SITE_TAG];
+    }
+    const urlOf = s => s.url || CG.pageUrl();
+
+    CG.share = {
+        TAG: SITE_TAG,
+        tags: tagList,
+
+        /** 文面（本文・ハッシュタグ・URL を改行でつなぐ） */
+        text(s) {
+            return s.msg + '\n' + tagList(s).map(t => '#' + t).join(' ') + '\n' + urlOf(s);
+        },
+
+        /** 各 SNS の投稿画面の URL。Facebook は文面を渡せないので hashtag に #ちくわげーむず */
+        links(s) {
+            const e = encodeURIComponent, u = urlOf(s);
+            return {
+                x: 'https://x.com/intent/tweet?text=' + e(s.msg) + '&url=' + e(u) + '&hashtags=' + e(tagList(s).join(',')),
+                line: 'https://social-plugins.line.me/lineit/share?url=' + e(u) + '&text=' + e(s.msg + '\n' + tagList(s).map(t => '#' + t).join(' ')),
+                facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + e(u) + '&hashtag=' + e('#' + SITE_TAG)
+            };
+        },
+
+        /** X の投稿画面を開く */
+        x(s) {
+            window.open(CG.share.links(s).x, '_blank', 'noopener');
+        },
+
+        /**
+         * 共有する。端末の共有メニューが使えればそれ（file があれば画像付き）、だめなら X の投稿画面。
+         * 結果は 'shared'（共有メニュー）・'cancel'（とじた）・'x'（X を開いた）
+         */
+        async open(s, file) {
+            const text = CG.share.text(s);
+            const withFile = file ? { text, files: [file] } : null;
+            const plain = { title: s.title || CG.info.title || document.title, text: s.msg + '\n' + tagList(s).map(t => '#' + t).join(' '), url: urlOf(s) };
+            const data = withFile && navigator.canShare && navigator.canShare(withFile) ? withFile : (navigator.share && !file ? plain : null);
+            if (data) {
+                try {
+                    await navigator.share(data);
+                    return 'shared';
+                }
+                catch (e) {
+                    if (e && e.name === 'AbortError')
+                        return 'cancel';
+                }
+            }
+            CG.share.x(s);
+            return 'x';
+        },
+
+        /** 文面をコピー */
+        copy(s) {
+            return CG.copy(CG.share.text(s));
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — save.js（セーブデータのファイルとセーブコード）。core.js の後に読む。
+ *
+ * ゲームの自動保存（localStorage）はゲームごとに書く。ここは「端末をまたいで持ち運ぶ」ための部品。
+ * 中身は どちらも同じ「包み」{ game, v, at, data } で、game がちがうデータは読み込めない。
+ *
+ *   const box = CG.save.wrap(state, 2);              // 包み（v はゲームのセーブ形式の版）
+ *   CG.save.toFile(box, 'ちいさなお店_….json');       // ファイルに書き出す
+ *   const box2 = await CG.save.fromFile(file);       // ファイルから読む（だめなら Error。message は日本語）
+ *   const code = await CG.save.toCode(box);          // セーブコード（文字列）にする
+ *   const box3 = await CG.save.fromCode(code);       // セーブコードを読む（だめなら Error）
+ *
+ * セーブコードの形：CK1.<本体>.<チェック値>
+ *   CK1 … 本体は JSON を deflate で縮めて base64url にしたもの
+ *   CK0 … 縮める仕組みが無いブラウザ用（JSON をそのまま base64url）
+ *   チェック値はゲーム名を混ぜたハッシュ。書き換えたコード・別のゲームのコードははじく（共通ルール 7 章）
+ * 読み込み側は、v がゲームの今の版より新しいときは「ゲームを最新にして」とエラーにすること（box.v を見る）。
+ */
+(function () {
+    const CG = window.CG;
+    const err = t => new Error(t);
+
+    /** ハッシュ（FNV-1a。つくれ！おでん横丁の checksum と同じ式。塩はゲーム名） */
+    function checksum(str, game) {
+        let h = 0x811c9dc5;
+        for (const ch of 'chikuwa-' + game + str) {
+            h ^= ch.charCodeAt(0);
+            h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return h.toString(36);
+    }
+
+    /** バイト列 ⇔ base64url */
+    function b64e(bytes) {
+        let s = '';
+        for (let i = 0; i < bytes.length; i += 0x8000)
+            s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    function b64d(t) {
+        const s = atob(t.replace(/-/g, '+').replace(/_/g, '/'));
+        const b = new Uint8Array(s.length);
+        for (let i = 0; i < s.length; i++)
+            b[i] = s.charCodeAt(i);
+        return b;
+    }
+
+    /** deflate（使えるブラウザだけ） */
+    const canZip = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+    async function pipe(bytes, stream) {
+        const out = new Response(new Blob([bytes]).stream().pipeThrough(stream));
+        return new Uint8Array(await out.arrayBuffer());
+    }
+
+    /** 包みが正しい形か（game が合っているか）。だめなら Error */
+    function check(box) {
+        if (!box || typeof box !== 'object' || typeof box.game !== 'string')
+            throw err('セーブデータの形ではありません。');
+        // 共通部品より前の ちいさなお店（v1.1.x）は中身を state に入れていた。読めるようにそろえる
+        if (!box.data && box.state && typeof box.state === 'object')
+            box.data = box.state;
+        if (box.game !== CG.info.game)
+            throw err('このゲームのセーブデータではありません。');
+        if (typeof box.v !== 'number' || !box.data || typeof box.data !== 'object')
+            throw err('セーブデータが壊れています。');
+        return box;
+    }
+
+    CG.save = {
+        checksum,
+
+        /** 包む（at は保存した日時） */
+        wrap(data, v) {
+            return { game: CG.info.game, v, at: new Date().toISOString(), data };
+        },
+
+        /** ファイルに書き出す */
+        toFile(box, name) {
+            CG.download(name, JSON.stringify(box), 'application/json');
+        },
+
+        /** ファイルから読む */
+        async fromFile(file) {
+            if (!file)
+                throw err('ファイルが選ばれていません。');
+            const t = await CG.readText(file);
+            let box;
+            try {
+                box = JSON.parse(t);
+            }
+            catch (e) {
+                throw err('ファイルを読み取れませんでした（JSONではありません）。');
+            }
+            return check(box);
+        },
+
+        /** セーブコードにする */
+        async toCode(box) {
+            const raw = new TextEncoder().encode(JSON.stringify(box));
+            let head = 'CK0', body = raw;
+            if (canZip) {
+                try {
+                    body = await pipe(raw, new CompressionStream('deflate-raw'));
+                    head = 'CK1';
+                }
+                catch (e) {
+                    body = raw;
+                }
+            }
+            const p = head + '.' + b64e(body);
+            return p + '.' + checksum(p, CG.info.game);
+        },
+
+        /** セーブコードを読む（前後の空白・改行は無視） */
+        async fromCode(code) {
+            const t = String(code || '').replace(/\s+/g, '');
+            const m = t.match(/^(CK[01])\.([A-Za-z0-9_-]+)\.([0-9a-z]+)$/);
+            if (!m)
+                throw err('セーブコードの形ではありません。全部コピーできているか確かめてください。');
+            if (checksum(m[1] + '.' + m[2], CG.info.game) !== m[3])
+                throw err('セーブコードが正しくありません（途中が欠けている・書き換えた・別のゲームのコード）。');
+            let bytes;
+            try {
+                bytes = b64d(m[2]);
+                if (m[1] === 'CK1') {
+                    if (!canZip)
+                        throw err('このブラウザではこのセーブコードを読めません。ブラウザを新しくしてください。');
+                    bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
+                }
+                return check(JSON.parse(new TextDecoder().decode(bytes)));
+            }
+            catch (e) {
+                throw e && /セーブ|ブラウザ/.test(e.message) ? e : err('セーブコードを読み取れませんでした。');
+            }
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — debug.js（デバッグ報告）。core.js の後に読む。
+ *
+ * 遊んでいる人の端末で「操作・出来事・エラー」を直近 max 件だけ localStorage に残し、
+ * 不具合が起きたらメモを付けて開発者に送る。サーバーは worker/index.js の /<フォルダ>/debug（D1 chikuwa-debug）。
+ * 新しいゲームで使うときは worker/index.js の DEBUG_GAMES にフォルダ名を足す。
+ *
+ *   CG.debug.init({ snap: () => ({ d: state.day }) });  // snap：1件ごとに付ける「いまの状態」の要約（任意）
+ *   CG.debug.add('open', { m: 100 });                    // 1件記録
+ *   CG.debug.wrap('buy', { before: () => state.money, after: (m0) => ({ dm: state.money - m0 }) });
+ *                                                        // window.buy を包んで、呼ばれたことを記録
+ *   const r = await CG.debug.send(note, { state });      // 送信 → { ok:true, code } か { ok:false, t }
+ *   CG.debug.mount(el);                                  // 送信欄（メモ・ボタン・受付番号）を el に作る（自前の見た目にしたいゲームは使わない）
+ *
+ * エラー（error・unhandledrejection）は init だけで自動的に記録される。
+ * アーティファクト版からは送れない（公開サイトのみ）。そのときは「公開サイトから送って」と表示する。
+ */
+(function () {
+    const CG = window.CG;
+    let opt = { key: '', max: 300, url: 'debug', snap: null };
+    let log = [];
+    let started = false;
+
+    function persist() {
+        CG.ls.setJSON(opt.key, log);
+    }
+
+    const D = CG.debug = {
+        /** 記録の一覧（古い順） */
+        get log() {
+            return log;
+        },
+
+        init(o) {
+            opt = Object.assign(opt, o || {});
+            if (!opt.key)
+                opt.key = CG.info.game + '-debuglog';
+            const v = CG.ls.getJSON(opt.key, []);
+            log = Array.isArray(v) ? v : [];
+            if (!started) {
+                started = true;
+                addEventListener('error', e => D.add('error', {
+                    msg: String(e.message), src: (e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno,
+                    st: e.error && e.error.stack ? String(e.error.stack).slice(0, 800) : undefined
+                }));
+                addEventListener('unhandledrejection', e => D.add('error', { msg: 'promise: ' + String(e.reason).slice(0, 300) }));
+            }
+            D.add('boot', { v: CG.info.version });
+            return D;
+        },
+
+        /** 1件記録する（t：時刻、ev：何が起きたか、＋ snap の結果、＋ extra） */
+        add(ev, extra) {
+            let s = {};
+            try {
+                s = opt.snap ? opt.snap() || {} : {};
+            }
+            catch (e) { }
+            log.push(Object.assign({ t: Date.now(), ev }, s, extra || {}));
+            if (log.length > opt.max)
+                log = log.slice(-opt.max);
+            persist();
+        },
+
+        /**
+         * グローバル関数 window[name] を包んで、呼ばれたことを記録する（ゲームの動きは変えない）。
+         * before() の戻り値が after(前の値, 引数, 戻り値) に渡り、after の戻り値（オブジェクト）が記録に足される。
+         */
+        wrap(name, h) {
+            const f = window[name];
+            if (typeof f !== 'function')
+                return;
+            h = h || {};
+            window[name] = function (...args) {
+                let b;
+                try {
+                    b = h.before ? h.before() : undefined;
+                }
+                catch (e) { }
+                const r = f.apply(this, args);
+                let x = {};
+                try {
+                    x = h.after ? h.after(b, args, r) || {} : {};
+                }
+                catch (e) { }
+                D.add(name, Object.assign({ a: args.length ? args : undefined }, x));
+                return r;
+            };
+        },
+
+        /** 記録を消す */
+        clear() {
+            log = [];
+            persist();
+        },
+
+        /**
+         * 送る。extra はゲームの状態など（state 全体を入れてよい。1件 300KB まで）。
+         * 戻り値：{ ok:true, code:'受付番号' } か { ok:false, t:'理由' }
+         */
+        async send(note, extra) {
+            const body = Object.assign({
+                game: CG.info.game, version: CG.info.version, note: String(note || '').trim().slice(0, 500),
+                at: new Date().toISOString(), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent
+            }, extra || {}, { log });
+            try {
+                const r = await fetch(opt.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+                let j = null;
+                try {
+                    j = await r.json();
+                }
+                catch (e) { }
+                if (r.ok && j && j.ok) {
+                    D.add('sent', { code: j.code });
+                    return { ok: true, code: j.code };
+                }
+                return { ok: false, t: (j && j.error) || '送信できませんでした（' + r.status + '）。公開サイトから送ってください。' };
+            }
+            catch (e) {
+                return { ok: false, t: '送信できませんでした。通信状態を確かめるか、公開サイトから送ってください。' };
+            }
+        },
+
+        /**
+         * 送信欄を el の中に作る（共通の見た目。class は cg-dbg-*）。
+         * o.title：見出し、o.extra()：送るときに足すデータ、o.placeholder：メモの例
+         */
+        mount(el, o) {
+            o = o || {};
+            let msg = null;
+            const draw = () => {
+                const note = el.querySelector('textarea') ? el.querySelector('textarea').value : '';
+                el.innerHTML = '<div class="cg-dbg"><b>' + CG.esc(o.title || '🐞 不具合を報告する') + '</b>' +
+                    '<textarea rows="2" maxlength="500" placeholder="' + CG.esc(o.placeholder || 'どんなことが起きた？（任意）') + '"></textarea>' +
+                    '<button type="button"' + (msg && msg.busy ? ' disabled' : '') + '>' + (msg && msg.busy ? '送信中…' : '🐞 デバッグログを送る') + '</button>' +
+                    '<div class="cg-dbg-meta">直近' + log.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>' +
+                    (msg && msg.ok ? '<div class="cg-dbg-ok">✅ 送信しました。受付番号 <b>' + CG.esc(msg.code) + '</b>（開発者に伝えてください）</div>' : '') +
+                    (msg && msg.t ? '<div class="cg-dbg-ng">⚠ ' + CG.esc(msg.t) + '</div>' : '') + '</div>';
+                el.querySelector('textarea').value = msg && msg.ok ? '' : note;
+                el.querySelector('button').onclick = async () => {
+                    const n = el.querySelector('textarea').value;
+                    msg = { busy: true };
+                    draw();
+                    msg = await D.send(n, o.extra ? o.extra() : {});
+                    draw();
+                };
+            };
+            draw();
+        }
+    };
+})();
+</script>
 <script>
 /**
  * data.js — データ定義（商品・季節・天気・難易度・各種テーブル）。ここは数値の調整だけで済む。
@@ -786,13 +1383,16 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
 
 /** 著作権表記 */
 const COPYRIGHT = '© 2026 ちくわげーむず';
 
 /** localStorage のセーブキー */
 const KEY = 'shopsim8';
+
+/** ちくわゲームズ共通部品（common/v1）にゲームの情報を伝える。game はフォルダ名（デバッグ送信の宛先・セーブの目印） */
+CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: VERSION });
 
 /** 1ヶ月の日数 */
 const MD = 7;
@@ -924,6 +1524,7 @@ const HELP = {
     hours: '長時間営業は幸福度を下げます。',
     sv: '月末に所持金がマイナスになると、自動で預金から引き出されます。',
     save: 'ファイルに書き出して保管し、別の端末やブラウザでも続きから遊べます。営業中は使えません。',
+    code: 'ゲームの状態を1行の文字列（セーブコード）にします。メモ帳やLINEに貼って保管し、別の端末で貼り付けると続きから遊べます。途中が欠けたり書き換えたりしたコードは読み込めません。',
     dbg: '不具合を見つけたときに押してください。直近の操作の記録といまのゲームの状態を開発者に送ります。名前や端末の情報は送りません（ブラウザの種類だけ）。'
 };
 </script>
@@ -2316,6 +2917,7 @@ function pxPeople(op) {
 <script>
 /**
  * share.js — 倒産時のポップアップとSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
+ * 共有の文面・共有メニュー・X の投稿画面・コピーは共通部品 common/v1/share.js（CG.share）。
  */
 
 /** 共有する文面とハッシュタグ */
@@ -2325,8 +2927,11 @@ const SHARE_TAG = 'ちくわげーむず';
 /** ゲームのURL（今開いているページ。#以降は除く） */
 const shareUrl = () => location.href.split('#')[0];
 
+/** CG.share に渡す中身（#ちくわげーむず は CG.share が付ける） */
+const shareData = () => ({ msg: SHARE_MSG, url: shareUrl() });
+
 /** コピー用・共有メニュー用の文面（URL込み） */
-const shareText = () => SHARE_MSG + '\n#' + SHARE_TAG + '\n' + shareUrl();
+const shareText = () => CG.share.text(shareData());
 
 /** 作成済みのリザルト画像（ゲームが変わったら作り直す） */
 let shareFile = null, shareFor = null;
@@ -2477,77 +3082,49 @@ function syncOver() {
     }
 }
 
-/** Xの投稿画面を開く（画像は添付できない） */
-function openX() {
-    window.open('https://x.com/intent/tweet?text=' + encodeURIComponent(SHARE_MSG) + '&url=' + encodeURIComponent(shareUrl()) + '&hashtags=' + encodeURIComponent(SHARE_TAG), '_blank', 'noopener');
-}
-
-/** 共有：使えれば端末の共有メニュー（画像付き）、だめならXの投稿画面 */
+/** 共有：使えれば端末の共有メニュー（画像付き）、だめならXの投稿画面（画像は手で添付） */
 function shareResult() {
-    const data = shareFile ? { text: shareText(), files: [shareFile] } : null;
-    if (data && navigator.canShare && navigator.canShare(data)) {
-        navigator.share(data).catch(e => {
-            if (e && e.name !== 'AbortError')
-                openX();
-        });
-        return;
-    }
-    openX();
+    if (shareFile)
+        CG.share.open(shareData(), shareFile);
+    else
+        CG.share.x(shareData());
 }
 
 /** リザルト画像を保存（ダウンロード） */
 function saveResultImage() {
     resultImage().toBlob(b => {
-        if (!b)
-            return;
-        const u = URL.createObjectURL(b), a = document.createElement('a');
-        a.href = u;
-        a.download = 'chiisana-omise.png';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(u), 10000);
+        if (b)
+            CG.download('chiisana-omise.png', b);
     }, 'image/png');
 }
 
 /** 文面をコピー */
 function copyShareText(b) {
-    const done = () => {
-        b.textContent = '✅ コピーしました';
+    CG.share.copy(shareData()).then(ok => {
+        b.textContent = ok ? '✅ コピーしました' : '⚠ 文面を長押ししてコピーしてください';
         setTimeout(() => b.textContent = '📋 文面をコピー', 2000);
-    };
-    const old = () => {
-        const t = byId('shtx');
-        t.select();
-        try {
-            document.execCommand('copy');
-            done();
-        }
-        catch (e) { }
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText)
-        navigator.clipboard.writeText(shareText()).then(done, old);
-    else
-        old();
+    });
 }
 </script>
 <script>
 /**
- * save.js — セーブデータのファイル書き出し・読み込み（「設定」タブ）。
+ * save.js — セーブデータのファイル書き出し・読み込みと、セーブコード（「設定」タブ）。
  * 自動保存（localStorage）は state.js の save()。こちらは端末をまたぐバックアップ用。
+ * ファイル・コードの作り方と読み方は共通部品 common/v1/save.js（CG.save）。ここはゲームに合わせた確認と画面だけ。
+ * 包みの形：{ game:'shop-sim', v:SAVE_VER, at, data:state, key }（v1.1.x までのファイルは data の代わりに state。CG.save が読める形にそろえる）
  */
 
 /** ファイルの目印と版番号（state の形を変えたら SAVE_VER を上げ、loadFix に移行処理を書く） */
 const SAVE_GAME = 'shop-sim', SAVE_VER = 2;
 
-/** 読み込み待ちのデータ（確認してから反映）、欄に出すメッセージ */
-let svPend = null, svMsg = null, svSig = '';
+/** 読み込み待ちのデータ（確認してから反映）、欄に出すメッセージ、作ったセーブコード、コード入力欄を開いているか */
+let svPend = null, svMsg = null, svSig = '', svCode = '', svIn = false;
 
 /** セーブ・ロードできるか（営業中は不可。倒産後は可） */
 const canSL = () => state.over || state.phase !== 'open';
 
 /** 2桁ゼロ埋め */
-const p2 = n => String(n).padStart(2, '0');
+const p2 = CG.p2;
 
 /** データの概要（難易度・時期・所持金） */
 function saveSummary(s, at) {
@@ -2569,28 +3146,22 @@ function exportSave() {
     if (!canSL())
         return;
     const now = new Date(), d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1;
-    const data = { game: SAVE_GAME, v: SAVE_VER, key: KEY, at: now.toISOString(), state };
+    const box = Object.assign(CG.save.wrap(state, SAVE_VER), { key: KEY });
     const name = 'ちいさなお店_' + difficulty().n + '_' + (state.day ? m + 'ヶ月目' : '開業前') + '_' +
         now.getFullYear() + p2(now.getMonth() + 1) + p2(now.getDate()) + '-' + p2(now.getHours()) + p2(now.getMinutes()) + '.json';
-    const u = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' })), a = document.createElement('a');
-    a.href = u;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(u), 10000);
+    CG.save.toFile(box, name);
     svPend = null;
     svMsg = { ok: true, t: '書き出しました：' + name };
     syncSave();
 }
 
-/** 読み込んだデータが正しいか確かめる（だめなら理由の文字列、OKなら null） */
+/** 読み込んだデータが正しいか確かめる（だめなら理由の文字列、OKなら null）。形とゲーム名は CG.save が確かめ済み */
 function checkSave(o) {
     if (!o || typeof o !== 'object' || o.game !== SAVE_GAME)
         return 'このゲームのセーブデータではありません。';
     if (typeof o.v !== 'number' || o.v > SAVE_VER)
         return '新しい版のセーブデータです。ゲームを最新にしてから読み込んでください。';
-    const s = o.state;
+    const s = o.data;
     if (!s || typeof s !== 'object' || !Array.isArray(s.shelf) || !Array.isArray(s.own) || typeof s.money !== 'number' || typeof s.day !== 'number' || !DF[s.diff])
         return 'セーブデータが壊れています。';
     return null;
@@ -2598,7 +3169,7 @@ function checkSave(o) {
 
 /** 古い版のデータを今の形にそろえる（足りない項目は初期値で埋める） */
 function loadFix(o) {
-    const s = Object.assign(fresh(), o.state);
+    const s = Object.assign(fresh(), o.data);
     ['up', 'sd'].forEach(k => {
         s[k] = PRODUCTS.map((_, i) => (s[k] && s[k][i]) || 0);
     });
@@ -2608,28 +3179,57 @@ function loadFix(o) {
     return s;
 }
 
+/** 読んだ包み（Promise）を確かめて、反映待ちにする */
+async function pendFrom(p) {
+    let o = null, err = null;
+    try {
+        o = await p;
+        err = checkSave(o);
+    }
+    catch (e) {
+        err = e.message;
+    }
+    svPend = err ? null : o;
+    svMsg = err ? { ok: false, t: err } : null;
+    syncSave();
+}
+
 /** ファイルを選んだら中身を確認して、反映待ちにする */
 function importFile(f) {
-    if (!f)
+    if (f)
+        pendFrom(CG.save.fromFile(f));
+}
+
+/** セーブコードを作ってコピーする（コピーできなくても、欄に出すので手でコピーできる） */
+async function makeCode() {
+    if (!canSL())
         return;
-    const r = new FileReader();
-    r.onload = () => {
-        let o = null;
-        try {
-            o = JSON.parse(r.result);
-        }
-        catch (e) { }
-        const err = o ? checkSave(o) : 'ファイルを読み取れませんでした（JSONではありません）。';
-        svPend = err ? null : o;
-        svMsg = err ? { ok: false, t: err } : null;
+    try {
+        svCode = await CG.save.toCode(Object.assign(CG.save.wrap(state, SAVE_VER), { key: KEY }));
+    }
+    catch (e) {
+        svCode = '';
+        svMsg = { ok: false, t: 'セーブコードを作れませんでした。' };
         syncSave();
-    };
-    r.onerror = () => {
-        svPend = null;
-        svMsg = { ok: false, t: 'ファイルを読み取れませんでした。' };
+        return;
+    }
+    svPend = null;
+    svIn = false;
+    const ok = await CG.copy(svCode);
+    svMsg = ok ? { ok: true, t: 'セーブコードをコピーしました（' + fmt(svCode.length) + '文字）。メモ帳などに貼って保管してください。' } : { ok: false, t: 'コピーできませんでした。下の欄を長押しして全部コピーしてください。' };
+    syncSave();
+}
+
+/** 貼り付けたセーブコードを確かめて、反映待ちにする */
+function readCode() {
+    const t = byId('svci');
+    const v = t ? t.value.trim() : '';
+    if (!v) {
+        svMsg = { ok: false, t: 'セーブコードを貼り付けてください。' };
         syncSave();
-    };
-    r.readAsText(f);
+        return;
+    }
+    pendFrom(CG.save.fromCode(v));
 }
 
 /** 反映待ちのデータで再開する */
@@ -2638,6 +3238,8 @@ function applyLoad() {
         return;
     state = loadFix(svPend);
     svPend = null;
+    svCode = '';
+    svIn = false;
     if (!LA.includes(state.ln.a))
         state.ln.a = LA[0];
     state.paused = false;
@@ -2658,20 +3260,32 @@ function syncSave() {
     const el = byId('svd');
     if (!el)
         return;
-    const ok = canSL(), sig = [ok, svPend && svPend.at, svMsg && svMsg.t].join('|');
+    const ok = canSL(), sig = [ok, svPend && svPend.at, svMsg && svMsg.t, svCode, svIn].join('|');
     if (sig === svSig)
         return;
     svSig = sig;
+    const old = byId('svci'), typed = old ? old.value : '';
+    const dis = ok ? '' : ' disabled';
     let h = '<b>💾 セーブデータ</b>' + helpIcon('save');
     if (!ok)
         h += '<div class="meta svwarn">営業中はセーブ・ロードできません。閉店後に操作してください。</div>';
-    h += '<div class="row"><button data-a="fsave"' + (ok ? '' : ' disabled') + '>📤 ファイルに書き出す</button><button class="alt" data-a="fload"' + (ok ? '' : ' disabled') + '>📥 ファイルから読み込む</button></div>';
+    h += '<div class="row"><button data-a="fsave"' + dis + '>📤 ファイルに書き出す</button><button class="alt" data-a="fload"' + dis + '>📥 ファイルから読み込む</button></div>';
+    h += '<div class="svsub">🔑 セーブコード' + helpIcon('code') + '</div>' +
+        '<div class="row"><button data-a="ccopy"' + dis + '>📋 コードをコピー</button><button class="alt" data-a="cin"' + dis + '>⌨ コードで読み込む</button></div>';
+    if (svCode)
+        h += '<textarea class="svcode" readonly rows="3" onfocus="this.select()">' + CG.esc(svCode) + '</textarea>';
+    if (svIn)
+        h += '<textarea class="svcode" id="svci" rows="3" placeholder="ここにセーブコード（CK1.〜）を貼り付け"></textarea>' +
+            '<div class="row"><button data-a="cread"' + dis + '>このコードを読み込む</button><button class="alt" data-a="cno">やめる</button></div>';
     if (svPend)
-        h += '<div class="svpend"><b>このデータで再開しますか？</b><div class="meta">' + saveSummary(svPend.state, svPend.at) + '</div><div class="meta svwarn">今のデータは上書きされます。必要なら先に書き出してください。</div>' +
+        h += '<div class="svpend"><b>このデータで再開しますか？</b><div class="meta">' + saveSummary(svPend.data, svPend.at) + '</div><div class="meta svwarn">今のデータは上書きされます。必要なら先に書き出してください。</div>' +
             '<div class="row"><button data-a="fok"' + (ok ? '' : ' disabled') + '>このデータで再開</button><button class="alt" data-a="fno">やめる</button></div></div>';
     if (svMsg)
         h += '<div class="meta ' + (svMsg.ok ? 'svok' : 'svwarn') + '">' + (svMsg.ok ? '✅ ' : '⚠ ') + svMsg.t + '</div>';
     el.innerHTML = h;
+    const ni = byId('svci');
+    if (ni)
+        ni.value = typed;
 }
 </script>
 <script>
@@ -3118,6 +3732,19 @@ document.addEventListener('click', e => {
     }
     if (a === 'fok')
         applyLoad();
+    if (a === 'ccopy')
+        makeCode();
+    if (a === 'cin' || a === 'cno') {
+        svIn = a === 'cin';
+        svCode = '';
+        svMsg = null;
+        syncSave();
+        const t = byId('svci');
+        if (t)
+            t.focus();
+    }
+    if (a === 'cread')
+        readCode();
     if (a === 'fno') {
         svPend = null;
         svMsg = null;
@@ -3156,15 +3783,18 @@ document.addEventListener('click', e => {
     if (a === 'reset') {
         if (!window.rs) {
             window.rs = 1;
-            b.textContent = 'もう一度押すとリセットします';
+            b.textContent = '⚠ もう一度押すとリセットします';
+            b.classList.add('arm');
             setTimeout(() => {
                 window.rs = 0;
                 b.textContent = '最初からやり直す';
+                b.classList.remove('arm');
             }, 4000);
         }
         else {
             window.rs = 0;
             b.textContent = '最初からやり直す';
+            b.classList.remove('arm');
             restart();
         }
     }
@@ -3266,7 +3896,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
@@ -3277,11 +3907,12 @@ function initLayout() {
 /**
  * debuglog.js — バグ調査用のデバッグログ（記録と送信）。
  *
+ * 記録・エラーの捕捉・送信は共通部品 common/v1/debug.js（CG.debug）。ここは「何を記録するか」と送信欄の見た目だけ。
  * 記録するもの（localStorage の DBG_KEY に直近 DBG_MAX 件。再読み込みしても残る）：
  *   - 操作（投資・融資・預金・開店・翌日・閉店・甘酒など）と、その前後のフェーズ・所持金
  *   - 投資ボタンが無視されたときの理由（investBlock）
  *   - イベントの文言（addEvent）
- *   - JavaScript のエラー
+ *   - JavaScript のエラー（CG.debug が自動で記録）
  * 送信：「⚙設定」タブの「🐞 デバッグログを送る」。サーバー（worker/index.js の /shop-sim/debug）が
  *   D1（chikuwa-debug の debug_logs）に保存し、受付番号を返す。送る中身は state 全体＋上の記録。
  * ほかのファイルの関数を「包んで」記録するだけなので、ゲームの動きは変えない。
@@ -3290,57 +3921,37 @@ function initLayout() {
 
 const DBG_KEY = 'shop-sim-debuglog';
 const DBG_MAX = 300;
-const DBG_URL = 'debug';
-
-let dbgLog = [];
-try {
-    dbgLog = JSON.parse(localStorage.getItem(DBG_KEY)) || [];
-}
-catch (e) { }
-if (!Array.isArray(dbgLog))
-    dbgLog = [];
 
 /** 送信欄の状態（null＝未送信、{busy}・{ok, code}・{ok:false, t}） */
 let dbgMsg = null;
 let dbgSig = '';
 
 /** いまの状態の要約（1件の記録に付ける） */
-const dbgSnap = () => state ? {
+const dbgSnap = () => typeof state !== 'undefined' && state ? {
     d: state.day, ph: state.phase, m: Math.round(state.money), sk: state.sick || 0, dp: state.dep || 0,
     ov: !!state.over, km: state.kama || 0, cl: state.clean || 0, sl: state.slots
 } : {};
 
-/** 1件記録する */
-function dbgAdd(ev, extra) {
-    dbgLog.push(Object.assign({ t: Date.now(), ev }, dbgSnap(), extra || {}));
-    if (dbgLog.length > DBG_MAX)
-        dbgLog = dbgLog.slice(-DBG_MAX);
-    try {
-        localStorage.setItem(DBG_KEY, JSON.stringify(dbgLog));
-    }
-    catch (e) { }
-}
+CG.debug.init({ key: DBG_KEY, max: DBG_MAX, snap: dbgSnap });
 
-/** グローバル関数を包んで、呼ばれたことと前後の変化を記録する */
+/** 1件記録する（ほかのファイルから呼んでもよい） */
+const dbgAdd = (ev, extra) => CG.debug.add(ev, extra);
+
+/** 関数を包んで、前後のフェーズ・所持金の変化を記録する。why：お金が動かなかったら「無視された理由」も残す */
 function dbgWrap(name, opt) {
-    const f = window[name];
-    if (typeof f !== 'function')
-        return;
-    window[name] = function (...args) {
-        const ph0 = state && state.phase, m0 = state && state.money, l0 = state && state.log[0];
-        const r = f.apply(this, args);
-        const x = { a: args.length ? args : undefined, ph0 };
-        if (state && state.money !== m0)
-            x.dm = Math.round(state.money - m0);
-        else if (opt && opt.why) {
-            // お金が動かなかった＝無視された。理由を残す
-            x.ign = investBlock() || 'お金不足か上限';
+    CG.debug.wrap(name, {
+        before: () => ({ ph0: state && state.phase, m0: state && state.money, l0: state && state.log[0] }),
+        after: b => {
+            const x = { ph0: b.ph0 };
+            if (state && state.money !== b.m0)
+                x.dm = Math.round(state.money - b.m0);
+            else if (opt && opt.why)
+                x.ign = investBlock() || 'お金不足か上限';
+            if (state && state.log[0] !== b.l0)
+                x.lg = state.log[0];
+            return x;
         }
-        if (state && state.log[0] !== l0)
-            x.lg = state.log[0];
-        dbgAdd(name, x);
-        return r;
-    };
+    });
 }
 
 ['buy', 'upgrade', 'takeLoan', 'svMove'].forEach(n => dbgWrap(n, { why: true }));
@@ -3352,40 +3963,20 @@ function dbgWrap(name, opt) {
         return f.apply(this, arguments);
     };
 }
-addEventListener('error', e => dbgAdd('error', { msg: String(e.message), src: (e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno, st: e.error && e.error.stack ? String(e.error.stack).slice(0, 800) : undefined }));
-addEventListener('unhandledrejection', e => dbgAdd('error', { msg: 'promise: ' + String(e.reason).slice(0, 300) }));
-dbgAdd('boot', { v: VERSION });
 
 /** 送信する */
 async function dbgSend() {
     if (dbgMsg && dbgMsg.busy)
         return;
     const nt = byId('dbgn');
-    const body = {
-        game: 'shop-sim', version: VERSION, note: nt ? nt.value.trim() : '', at: new Date().toISOString(),
-        screen: innerWidth + 'x' + innerHeight, why: investBlock(), state, log: dbgLog
-    };
     dbgMsg = { busy: true };
     syncDbg();
-    try {
-        const r = await fetch(DBG_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-        let j = null;
-        try {
-            j = await r.json();
-        }
-        catch (e) { }
-        if (r.ok && j && j.ok) {
-            dbgMsg = { ok: true, code: j.code };
-            dbgAdd('sent', { code: j.code });
-            const n2 = byId('dbgn');
-            if (n2)
-                n2.value = '';
-        }
-        else
-            dbgMsg = { ok: false, t: (j && j.error) || '送信できませんでした（' + r.status + '）。公開サイトから送ってください。' };
-    }
-    catch (e) {
-        dbgMsg = { ok: false, t: '送信できませんでした。通信状態を確かめるか、公開サイトから送ってください。' };
+    const r = await CG.debug.send(nt ? nt.value : '', { why: investBlock(), state });
+    dbgMsg = r.ok ? { ok: true, code: r.code } : { ok: false, t: r.t };
+    if (r.ok) {
+        const n2 = byId('dbgn');
+        if (n2)
+            n2.value = '';
     }
     syncDbg(true);
 }
@@ -3403,7 +3994,7 @@ function syncDbg(force) {
     let h = '<b>🐞 デバッグログ</b>' + helpIcon('dbg') +
         '<textarea id="dbgn" rows="2" maxlength="500" placeholder="どんなことが起きた？（任意）例：2ヶ月目に投資ボタンが押せない" style="width:100%;box-sizing:border-box;margin:6px 0;font:inherit;font-size:13px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)"></textarea>' +
         '<button data-a="dbgsend"' + (dbgMsg && dbgMsg.busy ? ' disabled' : '') + '>' + (dbgMsg && dbgMsg.busy ? '送信中…' : '🐞 デバッグログを送る') + '</button>' +
-        '<div class="meta">直近' + dbgLog.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>';
+        '<div class="meta">直近' + CG.debug.log.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>';
     if (dbgMsg && dbgMsg.ok)
         h += '<div class="meta svok">✅ 送信しました。受付番号 <b>' + dbgMsg.code + '</b>（開発者に伝えてください）</div>';
     else if (dbgMsg && dbgMsg.t)

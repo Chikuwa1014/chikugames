@@ -26,7 +26,13 @@
 <div id="up"></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="dbg"></div>
-<div class="foot"><button data-a="reset">最初からやり直す</button><div class="ver" id="ver"></div></div>
+<div class="card rst"><b>🔄 最初からやり直す</b><div class="meta">今のお店をたたんで、難易度えらびからやり直します。セーブデータを残したいときは、先に書き出してください。</div><button class="big rstb" data-a="reset">最初からやり直す</button></div>
+<div class="foot"><div class="ver" id="ver"></div></div>
+<!-- ちくわゲームズ共通部品（common/v1）。build.py・make-artifact.py が中に埋め込む -->
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/share.js"></script>
+<script src="../common/v1/save.js"></script>
+<script src="../common/v1/debug.js"></script>
 <script src="js/data.js"></script>
 <script src="js/util.js"></script>
 <script src="js/state.js"></script>

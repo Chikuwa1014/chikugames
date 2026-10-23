@@ -705,3 +705,84 @@ details .meta {
   font-size:12px;
   text-decoration:underline;
 }
+
+/* ---- v1.2.0：セーブコード ---- */
+.svsub {
+  margin-top:10px;
+  font-weight:700;
+  font-size:14px;
+}
+
+textarea.svcode {
+  width:100%;
+  box-sizing:border-box;
+  margin:6px 0;
+  font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;
+  padding:6px;
+  border-radius:8px;
+  border:1.5px solid var(--line);
+  background:var(--bg);
+  color:var(--ink);
+  word-break:break-all;
+  resize:vertical;
+}
+
+/* ---- v1.2.0：最初からやり直す（目立たせる） ---- */
+.rst {
+  border:1.5px solid var(--red);
+}
+
+.rst b {
+  color:var(--red);
+}
+
+button.big.rstb {
+  margin:8px 0 0;
+  background:transparent;
+  color:var(--red);
+  border:2px solid var(--red);
+}
+
+button.big.rstb.arm {
+  background:var(--red);
+  color:#fff;
+}
+
+/* ---- v1.2.0：横画面（スマホを横にしたとき）は左に店の様子、右にタブの中身 ---- */
+@media (orientation:landscape) and (max-height:560px) {
+  body {
+    max-width:none;
+    display:grid;
+    grid-template-columns:minmax(260px,42%) minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+    column-gap:14px;
+    padding-left:max(12px,env(safe-area-inset-left,0px));
+    padding-right:max(12px,env(safe-area-inset-right,0px));
+  }
+
+  .awning {
+    grid-column:1 / -1;
+    margin:0 calc(-1 * max(12px,env(safe-area-inset-left,0px))) 0 calc(-1 * max(12px,env(safe-area-inset-right,0px)));
+  }
+
+  #top {
+    grid-column:1;
+    grid-row:2;
+    margin:0;
+    padding:2px 0 8px;
+    box-shadow:none;
+    overflow-y:auto;
+    min-height:0;
+  }
+
+  #scr {
+    grid-column:2;
+    grid-row:2;
+    padding-top:6px;
+  }
+
+  #px {
+    max-height:42vh;
+    object-fit:contain;
+  }
+}
