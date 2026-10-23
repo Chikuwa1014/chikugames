@@ -81,7 +81,7 @@
 
 - 方式は「対戦オセロ」（`online-game-test`）と同じ。仲介サーバー（WebSocket）で WebRTC の接続情報を交換し、遊んでいる間のデータは端末どうしで直接やりとりする。
 - 仲介は `worker/index.js` の `MultiRoom`（Durable Objects）を使い回す。部屋コードは 4 桁の数字、最大 8 台、最初に入った端末が親。
-  - 新しいゲームでは `worker/index.js` の `fetch` にパス（例：`/<フォルダ>/ws`）を足し、部屋の名前にゲーム名を付けて、ほかのゲームと部屋が混ざらないようにする。
+  - 新しいゲームでは `worker/index.js` の `WS_GAMES` に「フォルダ名: 1部屋の台数」を 1 行足すだけ。`/<フォルダ>/ws` で受け、部屋の名前にゲーム名が付くので、ほかのゲームと部屋は混ざらない（例：`battle-othello: 2`）。
 - ゲームの進行（乱数・勝ち負け・時間）は親が決めて配る。子は操作を送るだけにする。
 - 招待はリンク（`?room=1234` を開くと自動で参加）・部屋コード・QR コード（cdnjs の qrcodejs）の 3 つを用意する。
 - 実装の手本は `roulette/index.html` の「みんなで決める」と、`roulette/CLAUDE.md` の「マルチプレイの仕組み」。
@@ -149,5 +149,6 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 | `shop-sim/` | ちいさなお店（商品販売シミュレーター） | `shop-sim/js/data.js` の `KEY` |
 | `stage-kobo/` | つくれ！おでん横丁（旧名：ステージ工房） | `stage-kobo-v1`・`stage-kobo-progress` |
 | `roulette/` | まわせ！ちくわルーレット | `chikuwa-roulette-v1`・`chikuwa-roulette-name` |
+| `battle-othello/` | バトルオセロ（ベータ版） | なし |
 
 トップページ自体の確認用アーティファクト：https://claude.ai/artifact/1XrN4ECSd153KpLVQuPYDG （`index.html` と各ゲームの `card.js` を載せたもの。ゲームへのリンクは動かない）
