@@ -129,3 +129,22 @@ const clAmt = () => {
 function ill() {
     return state.sick > 0 || state.dep > 0;
 }
+
+/** いま投資できない理由（できるときは空文字）。投資タブの表示とデバッグログで使う */
+function investBlock() {
+    if (state.over)
+        return '倒産しているため投資できません。';
+    if (!state.diff)
+        return '難易度を選ぶと投資できるようになります。';
+    if (state.dep > 0)
+        return '😔 うつ病の休養中のため投資できません（あと' + state.dep + '日）。' + (state.clerk > 0 ? '店員が営業を続けています。' : '');
+    if (state.sick > 0)
+        return '🤒 病気の休養中のため投資できません（あと' + state.sick + '日）。' + (state.clerk > 0 ? '店員が営業を続けています。' : '');
+    if (state.phase === 'prep')
+        return '開店準備中です。投資は閉店後にできます。';
+    if (state.phase === 'open')
+        return (state.kama ? '⛄ かまくらの日です。' : '営業中です。') + '投資は閉店後にできます。';
+    if (state.phase !== 'closed')
+        return '投資できない状態です（' + state.phase + '）。';
+    return '';
+}

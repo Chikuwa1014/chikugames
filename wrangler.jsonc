@@ -8,6 +8,10 @@
     "directory": ".",
     "binding": "ASSETS"
   },
+  // デバッグログの保存先（D1：chikuwa-debug。テーブル debug_logs）
+  "d1_databases": [
+    { "binding": "DEBUG_DB", "database_name": "chikuwa-debug", "database_id": "85202db5-5844-4a6e-963c-e4b4778011fe" }
+  ],
   // マルチプレイの部屋（WebRTC の接続情報を交換するだけ）
   "durable_objects": {
     "bindings": [

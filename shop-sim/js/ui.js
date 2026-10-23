@@ -184,7 +184,8 @@ function render() {
         }
         R.push(row('upg', i, '⬆ ' + p.e + ' ' + p.n + ' Lv.' + L + '/7', d, pc, dn));
     });
-    byId('up').innerHTML = R.join('');
+    const ib = investBlock();
+    byId('up').innerHTML = (ib ? '<div class="meta svwarn ivb">⚠ ' + ib + '</div>' : '') + R.join('');
 }
 
 document.addEventListener('click', e => {
@@ -389,7 +390,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
