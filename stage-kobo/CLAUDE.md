@@ -12,6 +12,7 @@
   - `BASE_URL`：サイト版は `location.origin + location.pathname`、プレビュー版は Artifact の URL
   - 共有ポップアップの注記文
   変更するときは両方に同じ修正を入れる（同じ Python の置換パッチを両ファイルに当てるのが確実）。
+- パーツの解放状態は「パーツ棚に置けるかどうか」だけに使う。共有リンク・ステージコードで開いたステージは、遊ぶ人が未解放のパーツでも配置どおりに出て動く（プレイの処理で解放状態を見ないこと）。
 - `.assetsignore` で `CLAUDE.md`・`README.md`・`CHANGELOG.md`・`dev/` は公開しない。
 - 名前を変えても、共有リンクが切れないよう URL `/stage-kobo/` と保存キーは変えない。
 
@@ -47,6 +48,7 @@
 ```
 node stage-kobo/dev/test-gameplay.js stage-kobo/index.html   # 新パーツの動き・報酬・スタンプ。「すべて成功」と出れば OK
 node stage-kobo/dev/test-smoke.js   stage-kobo/index.html   # 400 フレーム回してエラーが出ないか
+node stage-kobo/dev/test-shared.js  stage-kobo/index.html   # 何も解放していない人が共有リンクを開いても、新パーツが配置どおり出て動くか
 python3 stage-kobo/dev/screenshot.py stage-kobo/index.html out.png "<localStorage を仕込む JS（省略可）>"
 ```
 
