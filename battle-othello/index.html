@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>バトルオセロ｜ちくわゲームズ</title>
+<meta name="description" content="2台の端末で通信対戦するオセロ。力をこめて打ち、衝撃波でコマをひっくり返すバトルルールつき。">
+<style>
+  :root {
+    --bg: #10201a;
+    --panel: #18302a;
+    --text: #eef5f1;
+    --muted: #9fb8ad;
+    --accent: #f3c14b;
+    --board: #1f7a4d;
+    --board-line: #145536;
+    --danger: #ff7a6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    display: flex; justify-content: center; padding: 16px;
+  }
+  main { width: 100%; max-width: 440px; }
+  h1 { font-size: 22px; margin: 8px 0 16px; letter-spacing: .05em; }
+  .back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; padding: 4px 0; }
+  .back:hover { color: var(--text); }
+  .about { font-size: 13px; color: var(--muted); }
+  .about summary { cursor: pointer; padding: 4px 0; }
+  .about ul { margin: 6px 0 0; padding-left: 1.2em; }
+  .card { background: var(--panel); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  button {
+    font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 12px 16px;
+    background: var(--accent); color: #2a2000; cursor: pointer; width: 100%;
+  }
+  button.sub { background: transparent; color: var(--text); border: 1px solid #3b5a4f; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; margin-top: 10px; }
+  .row input {
+    flex: 1; min-width: 0; font: inherit; font-size: 20px; letter-spacing: .3em; text-align: center;
+    padding: 10px; border-radius: 10px; border: 1px solid #3b5a4f; background: #0c1814; color: var(--text);
+  }
+  .row button { width: auto; }
+  .or { text-align: center; color: var(--muted); margin: 14px 0 4px; font-size: 13px; }
+  .code { font-size: 42px; font-weight: 800; letter-spacing: .25em; text-align: center; margin: 8px 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .msg { min-height: 1.4em; margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .msg.err { color: var(--danger); }
+  .hidden { display: none !important; }
+  #shareBtn { flex: 1; }
+  .qr { margin-top: 14px; text-align: center; }
+  #qr { display: inline-block; background: #fff; padding: 10px; border-radius: 10px; }
+  #qr img, #qr canvas { display: block; }
+
+  .timer { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .timer-bar { flex: 1; height: 8px; border-radius: 4px; background: #0c1814; overflow: hidden; }
+  #timerFill { height: 100%; width: 100%; background: var(--accent); transition: width .2s linear; }
+  #timerFill.warn { background: var(--danger); }
+  .timer-text { min-width: 5.5em; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .timer-text.warn { color: var(--danger); }
+
+  .board-wrap { position: relative; }
+  .toss {
+    position: absolute; inset: 0; border-radius: 8px; background: rgba(8, 18, 14, .82);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    perspective: 600px;
+  }
+  .coin { width: 110px; height: 110px; position: relative; transform-style: preserve-3d; transition: transform 1.6s cubic-bezier(.2,.7,.2,1); }
+  .coin .face {
+    position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 44px; font-weight: 800; backface-visibility: hidden;
+    background: radial-gradient(circle at 35% 30%, #ffe08a, #c9921e); color: #5a3d00;
+    box-shadow: inset 0 0 0 6px rgba(255,255,255,.25);
+  }
+  .coin .back { transform: rotateY(180deg); }
+  .toss-text { font-size: 18px; font-weight: 700; text-align: center; white-space: pre-line; }
+
+  .seg { display: flex; gap: 6px; margin: 6px 0 4px; }
+  .seg button { flex: 1; background: transparent; color: var(--text); border: 1px solid #3b5a4f; }
+  .seg button.on { background: var(--accent); color: #2a2000; border-color: var(--accent); }
+  .help { margin-bottom: 12px; font-size: 13px; }
+  .center { text-align: center; }
+
+  .dmg {
+    position: absolute; right: 2px; bottom: 1px; font-size: 10px; font-weight: 800; line-height: 1;
+    padding: 1px 3px; border-radius: 4px; background: rgba(0,0,0,.55); color: #ffb3a8; z-index: 2;
+  }
+  .disc.hurt { box-shadow: 0 0 0 2px rgba(255,90,70,var(--hurt)), 0 2px 3px rgba(0,0,0,.4); }
+
+  .battle {
+    position: absolute; inset: 0; border-radius: 8px; background: rgba(8, 18, 14, .78);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer; padding: 16px; text-align: center;
+  }
+  .battle-title { font-size: 20px; font-weight: 800; }
+  .gauge { width: 85%; height: 26px; border-radius: 13px; background: #0c1814; overflow: hidden; border: 2px solid #3b5a4f; }
+  #gaugeFill { height: 100%; width: 0%; background: linear-gradient(90deg, #f3c14b, #ff7a6b); }
+  .battle-value { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .battle.defend { background: rgba(40, 10, 10, .78); }
+
+  .shock {
+    position: absolute; pointer-events: none; border-radius: 50%; opacity: 0;
+    border: 4px solid rgba(255, 210, 120, .95); box-shadow: 0 0 24px rgba(255, 170, 60, .9), inset 0 0 24px rgba(255, 170, 60, .6);
+    transform: translate(-50%, -50%) scale(.1); z-index: 3;
+  }
+  .shock.go { animation: shock .7s ease-out; }
+  @keyframes shock {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(.1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  }
+  #board.shake { animation: shake .35s; }
+  @keyframes shake {
+    0%,100% { transform: translate(0,0); } 20% { transform: translate(-5px,3px); }
+    40% { transform: translate(5px,-3px); } 60% { transform: translate(-4px,-2px); } 80% { transform: translate(3px,2px); }
+  }
+
+  .score { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .score .side { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; padding: 6px 10px; border-radius: 10px; }
+  .score .side.active { outline: 2px solid var(--accent); }
+  .chip { width: 20px; height: 20px; border-radius: 50%; display: inline-block; }
+  .chip.b { background: #111; border: 1px solid #555; }
+  .chip.w { background: #f4f4f4; }
+  .status { text-align: center; font-weight: 700; margin: 10px 0; min-height: 1.4em; white-space: pre-line; }
+
+  #board {
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+    background: var(--board-line); padding: 2px; border-radius: 8px; aspect-ratio: 1;
+  }
+  .cell { background: var(--board); position: relative; display: flex; align-items: center; justify-content: center; }
+  .cell.can { cursor: pointer; }
+  .cell.can::after { content: ""; width: 22%; height: 22%; border-radius: 50%; background: rgba(0,0,0,.25); }
+  .disc { width: 80%; height: 80%; border-radius: 50%; box-shadow: 0 2px 3px rgba(0,0,0,.4); transition: background .2s; }
+  .disc.b { background: radial-gradient(circle at 35% 30%, #444, #000); }
+  .disc.w { background: radial-gradient(circle at 35% 30%, #fff, #cfcfcf); }
+  .cell.last::before { content: ""; position: absolute; width: 10%; height: 10%; border-radius: 50%; background: var(--danger); z-index: 1; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../">← ちくわゲームズ</a>
+  <h1>バトルオセロ</h1>
+
+  <!-- ロビー -->
+  <section id="lobby">
+    <div class="card">
+      <div class="muted">ルール</div>
+      <div class="seg" id="modeSeg">
+        <button data-mode="normal" class="on">通常オセロ</button>
+        <button data-mode="battle">バトルオセロ</button>
+      </div>
+      <div id="modeHelp" class="muted help">いつものオセロです。</div>
+      <button id="createBtn">部屋を作る</button>
+      <div class="or">または部屋コードで参加</div>
+      <div class="row">
+        <input id="codeInput" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+        <button id="joinBtn">参加</button>
+      </div>
+      <div id="lobbyMsg" class="msg"></div>
+    </div>
+    <p class="muted">2台の端末でこのページを開き、片方が部屋を作って、招待リンクを送るかコードを伝えてください。リンクを開いた相手は自動で参加します。</p>
+    <details class="about">
+      <summary>ベータ版 <span id="verText"></span>・更新履歴</summary>
+      <ul>
+        <li>β0.1.0（2026-10-23）：ちくわゲームズにベータ版として公開（通常オセロ・バトルオセロの通信対戦）</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 待機中 -->
+  <section id="waiting" class="hidden">
+    <div class="card">
+      <div class="muted">部屋コード</div>
+      <div id="codeView" class="code">----</div>
+      <div id="waitMode" class="muted center"></div>
+      <div id="waitMsg" class="msg">相手の参加を待っています…</div>
+      <div id="invite" class="hidden">
+        <div class="row">
+          <button id="shareBtn">招待リンクを送る</button>
+          <button id="copyBtn" class="sub">コピー</button>
+        </div>
+        <div id="qrWrap" class="qr hidden">
+          <div id="qr"></div>
+          <div class="muted">近くの相手はこのQRコードを読み取ってもOK</div>
+        </div>
+      </div>
+      <div class="row"><button id="cancelBtn" class="sub">やめる</button></div>
+    </div>
+  </section>
+
+  <!-- 対戦 -->
+  <section id="game" class="hidden">
+    <div class="score">
+      <div id="sideB" class="side"><span class="chip b"></span><span id="countB">2</span></div>
+      <div id="youAre" class="muted center" style="white-space:pre-line"></div>
+      <div id="sideW" class="side"><span id="countW">2</span><span class="chip w"></span></div>
+    </div>
+    <div class="timer">
+      <div class="timer-bar"><div id="timerFill"></div></div>
+      <div id="timerText" class="timer-text"></div>
+    </div>
+    <div class="board-wrap">
+      <div id="board"></div>
+      <div id="shock" class="shock"></div>
+      <div id="battle" class="battle hidden">
+        <div id="battleTitle" class="battle-title"></div>
+        <div id="gauge" class="gauge"><div id="gaugeFill"></div></div>
+        <div id="battleValue" class="battle-value"></div>
+        <div id="battleTime" class="muted"></div>
+      </div>
+      <div id="toss" class="toss hidden">
+        <div id="coin" class="coin"><div class="face front">先</div><div class="face back">後</div></div>
+        <div id="tossText" class="toss-text">コイントス…</div>
+      </div>
+    </div>
+    <div id="status" class="status"></div>
+    <div class="row">
+      <button id="againBtn" class="hidden">もう一度</button>
+      <button id="leaveBtn" class="sub">退出</button>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ===== 設定 =====
+const VERSION = "β0.1.0";   // ベータ版は β 付き。正式版で β を外して 1.0.0 にする
+document.getElementById("verText").textContent = VERSION;
+// 接続先は自動で「このページと同じドメインの /battle-othello/ws」（ちくわゲームズ共通の仲介 worker/index.js。1部屋2台まで）。
+// ?signal=ws://localhost:8787/battle-othello/ws のようにURLで上書きもできる。
+const DEFAULT_SIGNAL_URL = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/battle-othello/ws`;
+const SIGNAL_URL = new URLSearchParams(location.search).get("signal") || DEFAULT_SIGNAL_URL;
+const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
+
+const $ = (id) => document.getElementById(id);
+function show(id) {
+  for (const s of ["lobby", "waiting", "game"]) $(s).classList.toggle("hidden", s !== id);
+}
+function lobbyMsg(text, err = false) {
+  $("lobbyMsg").textContent = text;
+  $("lobbyMsg").classList.toggle("err", err);
+}
+
+// ===== 接続まわり =====
+let ws = null, pc = null, dc = null;
+let role = null;          // "host" | "guest"
+let connected = false;    // データチャネルが開いたか
+let pendingIce = [];
+let chain = Promise.resolve();
+
+function resetConn() {
+  try { ws && ws.close(); } catch (e) {}
+  try { dc && dc.close(); } catch (e) {}
+  try { pc && pc.close(); } catch (e) {}
+  ws = pc = dc = null; role = null; connected = false; pendingIce = [];
+  chain = Promise.resolve();
+}
+
+function sendSignal(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+function openSignal(code, mode, tries = 0) {
+  resetConn();
+  let socket;
+  try {
+    socket = new WebSocket(`${SIGNAL_URL}?room=${code}`);
+  } catch (e) {
+    lobbyMsg("サーバーに接続できません", true); show("lobby"); return;
+  }
+  ws = socket;
+  socket.onerror = () => {
+    if (!connected) { lobbyMsg("サーバーに接続できません", true); show("lobby"); }
+  };
+  socket.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    chain = chain.then(() => onSignal(msg, code, mode, tries)).catch((err) => console.error(err));
+  };
+}
+
+async function onSignal(msg, code, mode, tries) {
+  switch (msg.type) {
+    case "role":
+      role = msg.role;
+      if (mode === "create" && role !== "host") {
+        // たまたま使用中のコードだった → 別のコードで作り直す
+        if (tries < 5) return createRoom(tries + 1);
+        lobbyMsg("部屋を作れませんでした。もう一度お試しください", true); show("lobby"); return;
+      }
+      if (mode === "join" && role === "host") {
+        resetConn();
+        lobbyMsg("その部屋は見つかりません", true); show("lobby"); return;
+      }
+      makePeer();
+      if (role === "guest") $("waitMsg").textContent = "接続しています…";
+      return;
+
+    case "full":
+      resetConn();
+      lobbyMsg("その部屋は満員です", true); show("lobby"); return;
+
+    case "peer-joined": // ホスト側：相手が来たのでオファーを送る
+      $("waitMsg").textContent = "接続しています…";
+      dc = pc.createDataChannel("game");
+      setupChannel(dc);
+      await pc.setLocalDescription(await pc.createOffer());
+      sendSignal({ type: "offer", sdp: pc.localDescription });
+      return;
+
+    case "offer":
+      await pc.setRemoteDescription(msg.sdp);
+      await flushIce();
+      await pc.setLocalDescription(await pc.createAnswer());
+      sendSignal({ type: "answer", sdp: pc.localDescription });
+      return;
+
+    case "answer":
+      await pc.setRemoteDescription(msg.sdp);
+      await flushIce();
+      return;
+
+    case "ice":
+      if (pc.remoteDescription) await pc.addIceCandidate(msg.c);
+      else pendingIce.push(msg.c);
+      return;
+
+    case "host-left":   // 共通の仲介では、親が抜けたときは host-left が届く
+    case "peer-left":
+      if (!connected) {
+        if (role === "host") $("waitMsg").textContent = "相手が抜けました。待っています…";
+        // ホストは次の相手を待てるよう作り直す
+        if (role === "host") { const c = code; openSignal(c, "create", 5); }
+        else { resetConn(); lobbyMsg("相手が部屋を閉じました", true); show("lobby"); }
+      }
+      return;
+  }
+}
+
+async function flushIce() {
+  for (const c of pendingIce) await pc.addIceCandidate(c);
+  pendingIce = [];
+}
+
+function makePeer() {
+  pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  pc.onicecandidate = (e) => { if (e.candidate) sendSignal({ type: "ice", c: e.candidate }); };
+  pc.ondatachannel = (e) => { dc = e.channel; setupChannel(dc); };
+  pc.onconnectionstatechange = () => {
+    if (pc && pc.connectionState === "failed") onLost("接続できませんでした（ネットワークを確認してください）");
+  };
+}
+
+function setupChannel(ch) {
+  ch.onopen = () => {
+    connected = true;
+    try { ws && ws.close(); } catch (e) {}   // 仲介はもう不要
+    ws = null;
+    startGame();
+  };
+  ch.onmessage = (e) => onGameMessage(JSON.parse(e.data));
+  ch.onclose = () => { if (connected) onLost("相手との接続が切れました"); };
+}
+
+function sendGame(obj) {
+  if (dc && dc.readyState === "open") dc.send(JSON.stringify(obj));
+}
+
+function onLost(text) {
+  if (!$("game").classList.contains("hidden")) {
+    $("status").textContent = text;
+    $("againBtn").classList.add("hidden");
+    locked = true;
+    render();
+  } else {
+    lobbyMsg(text, true); show("lobby");
+  }
+  connected = false;
+}
+
+// ===== ルール選択 =====
+let gameMode = "normal";   // "normal" | "battle"（ホストが選び、開始時にゲストへ送る）
+const MODE_NAME = { normal: "通常オセロ", battle: "バトルオセロ" };
+const MODE_HELP = {
+  normal: "いつものオセロです。",
+  battle: "打つときにゲージで力を込め、相手は連打か擦りで防御。力で勝つと衝撃波が周りのコマ（敵味方すべて）にダメージを与え、80たまるとひっくり返ります。",
+};
+for (const b of document.querySelectorAll("#modeSeg button")) {
+  b.onclick = () => {
+    gameMode = b.dataset.mode;
+    for (const x of document.querySelectorAll("#modeSeg button")) x.classList.toggle("on", x === b);
+    $("modeHelp").textContent = MODE_HELP[gameMode];
+  };
+}
+
+function createRoom(tries = 0) {
+  const code = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+  $("codeView").textContent = code;
+  $("waitMode").textContent = "ルール：" + MODE_NAME[gameMode];
+  $("waitMsg").textContent = "相手の参加を待っています…";
+  showInvite(code);
+  show("waiting");
+  openSignal(code, "create", tries);
+}
+
+function joinRoom() {
+  const code = $("codeInput").value.trim();
+  if (!/^[0-9]{4}$/.test(code)) { lobbyMsg("4桁の数字を入力してください", true); return; }
+  lobbyMsg("");
+  $("codeView").textContent = code;
+  $("waitMsg").textContent = "部屋を探しています…";
+  $("waitMode").textContent = "";
+  $("invite").classList.add("hidden");
+  show("waiting");
+  openSignal(code, "join");
+}
+
+// ===== 招待リンク =====
+function inviteUrl(code) {
+  const u = new URL(location.origin + location.pathname);
+  u.searchParams.set("room", code);
+  const sig = new URLSearchParams(location.search).get("signal");
+  if (sig) u.searchParams.set("signal", sig);
+  return u.toString();
+}
+
+function showInvite(code) {
+  const url = inviteUrl(code);
+  $("invite").classList.remove("hidden");
+  $("shareBtn").textContent = navigator.share ? "招待リンクを送る" : "招待リンクをコピー";
+  $("copyBtn").classList.toggle("hidden", !navigator.share);
+  $("shareBtn").onclick = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "バトルオセロ",
+          text: `${MODE_NAME[gameMode]}で勝負しよう！（部屋コード ${code}）\n#ちくわげーむず`,
+          url,
+        });
+      } catch (e) { /* 共有をキャンセルしたときは何もしない */ }
+    } else {
+      copyLink(url);
+    }
+  };
+  $("copyBtn").onclick = () => copyLink(url);
+
+  // QRコード（ライブラリが読めなかったときは出さない）
+  $("qr").innerHTML = "";
+  if (window.QRCode) {
+    new QRCode($("qr"), { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    $("qrWrap").classList.remove("hidden");
+  } else {
+    $("qrWrap").classList.add("hidden");
+  }
+}
+
+async function copyLink(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+    $("waitMsg").textContent = "リンクをコピーしました。相手に送ってください";
+  } catch (e) {
+    window.prompt("このリンクをコピーして相手に送ってください", url);
+  }
+}
+
+// 招待リンク（?room=1234）から開いたときは自動で参加する
+(() => {
+  const params = new URLSearchParams(location.search);
+  const code = params.get("room");
+  if (!code || !/^[0-9]{4}$/.test(code)) return;
+  // 再読み込みで二重参加しないよう、URLから部屋コードを消しておく
+  params.delete("room");
+  const rest = params.toString();
+  history.replaceState(null, "", location.pathname + (rest ? "?" + rest : ""));
+  $("codeInput").value = code;
+  setTimeout(joinRoom, 0);
+})();
+
+$("createBtn").onclick = () => { lobbyMsg(""); createRoom(); };
+$("joinBtn").onclick = joinRoom;
+$("codeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") joinRoom(); });
+$("cancelBtn").onclick = () => { resetConn(); show("lobby"); };
+$("leaveBtn").onclick = () => { connected = false; resetConn(); show("lobby"); };
+$("againBtn").onclick = () => {
+  $("againBtn").classList.add("hidden");
+  if (role === "host") doToss();
+  else { sendGame({ t: "again" }); $("status").textContent = "コイントスの準備中…"; }
+};
+
+// ===== オセロ本体 =====
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const TURN_LIMIT = 60;   // 1手の持ち時間（秒）
+const GRACE = 3;         // 相手側が時間切れを判定するまでの猶予（通信の遅れ分）
+
+// ----- バトルオセロの調整値 -----
+const BATTLE_MS = 3000;      // 攻撃（ゲージ）と防御（連打・擦り）の時間
+const GAUGE_PERIOD = 1000;   // ゲージが 0→100→0 と1往復する時間（ミリ秒）
+const TAP_POWER = 3;         // 連打1回あたりの防御力
+const RUB_POWER = 4;         // 画面幅1つ分擦るごとの防御力
+const FLIP_DAMAGE = 80;      // この値までダメージがたまるとひっくり返る
+
+let board, damage, turn, me, lastMove, locked, gameOver;
+let phase = "toss";      // "toss"（コイントス中） | "play" | "battle" | "over"
+let turnStartedAt = 0, timeoutLoser = 0, tossTimer = null;
+let battle = null;       // バトル中の情報
+let resultNote = "";     // 直前のバトル結果
+
+function flipsFor(b, i, p) {
+  if (b[i] !== EMPTY) return [];
+  const r0 = Math.floor(i / 8), c0 = i % 8, opp = 3 - p, out = [];
+  for (const [dr, dc2] of DIRS) {
+    let r = r0 + dr, c = c0 + dc2; const line = [];
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && b[r * 8 + c] === opp) { line.push(r * 8 + c); r += dr; c += dc2; }
+    if (line.length && r >= 0 && r < 8 && c >= 0 && c < 8 && b[r * 8 + c] === p) out.push(...line);
+  }
+  return out;
+}
+function legalMoves(b, p) {
+  const m = [];
+  for (let i = 0; i < 64; i++) if (flipsFor(b, i, p).length) m.push(i);
+  return m;
+}
+
+// 石を置いて通常どおり裏返す（裏返ったコマのダメージは0に戻る）
+function placeMove(i) {
+  const flips = flipsFor(board, i, turn);
+  if (!flips.length) return false;
+  board[i] = turn; damage[i] = 0;
+  for (const f of flips) { board[f] = turn; damage[f] = 0; }
+  lastMove = i;
+  return true;
+}
+
+// 手番を進める（パス・終局の判定）
+let passNote = "";
+function finishTurn() {
+  passNote = "";
+  const next = 3 - turn;
+  if (legalMoves(board, next).length) {
+    turn = next;
+  } else if (legalMoves(board, turn).length) {
+    passNote = (next === me ? "あなた" : "相手") + "は置ける場所がないのでパス";
+  } else {
+    gameOver = true;
+    phase = "over";
+  }
+  turnStartedAt = Date.now();   // 手番が変わる（またはパスで続く）たびに持ち時間をリセット
+}
+
+// ===== バトルオセロの計算（両方の端末で同じ結果になる） =====
+function shockLevel(atk, def) {
+  const diff = Math.round(atk - def);
+  return diff > 0 ? Math.min(100, diff) : 0;     // 0 は防御成功
+}
+function shockRadius(level) { return Math.ceil(level / 20); }   // Lv1〜20:1マス … Lv81〜100:5マス
+
+function applyShock(center, level) {
+  const r = shockRadius(level), base = level - 1;   // Lv1 は衝撃0
+  const r0 = Math.floor(center / 8), c0 = center % 8, flipped = [];
+  for (let i = 0; i < 64; i++) {
+    if (i === center || board[i] === EMPTY) continue;
+    const d = Math.max(Math.abs(Math.floor(i / 8) - r0), Math.abs(i % 8 - c0));
+    if (d > r) continue;
+    damage[i] += Math.round(base * (r - d + 1) / r);   // 中心ほど強い
+    if (damage[i] >= FLIP_DAMAGE) {
+      board[i] = 3 - board[i];
+      damage[i] = 0;
+      flipped.push(i);
+    }
+  }
+  return flipped;
+}
+
+// 接続できたら呼ばれる。コイントスはホストが行い、結果をゲストへ送る
+function startGame() {
+  show("game");
+  resetBoard();
+  if (role === "host") doToss();
+  else showTossWaiting();
+}
+
+function resetBoard() {
+  board = new Array(64).fill(EMPTY);
+  damage = new Array(64).fill(0);
+  board[27] = board[36] = WHITE;
+  board[28] = board[35] = BLACK;
+  turn = BLACK; lastMove = -1; locked = false; gameOver = false; passNote = ""; timeoutLoser = 0; resultNote = "";
+  phase = "toss";
+  endBattleUI();
+  render();
+}
+
+function showTossWaiting() {
+  $("toss").classList.remove("hidden");
+  $("tossText").textContent = "コイントス…";
+  $("status").textContent = "";
+}
+
+function doToss() {
+  const hostColor = Math.random() < 0.5 ? BLACK : WHITE;   // 黒が先攻
+  sendGame({ t: "start", hostColor, mode: gameMode });
+  beginMatch(hostColor, gameMode);
+}
+
+function beginMatch(hostColor, mode) {
+  gameMode = mode || "normal";
+  resetBoard();
+  me = role === "host" ? hostColor : 3 - hostColor;
+  $("youAre").textContent = "";
+  $("againBtn").classList.add("hidden");
+
+  // コインを回して、自分が先攻なら「先」、後攻なら「後」の面で止める
+  const coin = $("coin");
+  coin.style.transition = "none";
+  coin.style.transform = "rotateY(0deg)";
+  void coin.offsetWidth;
+  coin.style.transition = "";
+  $("toss").classList.remove("hidden");
+  $("tossText").textContent = MODE_NAME[gameMode] + "\nコイントス…";
+  coin.style.transform = `rotateY(${360 * 5 + (me === BLACK ? 0 : 180)}deg)`;
+
+  clearTimeout(tossTimer);
+  tossTimer = setTimeout(() => {
+    $("tossText").textContent = me === BLACK ? "あなたが先攻（黒）！" : "あなたは後攻（白）";
+    tossTimer = setTimeout(() => {
+      $("toss").classList.add("hidden");
+      $("youAre").textContent = (me === BLACK ? "あなた：黒（先攻）" : "あなた：白（後攻）") + (gameMode === "battle" ? "\nバトル" : "");
+      phase = "play";
+      turnStartedAt = Date.now();
+      render();
+    }, 1400);
+  }, 1700);
+}
+
+function onGameMessage(msg) {
+  if (msg.t === "move") {
+    if (phase !== "play" || turn === me) return;   // 相手の番以外の手は無視
+    if (placeMove(msg.i)) finishTurn();
+    render();
+  } else if (msg.t === "attack") {
+    if (phase !== "play" || turn === me) return;
+    startBattle(msg.i, false);
+  } else if (msg.t === "power") {
+    if (battle && battle.atk === null) { battle.atk = msg.v; tryResolve(); }
+  } else if (msg.t === "guard") {
+    if (battle && battle.def === null) { battle.def = msg.v; tryResolve(); }
+  } else if (msg.t === "start") {
+    beginMatch(msg.hostColor, msg.mode);
+  } else if (msg.t === "again") {
+    if (role === "host") doToss();
+  } else if (msg.t === "timeout") {
+    timeUp(msg.loser, false);
+  }
+}
+
+function onCellClick(i) {
+  if (locked || phase !== "play" || turn !== me) return;
+  if (!flipsFor(board, i, me).length) return;
+  if (gameMode === "battle") {
+    sendGame({ t: "attack", i });
+    startBattle(i, true);
+    return;
+  }
+  placeMove(i);
+  finishTurn();
+  sendGame({ t: "move", i });
+  render();
+}
+
+// ===== バトル（攻撃：ゲージを止める／防御：連打 or 擦る） =====
+function startBattle(i, isAttacker) {
+  resultNote = "";
+  placeMove(i);                       // 石を置いて通常どおり裏返す
+  phase = "battle";
+  battle = { i, isAttacker, atk: null, def: null, startedAt: Date.now(), taps: 0, rub: 0, lastX: null, lastY: null, done: false };
+  render();
+
+  const ov = $("battle");
+  ov.classList.remove("hidden");
+  ov.classList.toggle("defend", !isAttacker);
+  $("gauge").classList.toggle("hidden", !isAttacker);
+  $("battleTitle").textContent = isAttacker ? "力を込めろ！ タップでゲージを止める" : "防御！ 連打か擦って耐えろ！";
+  $("battleValue").textContent = isAttacker ? "" : "0";
+
+  const b = battle;
+  ov.onpointerdown = (e) => {
+    if (battle !== b || b.done) return;
+    if (b.isAttacker) { lockPower(b); return; }
+    b.taps++; b.lastX = e.clientX; b.lastY = e.clientY;
+    showGuard(b);
+  };
+  ov.onpointermove = (e) => {
+    if (battle !== b || b.done || b.isAttacker || b.lastX === null) return;
+    if (e.pointerType === "mouse" && !e.buttons) return;
+    b.rub += Math.hypot(e.clientX - b.lastX, e.clientY - b.lastY);
+    b.lastX = e.clientX; b.lastY = e.clientY;
+    showGuard(b);
+  };
+  ov.onpointerup = ov.onpointercancel = () => { if (battle === b) b.lastX = null; };
+
+  const loop = () => {
+    if (battle !== b || b.done) return;
+    const left = Math.max(0, BATTLE_MS - (Date.now() - b.startedAt));
+    $("battleTime").textContent = `残り ${(left / 1000).toFixed(1)}秒`;
+    if (b.isAttacker) {
+      const v = gaugeAt(Date.now() - b.startedAt);
+      $("gaugeFill").style.width = v + "%";
+      $("battleValue").textContent = v;
+    }
+    if (left <= 0) {
+      if (b.isAttacker) lockPower(b);       // 時間内に止めなければその位置で決定
+      else lockGuard(b);
+      return;
+    }
+    frame(loop);
+  };
+  frame(loop);
+}
+
+const frame = (f) => (window.requestAnimationFrame ? requestAnimationFrame(f) : setTimeout(f, 16));
+
+function gaugeAt(ms) {
+  const p = (ms % GAUGE_PERIOD) / GAUGE_PERIOD;   // 0→100→0 の往復
+  return Math.round((p < 0.5 ? p * 2 : (1 - p) * 2) * 100);
+}
+function guardPower(b) {
+  const w = Math.max(320, window.innerWidth || 400);
+  return Math.min(100, Math.round(b.taps * TAP_POWER + (b.rub / w) * RUB_POWER));
+}
+function showGuard(b) { $("battleValue").textContent = guardPower(b); }
+
+function lockPower(b) {
+  if (b.done) return;
+  b.done = true;
+  b.atk = gaugeAt(Date.now() - b.startedAt);
+  $("gaugeFill").style.width = b.atk + "%";
+  $("battleValue").textContent = b.atk;
+  $("battleTitle").textContent = "パワー決定！ 相手の防御を待っています…";
+  $("battleTime").textContent = "";
+  sendGame({ t: "power", v: b.atk });
+  tryResolve();
+}
+function lockGuard(b) {
+  if (b.done) return;
+  b.done = true;
+  b.def = guardPower(b);
+  $("battleValue").textContent = b.def;
+  $("battleTitle").textContent = "防御完了！";
+  $("battleTime").textContent = "";
+  sendGame({ t: "guard", v: b.def });
+  tryResolve();
+}
+
+function tryResolve() {
+  const b = battle;
+  if (!b || b.atk === null || b.def === null || b.resolved) return;
+  if (!b.done) return;   // 自分側の入力が終わるまでは結果を出さない
+  b.resolved = true;
+
+  const level = shockLevel(b.atk, b.def);
+  const flipped = level ? applyShock(b.i, level) : [];
+  const attackerIsMe = b.isAttacker;
+  if (level) {
+    resultNote = `攻撃${b.atk} vs 防御${b.def} → 衝撃波 Lv${level}` + (flipped.length ? `（${flipped.length}枚ひっくり返った！）` : "");
+    playShock(b.i, level);
+  } else {
+    resultNote = `攻撃${b.atk} vs 防御${b.def} → ${attackerIsMe ? "防がれた…" : "防御成功！"}`;
+  }
+  $("battleTitle").textContent = level ? `衝撃波 Lv${level}！` : (attackerIsMe ? "防がれた…" : "防御成功！");
+  $("battleValue").textContent = `${b.atk} vs ${b.def}`;
+  render();
+
+  setTimeout(() => {
+    if (battle !== b) return;
+    endBattleUI();
+    battle = null;
+    phase = "play";
+    finishTurn();
+    render();
+  }, 1600);
+}
+
+function endBattleUI() {
+  $("battle").classList.add("hidden");
+  $("battle").onpointerdown = $("battle").onpointermove = $("battle").onpointerup = $("battle").onpointercancel = null;
+}
+
+function playShock(center, level) {
+  const el = $("shock"), bd = $("board");
+  const size = bd.clientWidth || 320, cell = size / 8;
+  const r = shockRadius(level);
+  el.style.left = ((center % 8) + 0.5) * cell + 2 + "px";
+  el.style.top = (Math.floor(center / 8) + 0.5) * cell + 2 + "px";
+  el.style.width = el.style.height = (2 * r + 1) * cell + "px";
+  el.style.borderWidth = 2 + Math.round(level / 15) + "px";
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  if (level >= 40) { bd.classList.remove("shake"); void bd.offsetWidth; bd.classList.add("shake"); }
+}
+
+// ===== 持ち時間 =====
+function timeUp(loser, notify) {
+  if (phase !== "play") return;
+  phase = "over";
+  gameOver = true;
+  timeoutLoser = loser;
+  if (notify) sendGame({ t: "timeout", loser });
+  render();
+}
+
+function tick() {
+  if (phase !== "play" || locked) { updateTimer(null); return; }
+  const left = TURN_LIMIT - (Date.now() - turnStartedAt) / 1000;
+  updateTimer(left);
+  if (turn === me && left <= 0) timeUp(me, true);                 // 自分の時間切れ
+  else if (turn !== me && left <= -GRACE) timeUp(turn, true);     // 相手が応答しないまま時間切れ
+}
+
+function updateTimer(left) {
+  if (left === null) {
+    $("timerFill").style.width = phase === "toss" || phase === "battle" ? "100%" : "0%";
+    $("timerText").textContent = phase === "toss" ? `${TURN_LIMIT}秒` : phase === "battle" ? "バトル中" : "";
+    $("timerFill").classList.remove("warn"); $("timerText").classList.remove("warn");
+    return;
+  }
+  const sec = Math.max(0, Math.ceil(left));
+  const warn = sec <= 10;
+  $("timerFill").style.width = `${Math.max(0, left) / TURN_LIMIT * 100}%`;
+  $("timerFill").classList.toggle("warn", warn);
+  $("timerText").classList.toggle("warn", warn);
+  $("timerText").textContent = `${turn === me ? "あなた" : "相手"} ${sec}秒`;
+}
+setInterval(tick, 200);
+
+function render() {
+  const el = $("board");
+  if (!el.children.length) {
+    for (let i = 0; i < 64; i++) {
+      const c = document.createElement("div");
+      c.className = "cell";
+      c.onclick = () => onCellClick(i);
+      el.appendChild(c);
+    }
+  }
+  const canPlay = !locked && phase === "play" && turn === me;
+  const moves = canPlay ? new Set(legalMoves(board, me)) : new Set();
+  let nb = 0, nw = 0;
+  for (let i = 0; i < 64; i++) {
+    const c = el.children[i];
+    c.className = "cell" + (moves.has(i) ? " can" : "") + (i === lastMove ? " last" : "");
+    if (board[i]) {
+      const d = damage[i];
+      const hurt = d > 0 ? ` hurt" style="--hurt:${Math.min(1, 0.25 + d / FLIP_DAMAGE)}` : "";
+      c.innerHTML = `<div class="disc ${board[i] === BLACK ? "b" : "w"}${hurt}"></div>` + (d > 0 ? `<span class="dmg">${d}</span>` : "");
+    } else {
+      c.innerHTML = "";
+    }
+    if (board[i] === BLACK) nb++; else if (board[i] === WHITE) nw++;
+  }
+  $("countB").textContent = nb;
+  $("countW").textContent = nw;
+  $("sideB").classList.toggle("active", (phase === "play" || phase === "battle") && turn === BLACK);
+  $("sideW").classList.toggle("active", (phase === "play" || phase === "battle") && turn === WHITE);
+  tick();
+
+  if (locked || phase === "toss") return;
+  if (phase === "battle") {
+    $("status").textContent = resultNote || (battle && battle.isAttacker ? "攻撃中！" : "防御中！");
+    return;
+  }
+  if (phase === "over") {
+    const mine = me === BLACK ? nb : nw, theirs = me === BLACK ? nw : nb;
+    if (timeoutLoser) {
+      $("status").textContent = timeoutLoser === me ? "時間切れ… あなたの負け" : "相手の時間切れ！ あなたの勝ち";
+    } else {
+      $("status").textContent = mine > theirs ? `あなたの勝ち！（${mine} - ${theirs}）`
+        : mine < theirs ? `あなたの負け（${mine} - ${theirs}）` : `引き分け（${mine} - ${theirs}）`;
+    }
+    $("againBtn").classList.remove("hidden");
+  } else {
+    const head = [resultNote, passNote].filter(Boolean).join("\n");
+    $("status").textContent = (head ? head + "\n" : "") + (turn === me ? "あなたの番です" : "相手の番です");
+    $("againBtn").classList.add("hidden");
+  }
+}
+</script>
+</body>
+</html>

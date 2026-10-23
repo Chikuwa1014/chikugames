@@ -7,12 +7,16 @@
 // このスクリプトが動くのは assets に無いパス（/roulette/ws など）だけ。
 
 const MAX_PEERS = 8;
+// マルチプレイを使うゲーム（フォルダ名）と、1部屋に入れる台数。/<フォルダ>/ws で受ける
+export const WS_GAMES = { "roulette": 8, "battle-othello": 2 };
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/roulette/ws") {
+    // マルチプレイの仲介（例：/roulette/ws）。部屋の名前にゲーム名を付けて、ほかのゲームと混ざらないようにする
+    const wm = url.pathname.match(/^\/([a-z0-9-]+)\/ws$/);
+    if (wm && Object.hasOwn(WS_GAMES, wm[1])) {
       if (request.headers.get("Upgrade") !== "websocket") {
         return new Response("WebSocket only", { status: 426 });
       }
@@ -20,8 +24,11 @@ export default {
       if (!/^[0-9]{4}$/.test(room)) {
         return new Response("bad room code", { status: 400 });
       }
-      const id = env.ROOMS.idFromName("roulette:" + room);
-      return env.ROOMS.get(id).fetch(request);
+      const id = env.ROOMS.idFromName(wm[1] + ":" + room);
+      // 台数の上限は部屋（Durable Object）にヘッダーで伝える
+      const fwd = new Request(request);
+      fwd.headers.set("X-Max-Peers", String(WS_GAMES[wm[1]]));
+      return env.ROOMS.get(id).fetch(fwd);
     }
 
     // デバッグログの受け口（例：/shop-sim/debug）。D1 の debug_logs に保存し、受付番号を返す
@@ -82,8 +89,9 @@ export class MultiRoom {
     const sockets = this.state.getWebSockets();
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
+    const max = Math.min(MAX_PEERS, Number(request.headers.get("X-Max-Peers")) || MAX_PEERS);
 
-    if (sockets.length >= MAX_PEERS) {
+    if (sockets.length >= max) {
       server.accept();
       server.send(JSON.stringify({ type: "full" }));
       server.close(4000, "room full");

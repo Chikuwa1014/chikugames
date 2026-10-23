@@ -1,6 +1,7 @@
 // ローカル確認用サーバー（公開しない。.assetsignore の **/dev で除外）
 // wrangler が使えない環境でも、本物の worker/index.js の MultiRoom を Node 上で動かして
-// 静的ファイルと /roulette/ws（WebSocket）を出す。
+// 静的ファイルと /<フォルダ>/ws（WebSocket。worker/index.js の WS_GAMES にあるゲーム）を出す。
+// バトルオセロなど、ほかのマルチプレイのゲームの確認にも使える（http://localhost:8787/battle-othello/）。
 //   node roulette/dev/server.mjs [port]   → http://localhost:8787/roulette/
 import http from "node:http";
 import crypto from "node:crypto";
@@ -21,7 +22,7 @@ class FakeServerSocket {
 }
 globalThis.WebSocketPair = class { constructor() { this[0] = {}; this[1] = new FakeServerSocket(pendingRaw); } };
 globalThis.Response = class { constructor(body, init = {}) { this.status = init.status || 200; this.body = body; this.webSocket = init.webSocket; } };
-const { MultiRoom } = await import(path.join(ROOT, "worker/index.js"));
+const { MultiRoom, WS_GAMES } = await import(path.join(ROOT, "worker/index.js"));
 const rooms = new Map();
 function getRoom(code) {
   if (!rooms.has(code)) {
@@ -61,12 +62,13 @@ const server = http.createServer((req, res) => {
 server.on("upgrade", async (req, raw) => {
   const u = new URL(req.url, "http://x");
   const code = u.searchParams.get("room") || "";
-  if (u.pathname !== "/roulette/ws" || !/^[0-9]{4}$/.test(code)) { raw.end("HTTP/1.1 400 Bad Request\r\n\r\n"); return; }
+  const gm = u.pathname.match(/^\/([a-z0-9-]+)\/ws$/);
+  if (!gm || !Object.hasOwn(WS_GAMES, gm[1]) || !/^[0-9]{4}$/.test(code)) { raw.end("HTTP/1.1 400 Bad Request\r\n\r\n"); return; }
   const accept = crypto.createHash("sha1").update(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest("base64");
   raw.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
-  const { room, state } = getRoom(code);
+  const { room, state } = getRoom(gm[1] + ":" + code);
   pendingRaw = raw;
-  await room.fetch(req);
+  await room.fetch({ headers: new Headers({ "X-Max-Peers": String(WS_GAMES[gm[1]]) }) });
   const ws = [...state._set].find((w) => w.raw === raw);   // 満室のときは登録されない
   let buf = Buffer.alloc(0), closed = false;
   const onClose = () => {
