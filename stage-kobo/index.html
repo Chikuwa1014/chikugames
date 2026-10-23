@@ -10,7 +10,7 @@
 <meta property="og:description" content="ちくわくんが走るおでん横丁のステージを作って、遊んで、共有しよう。">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C9772E'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E9A55B'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFF6EA'/%3E%3C/svg%3E">
-<!-- artifact:skip -->（サイト版だけのリセット CSS。アーティファクトでは自動で付く）
+<!-- artifact:skip --><!-- サイト版だけのリセット CSS。アーティファクトでは自動で付く -->
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px/1.5 system-ui,-apple-system,sans-serif}
@@ -58,6 +58,15 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-s
 .tile kbd{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
 .hint{margin:0;font-size:13px;color:var(--muted)}
+.palhead{display:flex;align-items:center;gap:8px}
+.tip{position:relative;display:inline-flex}
+.tipBtn{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:13px;font-weight:700;line-height:1;cursor:help;padding:0}
+.tipBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tipBox{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:15;width:min(280px,calc(100vw - 48px));padding:10px 12px;border-radius:10px;background:var(--ink);color:var(--surface);font-size:13px;line-height:1.6;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.tipBox b{display:block;margin-top:4px}
+.tipBox b:first-child{margin-top:0}
+@media (hover:hover){.tip:hover .tipBox{display:block}}
+.tip.open .tipBox,.tipBtn:focus-visible+.tipBox{display:block}
 .genre{width:100%;font:inherit;font-size:15px;font-weight:700;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
 .genre:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .stage{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -73,7 +82,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-s
 .zoombar .sp{flex:1}
 .zoombar .movebtn{font-size:13px}
 .zoombar .movebtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-#cv.edit.movemode{cursor:grab}
+#cv.edit.movemode{cursor:grab;touch-action:pan-x pan-y}
 .zoombar .btn{min-width:40px;font-size:16px;line-height:1.2}
 .zoombar output{min-width:3.4em;text-align:center;font-family:var(--f-mono);color:var(--ink);font-variant-numeric:tabular-nums}
 body.shared .zoombar{display:none}
@@ -95,7 +104,7 @@ body.shared .zoombar{display:none}
 .touch button{font:inherit;font-family:var(--f-display);font-size:20px;padding:16px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);touch-action:none}
 .touch button.on{background:var(--well)}
 .touch #tJump{background:var(--play);color:var(--play-ink);border-color:var(--play)}
-.keys{margin:0;font-size:13px;color:var(--muted)}
+.keys{display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--muted)}
 .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .panel p{margin:0;font-size:13px;color:var(--muted)}
@@ -189,10 +198,24 @@ body.shared #collect,body.shared #bgPanel{display:none}
 
   <main class="layout">
     <aside class="palette" id="paletteBox">
-      <h2>パーツ</h2>
+      <div class="palhead">
+        <h2>パーツ</h2>
+        <span class="tip" id="palTip">
+          <button class="tipBtn" type="button" aria-label="パーツの置き方と画面の動かし方" aria-describedby="palTipBox" aria-expanded="false">?</button>
+          <span class="tipBox" id="palTipBox" role="tooltip">
+            <b>パーツの置き方</b>
+            ・上のプルダウンでパーツの種類を切り替え<br>
+            ・タップ（クリック）やなぞって配置。PC は右クリックで消去<br>
+            ・数字キーでもパーツを選べます<br>
+            <b>画面の動かし方</b>
+            ・スマホ：二本指でドラッグして移動、広げる・つまむで拡大・縮小<br>
+            ・「移動モード」をオンにすると、ドラッグ（スマホは一本指）で画面を移動<br>
+            ・ステージの下の －／＋ でも拡大・縮小
+          </span>
+        </span>
+      </div>
       <select id="genre" class="genre" aria-label="パーツの種類"></select>
       <div class="tiles" id="palette"></div>
-      <p class="hint">上のプルダウンでパーツの種類を切り替え。クリックかドラッグで配置、右クリックで消去。スマホは二本指のドラッグで画面を移動、広げる・つまむで拡大・縮小。PC はステージの下の「移動モード」をオンにするとドラッグで画面を移動、－／＋ で拡大・縮小できます。数字キーでもパーツを選べます。</p>
       <p class="hint" id="lockHint" role="status"></p>
     </aside>
 
@@ -230,7 +253,19 @@ body.shared #collect,body.shared #bgPanel{display:none}
         <button id="tRight" aria-label="右へ">▶</button>
         <button id="tJump">ジャンプ</button>
       </div>
-      <p class="keys" id="keys">操作: ← → または A D で移動、Space / ↑ / W でジャンプ、R でリトライ</p>
+      <div class="keys" id="keys">
+        <span class="tip" id="keysTip">
+          <button class="tipBtn" type="button" aria-label="テストプレイの操作" aria-describedby="keysTipBox" aria-expanded="false">?</button>
+          <span class="tipBox" id="keysTipBox" role="tooltip">
+            <b>テストプレイの操作</b>
+            ・← → または A D：移動<br>
+            ・Space / ↑ / W：ジャンプ<br>
+            ・R：リトライ、Esc：編集に戻る<br>
+            ・スマホ：画面の下の ◀ ▶ と「ジャンプ」ボタン
+          </span>
+        </span>
+        <span>操作のしかた</span>
+      </div>
     </section>
   </main>
 
@@ -294,11 +329,12 @@ body.shared #collect,body.shared #bgPanel{display:none}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
-      <li><b>v1.5.3</b>（2026-10-23）編集画面で、二本指のドラッグで画面を上下左右に動かし、ピンチで拡大・縮小できるように。PC 用に「移動モード」ボタンと、拡大・縮小の －／＋ ボタン（35%〜200%）を追加</li>
+      <li><b>v1.5.4</b>（2026-10-23）移動モードで画面全体が揺れる不具合を修正（スマホの移動モードはブラウザ本来のスクロールで動くように）。パーツ棚とテストプレイの操作の説明を「？」アイコンのヒントにまとめた。サイト版の画面の一番上に余計な文字が出ていたのを修正</li>
     </ul>
     <details>
       <summary>過去の更新履歴</summary>
       <ul>
+        <li><b>v1.5.3</b>（2026-10-23）編集画面で、二本指のドラッグで画面を上下左右に動かし、ピンチで拡大・縮小できるように。PC 用に「移動モード」ボタンと、拡大・縮小の －／＋ ボタン（35%〜200%）を追加</li>
         <li><b>v1.5.2</b>（2026-10-23）共有されたステージは、開いてすぐ始まらず「プレイ」ボタンを押してからスタートするように</li>
         <li><b>v1.5.1</b>（2026-10-23）スマホでも使いやすいように、パーツを種類ごと（基本／足場・しかけ／アイテム／敵・きけん）にプルダウンで切り替える形に。背景の選択を「ちくわとスタンプ」の上に移動。更新履歴は最新だけ表示し、過去の分は開いて見られるように。こおりの背景の名前を「カチンコチンコ」に変更</li>
         <li><b>v1.5.0</b>（2026-10-23）新パーツを10種類追加。ちくわで解放：お盆（動く床）、ぱたぱた油揚げ（飛ぶ敵）、ゆでたまご（残機＋1）、カギと扉、竹筒（ワープ）。スタンプで解放：溶岩、トゲの敵、串発射台、からし（無敵）</li>
@@ -343,7 +379,7 @@ body.shared #collect,body.shared #bgPanel{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.5.3';
+const VERSION = '1.5.4';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 /* 調整用の数値（報酬・動き）。パーツの解放に必要なちくわは UNLOCKS の cost、スタンプの条件は STAMPS の goal。
@@ -1216,6 +1252,19 @@ function scrollStage(dx, dy) {
   if (sc.scrollHeight > sc.clientHeight + 1) sc.scrollTop += dy;
   else window.scrollBy(0, dy);
 }
+/* ？のヒント：PC はマウスを重ねると、スマホはタップで開く（もう一度タップか、ほかの場所のタップで閉じる） */
+const TIPS = ['palTip', 'keysTip'];
+function closeTip(id) { $(id).classList.remove('open'); $(id).querySelector('.tipBtn').setAttribute('aria-expanded', 'false'); }
+for (const id of TIPS) {
+  $(id).querySelector('.tipBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const open = !$(id).classList.contains('open');
+    TIPS.forEach(closeTip);
+    $(id).classList.toggle('open', open);
+    e.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
+addEventListener('click', e => { for (const id of TIPS) if (!$(id).contains(e.target)) closeTip(id); });
 $('zoomOut').onclick = () => setZoom([...ZOOMS].reverse().find(z => z < zoom - 1e-6) ?? ZMIN);
 $('zoomIn').onclick = () => setZoom(ZOOMS.find(z => z > zoom + 1e-6) ?? ZMAX);
 /* 移動モード（PC 用。スマホでも使える）：オンの間は、ドラッグでパーツを置かずに画面を動かす */
@@ -1244,7 +1293,10 @@ function paint(p, ch) {
    - 移動モード：一本指（マウス）のドラッグで画面を移動 */
 const fingers = new Map();
 let snap = null, gesture = null, drag = null, waitAllUp = false;
-const mid = () => { const [a, b] = [...fingers.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; };
+/* 画面を動かす量は、ページのスクロールで変わらない screenX/Y で測る（clientX/Y だと、ページが動くたびに指の位置がずれて揺れる）。
+   拡大・縮小の中心だけは clientX/Y を使う */
+const pt = e => ({ x: e.clientX, y: e.clientY, sx: e.screenX, sy: e.screenY });
+const mid = () => { const [a, b] = [...fingers.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, sx: (a.sx + b.sx) / 2, sy: (a.sy + b.sy) / 2, d: Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1 }; };
 function applyGesture() {
   const g = gesture;
   if (!g || fingers.size < 2) return;
@@ -1253,37 +1305,39 @@ function applyGesture() {
   /* 指の間の距離が 8% 以上変わったらピンチとみなし、そこからは指の幅に合わせて拡大・縮小する */
   if (!g.pinch && Math.abs(ratio - 1) > 0.08) g.pinch = true;
   if (g.pinch) setZoom(g.z * ratio, m.x, m.y);
-  scrollStage(g.x - m.x, g.y - m.y);
-  g.x = m.x; g.y = m.y;
+  scrollStage(g.sx - m.sx, g.sy - m.sy);
+  g.sx = m.sx; g.sy = m.sy;
 }
 function showMoving(on) { cv.classList.toggle('panning', on); $('panTag').hidden = !on; }
 cv.addEventListener('pointerdown', e => {
   if (mode !== 'edit') { if (ended()) startGame(); return; }
+  /* スマホの移動モード：指の操作はブラウザ本来のスクロールに任せる（touch-action: pan-x pan-y） */
+  if (moveMode && e.pointerType === 'touch') return;
   cv.setPointerCapture(e.pointerId);
-  fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  fingers.set(e.pointerId, pt(e));
   if (fingers.size === 2) {
     /* 二本目の指が乗った：置いている途中のパーツを取り消して、画面の移動・拡大縮小に切り替える */
     if (snap && snap.some((r, y) => r.join('') !== grid[y].join(''))) { snap.forEach((r, y) => { grid[y] = r; }); save(); }
     painting = null; drag = null; hover = null;
-    const m = mid(); gesture = { x: m.x, y: m.y, d: m.d, z: zoom, pinch: false, raf: 0 };
+    const m = mid(); gesture = { sx: m.sx, sy: m.sy, d: m.d, z: zoom, pinch: false, raf: 0 };
     showMoving(true);
     return;
   }
   if (fingers.size > 2 || waitAllUp) return;
-  if (moveMode && e.button !== 2) { drag = { x: e.clientX, y: e.clientY }; showMoving(true); return; }
+  if (moveMode && e.button !== 2) { drag = { sx: e.screenX, sy: e.screenY }; showMoving(true); return; }
   snap = grid.map(r => r.slice());
   painting = e.button === 2 ? '.' : current;
   paint(tileFromEvent(e), painting);
 });
 cv.addEventListener('pointermove', e => {
   if (mode !== 'edit') return;
-  if (fingers.has(e.pointerId)) fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (fingers.has(e.pointerId)) fingers.set(e.pointerId, pt(e));
   if (gesture && fingers.size >= 2) {
     /* 2 本の指の動きは 1 本ずつ届くので、1 フレームにまとめてから動かす（途中の位置でピンチと間違えないように） */
     if (!gesture.raf) gesture.raf = requestAnimationFrame(applyGesture);
     return;
   }
-  if (drag) { scrollStage(drag.x - e.clientX, drag.y - e.clientY); drag.x = e.clientX; drag.y = e.clientY; return; }
+  if (drag) { scrollStage(drag.sx - e.screenX, drag.sy - e.screenY); drag.sx = e.screenX; drag.sy = e.screenY; return; }
   if (gesture || waitAllUp) return;
   hover = tileFromEvent(e);
   if (painting) paint(hover, painting);
