@@ -67,11 +67,21 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-s
 .stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .stats.warn{color:var(--warn);font-weight:700}
 .stagebox{position:relative}
+.panTag{position:absolute;left:10px;top:10px;padding:3px 10px;border-radius:999px;background:rgba(16,22,34,.72);color:#FFFFFF;font-size:13px;font-weight:700;line-height:1.5;pointer-events:none}
+#cv.edit.panning{cursor:grabbing}
+.zoombar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.zoombar .sp{flex:1}
+.zoombar .movebtn{font-size:13px}
+.zoombar .movebtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#cv.edit.movemode{cursor:grab}
+.zoombar .btn{min-width:40px;font-size:16px;line-height:1.2}
+.zoombar output{min-width:3.4em;text-align:center;font-family:var(--f-mono);color:var(--ink);font-variant-numeric:tabular-nums}
+body.shared .zoombar{display:none}
 .startBtn{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);font:inherit;font-family:var(--f-display);font-size:22px;letter-spacing:.06em;padding:12px 34px;border:0;border-radius:12px;background:var(--play);color:var(--play-ink);cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .startBtn:hover{filter:brightness(1.08)}
 @media (max-width:560px){.startBtn{font-size:16px;padding:8px 22px;top:68%}}
 .startBtn:focus-visible{outline:3px solid #FFFFFF;outline-offset:3px}
-.scroller{overflow-x:auto;border-radius:10px;border:1px solid var(--line);background:#9fd3f5;line-height:0;transition:background .3s ease}
+.scroller{overflow:auto;border-radius:10px;border:1px solid var(--line);background:#9fd3f5;line-height:0;transition:background .3s ease}
 #cv{display:block;image-rendering:pixelated}
 #cv.edit{touch-action:none;cursor:crosshair}
 #cv.play{width:100%;height:auto}
@@ -182,7 +192,7 @@ body.shared #collect,body.shared #bgPanel{display:none}
       <h2>パーツ</h2>
       <select id="genre" class="genre" aria-label="パーツの種類"></select>
       <div class="tiles" id="palette"></div>
-      <p class="hint">上のプルダウンでパーツの種類を切り替え。クリックかドラッグで配置、右クリックで消去。数字キーでもパーツを選べます。</p>
+      <p class="hint">上のプルダウンでパーツの種類を切り替え。クリックかドラッグで配置、右クリックで消去。スマホは二本指のドラッグで画面を移動、広げる・つまむで拡大・縮小。PC はステージの下の「移動モード」をオンにするとドラッグで画面を移動、－／＋ で拡大・縮小できます。数字キーでもパーツを選べます。</p>
       <p class="hint" id="lockHint" role="status"></p>
     </aside>
 
@@ -196,6 +206,15 @@ body.shared #collect,body.shared #bgPanel{display:none}
       <div class="stagebox">
         <div class="scroller" id="scroller"><canvas id="cv" class="edit"></canvas></div>
         <button class="startBtn" id="startBtn" hidden>▶ プレイ</button>
+        <span class="panTag" id="panTag" hidden>移動中</span>
+      </div>
+      <div class="zoombar" id="zoombar">
+        <button class="btn small movebtn" id="moveBtn" aria-pressed="false" title="オンの間は、ドラッグで画面を動かします">✋ 移動モード</button>
+        <span class="sp"></span>
+        <span>表示</span>
+        <button class="btn small" id="zoomOut" aria-label="縮小">－</button>
+        <output id="zoomVal">100%</output>
+        <button class="btn small" id="zoomIn" aria-label="拡大">＋</button>
       </div>
       <div class="hud" id="hud" hidden>
         <span id="hudLives">残機 3</span>
@@ -275,11 +294,12 @@ body.shared #collect,body.shared #bgPanel{display:none}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
-      <li><b>v1.5.2</b>（2026-10-23）共有されたステージは、開いてすぐ始まらず「プレイ」ボタンを押してからスタートするように</li>
+      <li><b>v1.5.3</b>（2026-10-23）編集画面で、二本指のドラッグで画面を上下左右に動かし、ピンチで拡大・縮小できるように。PC 用に「移動モード」ボタンと、拡大・縮小の －／＋ ボタン（35%〜200%）を追加</li>
     </ul>
     <details>
       <summary>過去の更新履歴</summary>
       <ul>
+        <li><b>v1.5.2</b>（2026-10-23）共有されたステージは、開いてすぐ始まらず「プレイ」ボタンを押してからスタートするように</li>
         <li><b>v1.5.1</b>（2026-10-23）スマホでも使いやすいように、パーツを種類ごと（基本／足場・しかけ／アイテム／敵・きけん）にプルダウンで切り替える形に。背景の選択を「ちくわとスタンプ」の上に移動。更新履歴は最新だけ表示し、過去の分は開いて見られるように。こおりの背景の名前を「カチンコチンコ」に変更</li>
         <li><b>v1.5.0</b>（2026-10-23）新パーツを10種類追加。ちくわで解放：お盆（動く床）、ぱたぱた油揚げ（飛ぶ敵）、ゆでたまご（残機＋1）、カギと扉、竹筒（ワープ）。スタンプで解放：溶岩、トゲの敵、串発射台、からし（無敵）</li>
         <li><b>v1.4.3</b>（2026-10-23）背景の町並みの下の基礎を、石積みから下に行くほど暗くなるグラデーションに変更</li>
@@ -323,7 +343,7 @@ body.shared #collect,body.shared #bgPanel{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.5.2';
+const VERSION = '1.5.3';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 /* 調整用の数値（報酬・動き）。パーツの解放に必要なちくわは UNLOCKS の cost、スタンプの条件は STAMPS の goal。
@@ -1161,13 +1181,50 @@ function applyTheme() {
 
 /* ---------- 編集 ---------- */
 let mode = 'edit', hover = null, painting = null;
+/* 編集画面の拡大・縮小（35%〜200%）。拡大するとステージの枠の中で上下にもスクロールできる。
+   －／＋ は ZOOMS の段階で、ピンチは段階の間も含めてなめらかに変わる */
+const ZOOMS = [0.35, 0.6, 0.8, 1, 1.5, 2], ZMIN = ZOOMS[0], ZMAX = ZOOMS[ZOOMS.length - 1];
+let zoom = 1;
 function sizeCanvas() {
   const w = (mode === 'edit' ? W : VW) * T, h = H * T;
-  cv.width = w * K; cv.height = h * K;
-  cv.className = mode;
-  cv.style.width = mode === 'edit' ? w + 'px' : '';
+  /* 中の大きさは変わるときだけ設定する（設定し直すと絵が消えるので、拡大・縮小のたびには触らない） */
+  if (cv.width !== w * K) cv.width = w * K;
+  if (cv.height !== h * K) cv.height = h * K;
+  cv.className = mode + (mode === 'edit' && moveMode ? ' movemode' : '') + (mode === 'edit' && (gesture || drag) ? ' panning' : '');
+  cv.style.width = mode === 'edit' ? w * zoom + 'px' : '';
+  cv.style.height = mode === 'edit' ? h * zoom + 'px' : '';
+  $('scroller').style.maxHeight = mode === 'edit' && zoom > 1 ? h + 'px' : '';
+  $('zoombar').hidden = mode !== 'edit';
   ctx.setTransform(K, 0, 0, K, 0, 0);
 }
+/* 画面上の点（ax, ay）の下にあるステージの場所が、拡大・縮小のあとも同じ点に来るように大きさを変える */
+function setZoom(z, ax, ay) {
+  z = Math.max(ZMIN, Math.min(ZMAX, z));
+  const sc = $('scroller'), sr = sc.getBoundingClientRect();
+  if (ax === undefined) { ax = sr.left + sc.clientWidth / 2; ay = sr.top + sc.clientHeight / 2; }
+  const r0 = cv.getBoundingClientRect(), px = (ax - r0.left) / zoom, py = (ay - r0.top) / zoom;
+  zoom = z; sizeCanvas();
+  const r1 = cv.getBoundingClientRect();
+  scrollStage(r1.left + px * z - ax, r1.top + py * z - ay);
+  $('zoomVal').textContent = Math.round(z * 100) + '%';
+  $('zoomOut').disabled = z <= ZMIN + 1e-6; $('zoomIn').disabled = z >= ZMAX - 1e-6;
+}
+/* 画面を dx, dy だけ動かす。左右はステージ、上下は拡大中ならステージ・それ以外はページ */
+function scrollStage(dx, dy) {
+  const sc = $('scroller');
+  sc.scrollLeft += dx;
+  if (sc.scrollHeight > sc.clientHeight + 1) sc.scrollTop += dy;
+  else window.scrollBy(0, dy);
+}
+$('zoomOut').onclick = () => setZoom([...ZOOMS].reverse().find(z => z < zoom - 1e-6) ?? ZMIN);
+$('zoomIn').onclick = () => setZoom(ZOOMS.find(z => z > zoom + 1e-6) ?? ZMAX);
+/* 移動モード（PC 用。スマホでも使える）：オンの間は、ドラッグでパーツを置かずに画面を動かす */
+let moveMode = false;
+$('moveBtn').onclick = () => {
+  moveMode = !moveMode;
+  $('moveBtn').setAttribute('aria-pressed', moveMode ? 'true' : 'false');
+  cv.classList.toggle('movemode', moveMode);
+};
 function tileFromEvent(e) {
   const r = cv.getBoundingClientRect();
   const x = Math.floor((e.clientX - r.left) / r.width * W);
@@ -1181,18 +1238,63 @@ function paint(p, ch) {
   grid[p.y][p.x] = ch;
   save();
 }
+/* 編集画面の指・マウスの扱い
+   - 一本指（マウス）：なぞってパーツを置く
+   - 二本指：ドラッグで画面を移動、広げる・つまむで拡大・縮小。1 本目の指で置いたパーツは元に戻す
+   - 移動モード：一本指（マウス）のドラッグで画面を移動 */
+const fingers = new Map();
+let snap = null, gesture = null, drag = null, waitAllUp = false;
+const mid = () => { const [a, b] = [...fingers.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; };
+function applyGesture() {
+  const g = gesture;
+  if (!g || fingers.size < 2) return;
+  g.raf = 0;
+  const m = mid(), ratio = m.d / g.d;
+  /* 指の間の距離が 8% 以上変わったらピンチとみなし、そこからは指の幅に合わせて拡大・縮小する */
+  if (!g.pinch && Math.abs(ratio - 1) > 0.08) g.pinch = true;
+  if (g.pinch) setZoom(g.z * ratio, m.x, m.y);
+  scrollStage(g.x - m.x, g.y - m.y);
+  g.x = m.x; g.y = m.y;
+}
+function showMoving(on) { cv.classList.toggle('panning', on); $('panTag').hidden = !on; }
 cv.addEventListener('pointerdown', e => {
   if (mode !== 'edit') { if (ended()) startGame(); return; }
-  painting = e.button === 2 ? '.' : current;
   cv.setPointerCapture(e.pointerId);
+  fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (fingers.size === 2) {
+    /* 二本目の指が乗った：置いている途中のパーツを取り消して、画面の移動・拡大縮小に切り替える */
+    if (snap && snap.some((r, y) => r.join('') !== grid[y].join(''))) { snap.forEach((r, y) => { grid[y] = r; }); save(); }
+    painting = null; drag = null; hover = null;
+    const m = mid(); gesture = { x: m.x, y: m.y, d: m.d, z: zoom, pinch: false, raf: 0 };
+    showMoving(true);
+    return;
+  }
+  if (fingers.size > 2 || waitAllUp) return;
+  if (moveMode && e.button !== 2) { drag = { x: e.clientX, y: e.clientY }; showMoving(true); return; }
+  snap = grid.map(r => r.slice());
+  painting = e.button === 2 ? '.' : current;
   paint(tileFromEvent(e), painting);
 });
 cv.addEventListener('pointermove', e => {
   if (mode !== 'edit') return;
+  if (fingers.has(e.pointerId)) fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (gesture && fingers.size >= 2) {
+    /* 2 本の指の動きは 1 本ずつ届くので、1 フレームにまとめてから動かす（途中の位置でピンチと間違えないように） */
+    if (!gesture.raf) gesture.raf = requestAnimationFrame(applyGesture);
+    return;
+  }
+  if (drag) { scrollStage(drag.x - e.clientX, drag.y - e.clientY); drag.x = e.clientX; drag.y = e.clientY; return; }
+  if (gesture || waitAllUp) return;
   hover = tileFromEvent(e);
   if (painting) paint(hover, painting);
 });
-const endPaint = () => { painting = null; };
+const endPaint = e => {
+  fingers.delete(e && e.pointerId);
+  if (gesture) { if (gesture.raf) cancelAnimationFrame(gesture.raf); gesture = null; waitAllUp = fingers.size > 0; showMoving(false); }
+  else if (drag) { drag = null; showMoving(false); }
+  if (!fingers.size) waitAllUp = false;
+  painting = null; snap = fingers.size ? snap : null;
+};
 cv.addEventListener('pointerup', endPaint);
 cv.addEventListener('pointercancel', endPaint);
 cv.addEventListener('pointerleave', () => { hover = null; });
