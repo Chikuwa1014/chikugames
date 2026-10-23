@@ -1,7 +1,7 @@
 # つくれ！おでん横丁（旧名：ステージ工房）引き継ぎメモ
 
 ちくわくんが走る「おでん横丁」の 2D アクションステージを作り、テストプレイし、リンクで共有するブラウザゲームメーカー。
-現在 **v1.5.0**（2026-10-23）。更新履歴は `CHANGELOG.md` と、`index.html` 末尾の「更新履歴」欄。
+現在 **v1.5.1**（2026-10-23）。更新履歴は `CHANGELOG.md` と、`index.html` 末尾の「更新履歴」欄。
 
 ## 公開と置き場所
 
@@ -17,7 +17,7 @@
 
 ## 作業の約束
 
-- バージョンを上げるたびに：`const VERSION`、画面の更新履歴 `<li>`、`CHANGELOG.md`、`README.md` の版数、トップページの `version` / `updated` をそろえる。
+- バージョンを上げるたびに：`const VERSION`、画面の更新履歴 `<li>`（最新の 1 件だけ上の `<ul>` に置き、1 つ前の版は「過去の更新履歴」の `<details>` の先頭に移す）、`CHANGELOG.md`、`README.md` の版数、トップページの `version` / `updated` をそろえる。
 - SNS 共有の文面には必ず `#ちくわげーむず` を入れる（今は `#つくれおでん横丁 #ちくわげーむず`、Facebook は hashtag パラメータ）。
 - 既存の有名ゲームに似せない（見た目・アイテム名はおでん横丁のオリジナルで）。
 - コミットは `Chikuwa1014` 名義、push 前に `git fetch && git rebase origin/main`。
@@ -27,8 +27,8 @@
 | 部分 | 中身 |
 |---|---|
 | 定数 | `T=24`（1 マス px）、`W=40`×`H=15` マス、`VW=20`（プレイ時の表示幅） |
-| `THEMES` | 背景 5 種：day「ある日の昼下がり」、dusk「たそがれどき」、night「流星のぐんじょう」、magma「マンマンボルケーノ」、ice「カチカチチンチン」。地面の色など |
-| `ALL_PARTS` / `KEY_PARTS` | パーツ一覧と数字キー |
+| `THEMES` | 背景 5 種：day「ある日の昼下がり」、dusk「たそがれどき」、night「流星のぐんじょう」、magma「マンマンボルケーノ」、ice「カチンコチンコ」。地面の色など |
+| `ALL_PARTS` / `KEY_PARTS` / `GENRES` | パーツ一覧、数字キー、パーツ棚のジャンル（プルダウンで切り替え。新パーツはどれかのジャンルの `parts` に足す） |
 | `UNLOCKS` / `STAMPS` / `ALIAS` | ちくわで解放するパーツと、スタンプのミッション（`ch` が獲得で解放されるパーツ）。扉 `D` はカギ `K` といっしょに解放（`ALIAS`） |
 | `normalize` / `fromData` | ステージの検証。使える記号は `.#Boe^SGPC=X?IMFEKDWLTRY`。新パーツを足すときはこの正規表現にも記号を追加 |
 | `encodeShare` / `decodeShare` / `checksum` / `parseCode` | 共有リンク `#st.<base64>.<チェック値>` とステージコード `SK1.<同じ>`。改ざんすると読み込まない |
@@ -55,6 +55,5 @@ python3 stage-kobo/dev/screenshot.py stage-kobo/index.html out.png "<localStorag
 ## 残りのタスク
 
 - なし（v1.5.0 で予定していたパーツはすべて実装済み）
-- 気になっている点：パーツが 25 種類になり、PC ではパーツ棚が縦に長い。必要ならアイコンだけの並びに詰める
 - 動作確認用に、全パーツ・全スタンプを解放した Artifact がある（https://claude.ai/artifact/J1KSP7N3bjGpgWgyfPo2cK）。プレビュー版に「最初から全開放」の 1 行（`PG.u = UNLOCKS.map(u => u.ch); PG.got = STAMPS.map(s => s.id);`）とタイトル・説明文の差し替えを足したもの
 - push はユーザーが動作確認してから指示する
