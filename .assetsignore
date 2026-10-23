@@ -13,3 +13,5 @@ wrangler.jsonc
 worker
 node_modules
 .wrangler
+.artifact
+.gitignore

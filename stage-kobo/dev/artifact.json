@@ -1,0 +1,33 @@
+{
+  "source": "index.html",
+  "url": "https://claude.ai/artifact/DLL2tcjb9FhfsTtGPgP8Uh",
+  "replace": [
+    {
+      "find": "const BASE_URL = location.origin + location.pathname;",
+      "replace": "const BASE_URL = '{ARTIFACT_URL}';"
+    },
+    {
+      "find": "    'ステージを変えたら、もう一度ここからリンクを作り直してください。前に配ったリンクは古い内容のままです。');",
+      "replace": "    'ほかの人が開けるようにするには、このページ自体を共有設定で公開しておく必要があります。ステージを変えたら、もう一度ここからリンクを作り直してください。');"
+    }
+  ],
+  "profiles": {
+    "unlocked": {
+      "url": "https://claude.ai/artifact/J1KSP7N3bjGpgWgyfPo2cK",
+      "replace": [
+        {
+          "find": "<title>つくれ！おでん横丁</title>",
+          "replace": "<title>おでん横丁 全開放版</title>"
+        },
+        {
+          "find": "<p id=\"tagline\">ちくわくんが走る「おでん横丁」のステージを作って、その場で遊べます。</p>",
+          "replace": "<p id=\"tagline\">動作確認用の全開放版です。すべてのパーツとスタンプが解放された状態で始まります。</p>"
+        },
+        {
+          "find": "PG.u = PG.u.filter(ch => LOCKABLE.has(ch));\n",
+          "replace": "PG.u = PG.u.filter(ch => LOCKABLE.has(ch));\n/* 動作確認用：すべてのパーツとスタンプを解放した状態で始める */\nPG.u = UNLOCKS.map(u => u.ch); PG.got = STAMPS.map(s => s.id);\n"
+        }
+      ]
+    }
+  }
+}
