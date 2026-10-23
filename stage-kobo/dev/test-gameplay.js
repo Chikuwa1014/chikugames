@@ -85,4 +85,55 @@ ok(!e0.alive && g.lives===3, '上から落ちると敵をふめる');
 ok(t.PG.stomp===30 && t.PG.got.includes('stomp'), '敵30体目でスタンプ獲得 (stomp='+t.PG.stomp+')');
 // 11) 保存データの改ざん検出
 const key='stage-kobo-progress'; const saved=store[key]; ok(/^[A-Za-z0-9+/=]+\.[0-9a-z]+$/.test(saved), '進行データはbase64＋チェック値で保存');
+
+// ---- v1.5.0 の新パーツ ----
+const R15=(...last)=>[...Array(15-last.length).fill(''),...last];
+const walkRight=(g,n)=>{t.keys.right=true; run(n,()=>{ if(g.state!=='run') t.keys.right=false; }); t.keys.right=false;};
+// 12) 解放：スタンプで解放するパーツ、カギと扉はいっしょに解放
+t.PG.got=t.PG.got.filter(x=>x!=='lava'); t.PG.u=t.PG.u.filter(x=>x!=='K');
+ok(!t.isUnlocked('L') && !t.isUnlocked('D'), '溶岩・扉は最初は未解放');
+t.PG.got.push('lava'); t.PG.u.push('K');
+ok(t.isUnlocked('L') && t.isUnlocked('K') && t.isUnlocked('D') && t.isUnlocked('T'), 'スタンプ「溶岩」で溶岩、カギの解放で扉も使える（トゲの敵はスタンプ獲得済み）');
+// 13) お盆：乗ると運ばれる
+g=play(R15('.P','.MM......#','',''));
+run(120);
+ok(g.p.ground && g.p.tray && g.p.x>3+40 && Math.abs(g.p.y+g.p.h-g.trays[0].y)<0.5 && g.state==='run', 'お盆：乗ったまま右へ運ばれる (x='+g.p.x.toFixed(1)+')');
+run(200); ok(g.state==='run' && g.p.tray, 'お盆：壁で折り返しても落ちない');
+// 14) ゆでたまご：残機＋1
+g=play(R15('.PE....','#######','')); walkRight(g,40);
+ok(g.lives===4 && g.map[12][2]==='.', 'ゆでたまご：取ると残機4');
+// 15) カギと扉
+g=play(R15('.....D','.P...D...','#########','')); walkRight(g,90);
+ok(g.p.x+g.p.w<=5*24+0.5 && g.map[12][5]==='D', '扉：カギなしでは通れない');
+g=play(R15('.....D','.PK..D..G','#########','')); walkRight(g,200);
+ok(g.map[11][5]==='.' && g.map[12][5]==='.' && g.keys===0 && g.state==='clear', 'カギ1つで、つながった扉がまとめて開き、通り抜けられる');
+// 16) 竹筒：次の竹筒へワープ。戻ってこない
+g=play(R15('.PW......W..............','#########################','')); walkRight(g,30);
+ok(g.p.x>9*24-4, '竹筒：もう一方の竹筒へワープ (x='+g.p.x.toFixed(1)+')');
+walkRight(g,60); ok(g.p.x>10*24 && g.state==='run', 'ワープ先から先へ進める（行ったり来たりしない）');
+// 17) 溶岩：落ちるとミス
+g=play(R15('.P......','###LL###','')); walkRight(g,60);
+ok(g.lives===2 && g.misses===1, '溶岩：さわるとミス');
+// 18) トゲの敵：ふむとミス
+g=play(R15('.P....T..','#########',''));
+let e1=g.enemies[0]; ok(e1.kind==='spike','トゲの敵は敵として動く');
+g.p.x=e1.x; g.p.y=e1.y-60; g.p.vy=2; n=0; while(g.state==='run' && n++<100) t.update();
+ok(e1.alive && g.lives===2, 'トゲの敵：ふむとミス');
+// 19) ぱたぱた油揚げ：上下に飛び、ふめる
+g=play(R15('','','.P.....F.','#########',''),{settings:{lives:3,enemy:0}});
+const f=g.enemies[0]; let fmin=1e9,fmax=-1e9; run(120,()=>{fmin=Math.min(fmin,f.y);fmax=Math.max(fmax,f.y);}); ok(f.kind==='fly' && fmax-fmin>30, 'ぱたぱた油揚げ：重力なしで上下にゆれる');
+g.p.x=f.x; g.p.y=f.y-50; g.p.vy=2; n=0; while(f.alive && g.state==='run' && n++<100){ g.p.x=f.x; t.update(); }
+ok(!f.alive && g.lives===3, 'ぱたぱた油揚げ：上からふめる');
+// 20) 串発射台：近づくと串が飛んでくる
+g=play(R15('.P........R','###########','')); run(260);
+ok(g.lives<=2, '串発射台：串に当たるとミス');
+// 21) からし：しばらく無敵（敵に負けない）
+g=play(R15('.PY.....e...........','####################','')); walkRight(g,20);
+ok(g.inv>0, 'からし：取ると無敵'); walkRight(g,120);
+ok(g.lives===3 && !g.enemies[0].alive, 'からし：無敵中は敵にさわると倒せる');
+g=play(R15('.PY.......R','###########','')); walkRight(g,12); run(200);
+ok(g.lives===3, 'からし：無敵中は串に当たってもミスにならない');
+// 22) ゆでたまごで残機が増えても、ミスしたらノーミス扱いにしない
+g=play(R15('.PE.^...G','#########','')); walkRight(g,300);
+ok(g.misses>=1, 'ミスの回数を記録（ゆでたまごで残機が戻ってもノーミスにならない）');
 console.log(fails? `\n${fails} 件失敗` : '\nすべて成功');
