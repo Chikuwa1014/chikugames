@@ -9,3 +9,7 @@ wrangler.jsonc
 **/claude
 **/CHANGELOG.md
 **/dev
+**/worker
+worker
+node_modules
+.wrangler
