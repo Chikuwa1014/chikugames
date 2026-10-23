@@ -64,6 +64,11 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;letter-s
 .stagebar input:hover{border-color:var(--line)}
 .stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .stats.warn{color:var(--warn);font-weight:700}
+.stagebox{position:relative}
+.startBtn{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);font:inherit;font-family:var(--f-display);font-size:22px;letter-spacing:.06em;padding:12px 34px;border:0;border-radius:12px;background:var(--play);color:var(--play-ink);cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.startBtn:hover{filter:brightness(1.08)}
+@media (max-width:560px){.startBtn{font-size:16px;padding:8px 22px;top:68%}}
+.startBtn:focus-visible{outline:3px solid #FFFFFF;outline-offset:3px}
 .scroller{overflow-x:auto;border-radius:10px;border:1px solid var(--line);background:#9fd3f5;line-height:0;transition:background .3s ease}
 #cv{display:block;image-rendering:pixelated}
 #cv.edit{touch-action:none;cursor:crosshair}
@@ -186,7 +191,10 @@ body.shared #collect,body.shared #bgPanel{display:none}
         <span class="stats" id="stats"></span>
         <button class="btn" id="shareBtn">このステージを共有</button>
       </div>
-      <div class="scroller" id="scroller"><canvas id="cv" class="edit"></canvas></div>
+      <div class="stagebox">
+        <div class="scroller" id="scroller"><canvas id="cv" class="edit"></canvas></div>
+        <button class="startBtn" id="startBtn" hidden>▶ プレイ</button>
+      </div>
       <div class="hud" id="hud" hidden>
         <span id="hudLives">残機 3</span>
         <span id="hudCoin">しずく 0/0</span>
@@ -265,11 +273,12 @@ body.shared #collect,body.shared #bgPanel{display:none}
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
-      <li><b>v1.5.1</b>（2026-10-23）スマホでも使いやすいように、パーツを種類ごと（基本／足場・しかけ／アイテム／敵・きけん）にプルダウンで切り替える形に。背景の選択を「ちくわとスタンプ」の上に移動。更新履歴は最新だけ表示し、過去の分は開いて見られるように。こおりの背景の名前を「カチンコチンコ」に変更</li>
+      <li><b>v1.5.2</b>（2026-10-23）共有されたステージは、開いてすぐ始まらず「プレイ」ボタンを押してからスタートするように</li>
     </ul>
     <details>
       <summary>過去の更新履歴</summary>
       <ul>
+        <li><b>v1.5.1</b>（2026-10-23）スマホでも使いやすいように、パーツを種類ごと（基本／足場・しかけ／アイテム／敵・きけん）にプルダウンで切り替える形に。背景の選択を「ちくわとスタンプ」の上に移動。更新履歴は最新だけ表示し、過去の分は開いて見られるように。こおりの背景の名前を「カチンコチンコ」に変更</li>
         <li><b>v1.5.0</b>（2026-10-23）新パーツを10種類追加。ちくわで解放：お盆（動く床）、ぱたぱた油揚げ（飛ぶ敵）、ゆでたまご（残機＋1）、カギと扉、竹筒（ワープ）。スタンプで解放：溶岩、トゲの敵、串発射台、からし（無敵）</li>
         <li><b>v1.4.3</b>（2026-10-23）背景の町並みの下の基礎を、石積みから下に行くほど暗くなるグラデーションに変更</li>
         <li><b>v1.4.2</b>（2026-10-23）背景の町並みの下に濃い灰色の石積みの基礎を追加し、家が浮いて見えないように</li>
@@ -312,7 +321,7 @@ body.shared #collect,body.shared #bgPanel{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 const THEMES = {
@@ -1277,8 +1286,23 @@ function startGame() {
     lives: doc.settings.lives, start: { x: p.x, y: p.y }, deadT: 0,
     trays, shooters, shots: [], warps, warpLock: -1, keys: 0, hasKey, inv: 0, misses: 0 };
   jumpBuf = 0;
+  $('startBtn').hidden = true;
   hideModal();
   if (!readOnly) markMine(stageId(doc));
+}
+/* 共有ステージ：開いた直後は止めておき、「プレイ」ボタンで始める */
+function waitForStart() {
+  if (!game) return;
+  game.state = 'ready';
+  const b = $('startBtn'); b.hidden = false; b.focus?.();
+}
+function beginPlay() {
+  if (!game || game.state !== 'ready') return;
+  for (const k in keys) keys[k] = false;
+  jumpBuf = 0;
+  game.state = 'run';
+  $('startBtn').hidden = true;
+  cv.focus?.();
 }
 function die() {
   const g = game; if (g.state !== 'run') return;
@@ -1468,6 +1492,11 @@ function renderPlay(t) {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '26px DotGothic16, monospace'; ctx.fillText('ミス！', vw / 2, vh / 2 - 6);
     ctx.font = '14px DotGothic16, monospace'; ctx.fillText(`残機 あと ${g.lives}`, vw / 2, vh / 2 + 18);
+  } else if (g.state === 'ready') {
+    ctx.fillStyle = 'rgba(16,22,34,0.45)'; ctx.fillRect(0, 0, vw, vh);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '28px DotGothic16, monospace'; ctx.fillText(doc.title || 'ステージ', vw / 2, vh / 2 - 56);
+    ctx.font = '14px DotGothic16, monospace'; ctx.fillText(`残機 ${doc.settings.lives} ・ だしのしずく ${g.total}`, vw / 2, vh / 2 - 26);
   } else if (g.state !== 'run') {
     ctx.fillStyle = 'rgba(16,22,34,0.55)'; ctx.fillRect(0, 0, vw, vh);
     ctx.fillStyle = '#FFFFFF';
@@ -1489,7 +1518,7 @@ function setMode(m) {
   if (m === 'play') {
     if (!grid.some(r => r.includes('P'))) { updateStats(); $('stats').textContent = 'テストプレイの前にスタート地点を置いてください'; return; }
     startGame();
-  } else { game = null; }
+  } else { game = null; $('startBtn').hidden = true; }
   mode = m;
   $('modeEdit').setAttribute('aria-selected', m === 'edit');
   $('modePlay').setAttribute('aria-selected', m === 'play');
@@ -1502,6 +1531,7 @@ function setMode(m) {
 $('modeEdit').onclick = () => setMode('edit');
 $('modePlay').onclick = () => setMode('play');
 $('retry').onclick = () => startGame();
+$('startBtn').onclick = () => beginPlay();
 $('backEdit').onclick = () => setMode('edit');
 
 const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', ArrowUp: 'jump', KeyW: 'jump' };
@@ -1674,7 +1704,7 @@ if (readOnly) {
   sn.append(st, document.createTextNode(` ・ プレイ専用 ・ 残機 ${doc.settings.lives} ・ 背景「${TH.name}」`));
   sn.hidden = false;
   $('makeOwn').hidden = false;
-  if (grid.some(r => r.includes('P'))) setMode('play');
+  if (grid.some(r => r.includes('P'))) { setMode('play'); waitForStart(); }
   else { sn.textContent = 'このリンクのステージにはスタート地点がないため、遊べません。'; sizeCanvas(); }
 } else {
   sizeCanvas();
