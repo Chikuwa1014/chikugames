@@ -152,7 +152,7 @@ const GAMES = [
   {
     href: './stage-kobo/', kicker: 'ゲームメーカー', title: 'つくれ！おでん横丁', sub: 'ちくわくんの2Dアクションステージメーカー',
     desc: 'ちくわくんが走る「おでん横丁」のステージを作って、その場でテストプレイ。クリアで集めたちくわで、ちょうちんやおみくじ箱などのパーツを解放できる。',
-    tags: ['アクション', 'つくる', 'リンクで共有'], version: '1.4.2', thumb: 'stage', updated: '2026-10-23'
+    tags: ['アクション', 'つくる', 'リンクで共有'], version: '1.4.3', thumb: 'stage', updated: '2026-10-23'
   }
 ];
 
@@ -225,8 +225,9 @@ function DRAW_stage(c, t) {
   c.fillStyle = g; c.fillRect(0, 0, 160, 90);
   // 横丁の町並み（ゲームの「たそがれどき」と同じ色）：町家・屋台・「おでん」の縦看板・ちょうちんの列
   const roof = (x, y, w) => { c.fillStyle = '#3A2846'; c.beginPath(); c.moveTo(x - 3, y + 4); c.lineTo(x + 2, y); c.lineTo(x + w - 2, y); c.lineTo(x + w + 3, y + 4); c.fill(); };
-  r(0, 72, 160, 18, '#45404B'); r(0, 72, 160, 1, '#5A5560');
-  for (let x = 0; x < 160; x += 8) r(x + (x % 16 ? 0 : 4), 73, 1, 17, '#38333D');
+  // 基礎：上端の濃い灰色から下に行くほど暗くなるグラデーション
+  const fg = c.createLinearGradient(0, 72, 0, 90); fg.addColorStop(0, '#45404B'); fg.addColorStop(1, '#1E1C24');
+  c.fillStyle = fg; c.fillRect(0, 72, 160, 18); r(0, 72, 160, 1, '#5A5560');
   const street = [[-4, 'm'], [30, 'y'], [58, 't'], [94, 'm'], [128, 't']];
   for (const [x, type] of street) {
     if (type === 'y') {
