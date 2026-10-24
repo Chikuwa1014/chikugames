@@ -27,7 +27,7 @@ function render() {
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
     byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
     byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
-    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + m + 'ヶ月目 ' + ((d - 1) % MD + 1) + '日目（通算' + state.day + '日）' + we.e + we.n;
+    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + calOf(d) + '月' + ((d - 1) % MD + 1) + '日目（通算' + m + 'ヶ月' + state.day + '日）' + we.e + we.n;
     byId('sp').innerHTML = Object.keys(PHN).map(k => '<span class="' + (state.phase === k ? 'on' : '') + '">' + PHN[k] + '</span>').join('');
     byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
     byId('gb').style.width = state.gauge + '%';

@@ -20,7 +20,7 @@ const PRODUCTS = [
 
 ];
 
-/** 季節（春夏秋冬）と購買力の倍率 */
+/** 季節（春夏秋冬）と購買力の倍率。巡り方は util.js の seaOf（3ヶ月ずつ） */
 const SEA = [
     { n: '春', e: '🌸', p: 1.1 },
     { n: '夏', e: '🌻', p: 1.25 },
@@ -61,6 +61,9 @@ CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: VERSION });
 
 /** 1ヶ月の日数 */
 const MD = 7;
+
+/** 1ヶ月目が暦の何月か（季節の巡りと日付の表示に使う。4月＝春から） */
+const START_MONTH = 4;
 
 /** 時給の基準額（愛知県の最低賃金） */
 const BASEW = 1195;
