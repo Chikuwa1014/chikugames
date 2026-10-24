@@ -1094,7 +1094,7 @@ button.achr {
 <details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="192" height="92" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
 <div id="sp" style="display:none"></div>
 <div class="sd" id="sd"></div>
-<div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div></div>
+<div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div><div class="meta" id="qx"></div></div>
 
 
 <div id="act"></div>
@@ -1675,7 +1675,7 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.4.3';
+const VERSION = '1.4.4';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
@@ -2072,6 +2072,13 @@ const wageDay = () => {
        w += WAGE * (h < 7 || h >= 22 ? 1.25 : 1);
     return w * state.clerk;
 };
+
+/** 今月のノルマの内訳（b：損益分岐点、g：前月比、q：ノルマ＝高い方） */
+function quotaParts() {
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    const g = state.prev == null ? 0 : state.prev * difficulty().gr;
+    return { b: r100(b), g: r100(g), q: r100(state.prev == null ? b : Math.max(b, g)) };
+}
 
 /** 今月の売上ノルマ（損益分岐点＋前月比） */
 function quota() {
@@ -3919,6 +3926,8 @@ function render() {
     byId('pw').title = '季節×' + sea.p + ' 天気×' + we.p;
     const q = quota();
     byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
+    const qp = quotaParts();
+    byId('qx').textContent = '内訳: 損益分岐点¥' + fmt(qp.b) + '（月収¥' + fmt(state.sal) + '込み）' + (state.prev == null ? '' : ' / 前月比¥' + fmt(qp.g)) + ' → 高い方がノルマ';
     byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
     byId('qb').className = 'bar' + (state.mSales >= q ? '' : ' low');
     const left = state.day === 0 ? MD : MD - ((d - 1) % MD) - 1;

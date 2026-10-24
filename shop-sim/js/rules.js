@@ -28,6 +28,13 @@ const wageDay = () => {
     return w * state.clerk;
 };
 
+/** 今月のノルマの内訳（b：損益分岐点、g：前月比、q：ノルマ＝高い方） */
+function quotaParts() {
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    const g = state.prev == null ? 0 : state.prev * difficulty().gr;
+    return { b: r100(b), g: r100(g), q: r100(state.prev == null ? b : Math.max(b, g)) };
+}
+
 /** 今月の売上ノルマ（損益分岐点＋前月比） */
 function quota() {
     const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
