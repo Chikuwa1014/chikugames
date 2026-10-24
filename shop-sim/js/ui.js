@@ -167,6 +167,7 @@ function render() {
         });
     }
     const can = state.phase !== 'closed' && !state.over && !ill();
+    const step = Math.max(1, Math.ceil(state.cap * 0.1));
     byId('sh').innerHTML = state.shelf.map((s, i) => {
         if (!s)
             return '<div class="shelf empty">空き棚<br>新商品を扱うと並びます</div>';
@@ -174,7 +175,7 @@ function render() {
         return '<div class="shelf"><div class="top"><span class="emo">' + p.e + '</span><div><div class="nm">' + p.n + (state.up[s.id] ? ' <small>Lv' + state.up[s.id] + '</small>' : '') + '</div><span class="price">¥' + fmt(priceOf(p)) + '</span></div></div>' +
             '<div class="bar' + (s.st <= Math.ceil(state.cap * .2) ? ' low' : '') + '"><i style="width:' + (s.st / state.cap * 100) + '%"></i></div>' +
             '<div class="cnt"><span>' + s.st + ' / ' + state.cap + '個</span><span>原価 ¥' + fmt(p.c) + '</span></div>' +
-            '<div class="btns"><button class="alt" data-a="r" data-i="' + i + '" data-n="5"' + dis + '>+5</button><button data-a="r" data-i="' + i + '" data-n="999"' + dis + '>満タン</button></div></div>';
+            '<div class="btns"><button class="alt" data-a="r" data-i="' + i + '" data-n="' + step + '"' + dis + '>+' + step + '</button><button data-a="r" data-i="' + i + '" data-n="999"' + dis + '>満タン</button></div></div>';
     }).join('');
     const ok = state.phase === 'closed' && !state.over && !ill();
     const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
