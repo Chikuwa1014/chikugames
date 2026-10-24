@@ -67,6 +67,12 @@ function render() {
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
+    {
+        const n = state.ss || 0, e = byId('secn');
+        e.hidden = n <= 0;
+        e.textContent = '🛡×' + n;
+        e.title = 'セキュリティのストック ' + n + '/5';
+    }
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -418,6 +424,12 @@ function initLayout() {
     tp.append(hr);
     const dd = byId('px').closest('details');
     dd.style.margin = '4px 0';
+    // ドット絵の右上にセキュリティのストック残数（v1.4.2〜。0のときは出さない）
+    const pw = document.createElement('div');
+    pw.className = 'pxw';
+    byId('px').before(pw);
+    pw.append(byId('px'));
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');
