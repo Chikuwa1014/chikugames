@@ -1011,6 +1011,38 @@ button.achr {
 .ovbox.achbox {
   border-top-color:#c8a45a;
 }
+
+/* ---- v1.4.1：営業中の現在時刻（購買欲ゲージの上） ---- */
+.clk {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  padding:6px 12px;
+  margin-bottom:8px;
+  border-radius:12px;
+  background:var(--ink);
+  color:var(--bg);
+}
+
+.clk[hidden] {
+  display:none;
+}
+
+.clkt {
+  font-size:28px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.5px;
+  line-height:1.2;
+}
+
+.clkr {
+  font-size:12px;
+  font-weight:700;
+  opacity:.8;
+  text-align:right;
+}
 </style>
 </head>
 <body>
@@ -1602,13 +1634,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['1.4.1', '2026-10-24', '営業中の現在時刻を購買欲ゲージの上に大きく表示。投資の「棚を増やす」に、増やしたあとの月のテナント料を表示'],
     ['1.4.0', '2026-10-24', '更新履歴を設定タブに表示。実績を所持金の横のバッジ（🏅）に移し、タップで一覧を開くように。実績のリセットを追加（確認画面つき）。一時停止・倍速ボタンをタブの行の右端にまとめ、倍速は押すたびに×1→×2→×4→×8と切り替え。営業タブのログ欄を4行分の枠にし、直近50件までさかのぼれるように（売れた商品を時刻つきで記録）。デバッグ欄の見出しを「🐞 デバッグ」に'],
     ['1.3.0', '2026-10-24', '実績（累計売上・営業・貯金・インフェルノの18個）を追加。季節を実際の1年と同じ3ヶ月ごとに（1ヶ月目＝4月）。日付に暦の月を表示'],
     ['1.2.0', '2026-10-24', 'セーブコード（コピー・貼り付けで読み込み）を追加。横画面に対応。「最初からやり直す」を目立たせた。共有・セーブ・デバッグ送信をちくわゲームズ共通部品に置き換え'],
@@ -1976,7 +2009,7 @@ const save = () => {
 const pwr = d => SEA[seaOf(d)].p * WE[d === state.day ? state.weather : state.next].p * (state.flame > 0 ? difficulty().fl : 1);
 
 /** 月のテナント料（棚数で指数的に増加） */
-const tenantFee = () => r100(4000 * Math.pow(1.6, state.slots - 2) * state.feeMul * difficulty().fee);
+const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee);
 
 /** 現在の売値（原価÷(1-粗利率)） */
 const priceOf = p => Math.max(p.c + 1, Math.round(p.c / (1 - state.margin / 100)));
@@ -3822,10 +3855,14 @@ function render() {
     else if (state.phase === 'prep')
         a = '<button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
-        a = '<div class="hint">' + (state.kama ? '⛄ かまくら作り中（12:00から甘酒ボーナス） ' : '営業中 ') + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '（' + state.openH + ':00〜' + state.closeH + ':00）</div>';
+        a = state.kama ? '<div class="hint">⛄ かまくら作り中（12:00から甘酒ボーナス）</div>' : '';
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
+    // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
+    byId('clk').hidden = state.phase !== 'open' || state.over;
+    if (state.phase === 'open')
+        byId('clk').innerHTML = '<span class="clkt">🕘 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '</span><span class="clkr">' + (state.paused ? '⏸ 一時停止中 / ' : '営業中 ') + state.openH + ':00〜' + state.closeH + ':00</span>';
     syncOver();
     syncSave();
     syncAma();
@@ -3928,7 +3965,7 @@ function render() {
     const ok = state.phase === 'closed' && !state.over && !ill();
     const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
     const R = [];
-    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < PRODUCTS.length ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + '。テナント料は約1.6倍に', cost.slot(), state.slots >= MAX.slot));
+    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < PRODUCTS.length ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
     R.push(row('cap', '', '📦 棚の容量アップ（' + state.cap + '個）', '次の容量: ' + (CAPS[CAPS.indexOf(state.cap) + 1] || '最大') + '個', cost.cap(), state.cap >= MAX.cap));
     R.push(row('ad', '', '📣 広告（Lv.' + state.ad + '）', '来店数とまとめ買いが増える', cost.ad(), state.ad >= MAX.ad));
     R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給¥' + fmt(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
@@ -4184,6 +4221,7 @@ function initLayout() {
         d.id = 'p' + i;
         return d;
     }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3);
+    P0.insertAdjacentHTML('afterbegin', '<div class="clk" id="clk" hidden></div>');
     [byId('gl').closest('.card'), byId('act'), byId('lg'), byId('pn'), byId('sh').previousElementSibling, byId('sh')].forEach(e => P0.append(e));
     P1.append(byId('up').previousElementSibling, byId('up'));
     const my = byId('mny');
