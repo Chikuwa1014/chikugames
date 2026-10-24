@@ -793,6 +793,83 @@ button.big.rstb.arm {
     object-fit:contain;
   }
 }
+
+/* ---- v1.3.0：実績 ---- */
+.achn {
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+.achg {
+  margin-top:10px;
+}
+
+.achgh {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  font-weight:700;
+  font-size:13px;
+}
+
+.achgh .meta {
+  font-weight:400;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+.achl {
+  display:grid;
+  gap:4px;
+  margin-top:4px;
+}
+
+.ach {
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  align-items:center;
+  gap:6px;
+  padding:5px 8px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  font-size:13px;
+  color:var(--sub);
+}
+
+.ach.on {
+  border-color:var(--tag);
+  background:color-mix(in srgb, var(--tag) 18%, transparent);
+  color:var(--ink);
+  font-weight:700;
+}
+
+.achi {
+  text-align:center;
+}
+
+.achd {
+  font-size:11px;
+  font-weight:400;
+  color:var(--sub);
+  white-space:nowrap;
+}
+
+.achp {
+  width:64px;
+  height:6px;
+  border-radius:3px;
+  background:var(--bar);
+  overflow:hidden;
+}
+
+.achp i {
+  display:block;
+  height:100%;
+  background:var(--ok);
+}
 </style>
 </head>
 <body>
@@ -813,6 +890,7 @@ button.big.rstb.arm {
 <div class="grid" id="sh"></div>
 <h2>投資</h2>
 <div id="up"></div>
+<div class="card" id="ach"></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="dbg"></div>
 <div class="card rst"><b>🔄 最初からやり直す</b><div class="meta">今のお店をたたんで、難易度えらびからやり直します。セーブデータを残したいときは、先に書き出してください。</div><button class="big rstb" data-a="reset">最初からやり直す</button></div>
@@ -1383,7 +1461,7 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 
 /** 著作権表記 */
 const COPYRIGHT = '© 2026 ちくわげーむず';
@@ -1524,6 +1602,7 @@ const HELP = {
     hours: '長時間営業は幸福度を下げます。',
     sv: '月末に所持金がマイナスになると、自動で預金から引き出されます。',
     save: 'ファイルに書き出して保管し、別の端末やブラウザでも続きから遊べます。営業中は使えません。',
+    achv: '条件を満たすと解除されます。最初からやり直しても、倒産しても消えません。1年＝12ヶ月（84日）。インフェルノの実績は、倒産せずにその日数まで続けると解除。',
     code: 'ゲームの状態を1行の文字列（セーブコード）にします。メモ帳やLINEに貼って保管し、別の端末で貼り付けると続きから遊べます。途中が欠けたり書き換えたりしたコードは読み込めません。',
     dbg: '不具合を見つけたときに押してください。直近の操作の記録といまのゲームの状態を開発者に送ります。名前や端末の情報は送りません（ブラウザの種類だけ）。'
 };
@@ -3896,11 +3975,128 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('ach'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
     tp.after(sc);
+}
+</script>
+<script>
+/**
+ * achv.js — 実績（v1.3.0〜）。
+ *
+ * 条件を満たすと解除され、「⚙設定」タブの「🏅 実績」欄に並ぶ。解除の瞬間は画面下にお知らせ（CG.toast）。
+ * 保存はゲームとは別の localStorage（ACH_KEY）なので、最初からやり直しても・倒産しても消えない。
+ *   形：{ <実績のid>: { at: 解除した日時(ISO), diff: 難易度のキー } }
+ * 判定（achCheck）は閉店のあと（endDay）と預金の操作のあと（svMove）。ほかの関数を包むだけで、ゲームの動きは変えない。
+ * 1年＝12ヶ月＝84日（1ヶ月＝MD日）。
+ * ui.js の後、debuglog.js の前に読み込むこと。
+ */
+
+const ACH_KEY = 'shop-sim-achv';
+
+/** 1年の日数（12ヶ月） */
+const YEAR = MD * 12;
+
+/** 金額を「1億」「1000億」「1兆」の形にする */
+const achYen = v => v >= 1e12 ? (v / 1e12) + '兆' : v >= 1e8 ? (v / 1e8) + '億' : (v / 1e4) + '万';
+
+/** 期間（日数）を「6ヶ月」「10年」の形にする */
+const achTerm = d => d % YEAR === 0 ? (d / YEAR) + '年' : (d / MD) + 'ヶ月';
+
+/**
+ * 実績の一覧。g：見出し、v()：いまの値、n：目標、ok()：追加の条件（なければ値が目標以上で解除）
+ * id は保存に使うので、公開後は変えない
+ */
+const ACH_GROUPS = [
+    { g: '💴 累計売上', e: '💴', v: () => state.tot || 0, ns: [1e8, 1e9, 1e10, 1e11, 1e12], id: n => 'tot' + n, name: n => '累計売上 ' + achYen(n), fmt: v => '¥' + fmt(v) },
+    { g: '🏪 営業', e: '🏪', v: () => state.day || 0, ns: [10 * YEAR, 50 * YEAR, 100 * YEAR], id: n => 'day' + n, name: n => '営業 ' + achTerm(n), fmt: v => '通算' + fmt(v) + '日' },
+    { g: '🏦 貯金', e: '🏦', v: () => state.sv || 0, ns: [1e7, 1e8, 1e9, 1e10, 1e11, 1e12], id: n => 'sv' + n, name: n => '貯金 ' + achYen(n), fmt: v => '預金 ¥' + fmt(v) },
+    { g: '🔥 インフェルノ', e: '🔥', v: () => state.diff === 'inferno' && !state.over ? state.day || 0 : 0, ns: [6 * MD, YEAR, 5 * YEAR, 10 * YEAR], id: n => 'inf' + n, name: n => 'インフェルノで ' + achTerm(n), fmt: v => state.diff === 'inferno' ? '通算' + fmt(v) + '日' : 'インフェルノで遊ぶと進みます' }
+];
+
+/** すべての実績（並び順どおり） */
+const ACHS = ACH_GROUPS.flatMap(G => G.ns.map(n => ({ id: G.id(n), G, n, name: G.name(n) })));
+
+/** 解除済み */
+let achGot = CG.ls.getJSON(ACH_KEY, {});
+if (!achGot || typeof achGot !== 'object' || Array.isArray(achGot))
+    achGot = {};
+
+let achSig = '';
+
+/** 条件を満たしたものを解除する（新しく解除したものの一覧を返す） */
+function achCheck() {
+    if (!state || !state.diff)
+        return [];
+    const nw = [];
+    ACHS.forEach(a => {
+        if (achGot[a.id] || a.G.v() < a.n)
+            return;
+        achGot[a.id] = { at: new Date().toISOString(), diff: state.diff };
+        nw.push(a);
+    });
+    if (nw.length) {
+        CG.ls.setJSON(ACH_KEY, achGot);
+        CG.toast('🏅 実績解除：' + nw.map(a => a.name).join('・'), 3500);
+        if (typeof dbgAdd === 'function')
+            dbgAdd('achv', { got: nw.map(a => a.id) });
+        syncAch(true);
+    }
+    return nw;
+}
+
+/** 「設定」タブの実績欄（解除数が変わったとき・開いたときだけ作り直す） */
+function syncAch(force) {
+    const el = byId('ach');
+    if (!el)
+        return;
+    const got = ACHS.filter(a => achGot[a.id]).length;
+    const sig = got + '|' + (state.tab || 0) + '|' + state.day + '|' + Math.floor((state.tot || 0) / 1e6) + '|' + Math.floor((state.sv || 0) / 1e5);
+    if (!force && sig === achSig && el.innerHTML)
+        return;
+    achSig = sig;
+    let h = '<div class="row"><b>🏅 実績' + helpIcon('achv') + '</b><span class="achn">' + got + ' / ' + ACHS.length + '</span></div>';
+    ACH_GROUPS.forEach(G => {
+        const cur = G.v();
+        h += '<div class="achg"><div class="achgh"><span>' + G.g + '</span><span class="meta">' + G.fmt(cur) + '</span></div><div class="achl">';
+        G.ns.forEach(n => {
+            const a = ACHS.find(x => x.id === G.id(n)), r = achGot[a.id];
+            if (r) {
+                const d = new Date(r.at), df = DF[r.diff];
+                h += '<div class="ach on" title="' + (isNaN(d) ? '' : d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate()) + (df ? '・' + df.n : '') + '">' +
+                    '<span class="achi">🏅</span><span class="acht">' + a.name + '</span><span class="achd">' + (isNaN(d) ? '' : (d.getMonth() + 1) + '/' + d.getDate()) + (df ? ' ' + df.n : '') + '</span></div>';
+            }
+            else {
+                const pc = Math.max(0, Math.min(100, cur / n * 100));
+                h += '<div class="ach"><span class="achi">🔒</span><span class="acht">' + a.name + '</span><span class="achp"><i style="width:' + pc + '%"></i></span></div>';
+            }
+        });
+        h += '</div></div>';
+    });
+    h += '<div class="meta">実績は最初からやり直しても消えません。</div>';
+    el.innerHTML = h;
+}
+
+// 閉店のあと・預金の操作のあとに判定する
+['endDay', 'svMove'].forEach(name => {
+    const f = window[name];
+    window[name] = function () {
+        const r = f.apply(this, arguments);
+        achCheck();
+        return r;
+    };
+});
+
+// 描画のたびに実績欄をそろえる（設定タブを開いているときだけ中身を作り直す）
+{
+    const r0 = render;
+    window.render = function () {
+        r0.apply(this, arguments);
+        if ((state.tab || 0) === 3)
+            syncAch();
+    };
 }
 </script>
 <script>

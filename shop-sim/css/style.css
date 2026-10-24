@@ -786,3 +786,80 @@ button.big.rstb.arm {
     object-fit:contain;
   }
 }
+
+/* ---- v1.3.0：実績 ---- */
+.achn {
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+.achg {
+  margin-top:10px;
+}
+
+.achgh {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  font-weight:700;
+  font-size:13px;
+}
+
+.achgh .meta {
+  font-weight:400;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+.achl {
+  display:grid;
+  gap:4px;
+  margin-top:4px;
+}
+
+.ach {
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  align-items:center;
+  gap:6px;
+  padding:5px 8px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  font-size:13px;
+  color:var(--sub);
+}
+
+.ach.on {
+  border-color:var(--tag);
+  background:color-mix(in srgb, var(--tag) 18%, transparent);
+  color:var(--ink);
+  font-weight:700;
+}
+
+.achi {
+  text-align:center;
+}
+
+.achd {
+  font-size:11px;
+  font-weight:400;
+  color:var(--sub);
+  white-space:nowrap;
+}
+
+.achp {
+  width:64px;
+  height:6px;
+  border-radius:3px;
+  background:var(--bar);
+  overflow:hidden;
+}
+
+.achp i {
+  display:block;
+  height:100%;
+  background:var(--ok);
+}
