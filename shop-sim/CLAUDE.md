@@ -36,6 +36,7 @@
 | `js/amazake.js` | かまくらボーナスの日（`kamaTick`）と甘酒ミニゲーム（`amaStart`・`syncAma`・`amaClose`） |
 | `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`）、セーブコード（`makeCode`・`readCode`）。作り方・読み方は `CG.save` |
 | `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`、ボタン処理 |
+| `js/achv.js` | 実績（一覧 `ACH_GROUPS`・判定 `achCheck`・設定タブの欄 `syncAch`）。`endDay`・`svMove` を包んで判定するだけ（ui.js の後、debuglog.js の前に読む） |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動 |
 
@@ -44,6 +45,7 @@
 - 自動保存：localStorage の `js/data.js` の `KEY`。項目名を変えたときは `KEY` を変える（古いセーブと混ざらないように）。
 - `state` の形を変えたときは `js/save.js` の `SAVE_VER` を上げ、`loadFix` に古いファイルの移行処理を書く（ファイルとセーブコードの両方に効く）。
 - セーブデータのファイル書き出し・読み込みは付録の「セーブデータ」。
+- 実績：localStorage `shop-sim-achv`（`{ id: { at, diff } }`）。ゲームの保存とは別で、やり直し・倒産でも消えない。実績の `id`（`tot<金額>`・`day<日数>`・`sv<金額>`・`inf<日数>`）は公開後に変えない。
 
 ## 5. 調整用の数値
 
@@ -54,6 +56,7 @@
 
 - `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
+- `python3 shop-sim/dev/test-achv.py [出力先]`：実績（閉店・預金で解除、やり直しても残る、インフェルノ以外・倒産した日は解除されない、表示）。サーバー不要。
 - `python3 shop-sim/dev/test-v120.py [出力先]`：セーブコード（コピー・やり直し・復元・書き換えの拒否）、v1.1.x 形式のファイル読み込み、書き出し、やり直しの2回押し、横画面（上のサーバーを先に起動）。
 - それ以外は Playwright で `index.html` を開き、スマホ幅のスクリーンショットで確認する。
 - 公開用の 1 ファイルは `python3 build.py` で `dist/shop-sim.html` に作る（アーティファクト版の元にもなる）。
@@ -160,6 +163,11 @@
 - 営業中（開店〜閉店）は不可。開業前・開店準備・閉店後・倒産後は可。
 - `SAVE_VER` 2：土嚢・かまくら（`prep`・`kama`・`mbDay`）を追加。
 - セーブコード（v1.2.0〜）：「📋 コードをコピー」で同じ包みを `CK1.<deflate＋base64url>.<チェック値>`（約750文字〜）にしてコピーし、欄にも出す（コピーできない端末は長押しで）。「⌨ コードで読み込む」に貼ると、ファイルと同じ確認（概要→「このデータで再開」）。欠け・書き換え・別ゲームのコードはチェック値ではじく。
+
+### 実績（v1.3.0〜、`js/achv.js`）
+- 18個：累計売上（`state.tot`）1億・10億・100億・1000億・1兆／営業（通算日数 `state.day`）10年・50年・100年／貯金（預金残高 `state.sv`）1000万・1億・10億・100億・1000億・1兆／インフェルノで（倒産せずに通算日数）6ヶ月・1年・5年・10年。
+- 1年＝12ヶ月＝84日（`YEAR`）。判定は閉店のあと（`endDay`）と預金の操作のあと（`svMove`）。
+- 解除の瞬間は画面下にトースト（`CG.toast`）。「⚙設定」タブの「🏅 実績」欄に解除数・一覧（解除日と難易度、未解除は🔒と進み具合のバー）。
 
 ### 画面
 - 上部固定：屋根・所持金・日付・ドット絵（店・季節・天気・夜・店員・お客さん・セキュリティ）・速度・タブ。
