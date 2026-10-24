@@ -3963,8 +3963,9 @@ function initLayout() {
     tp.id = 'top';
     document.querySelector('.awning').after(tp);
     const hr = document.createElement('div');
-    hr.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;gap:8px';
-    byId('dt').style.cssText = 'font-size:12px;text-align:right';
+    // 1行目に所持金、2行目に難易度・季節・日付・天気（v1.3.0〜）
+    hr.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:0';
+    byId('dt').style.cssText = 'font-size:12px;text-align:left';
     hr.append(byId('m'), byId('dt'));
     tp.append(hr);
     const dd = byId('px').closest('details');
