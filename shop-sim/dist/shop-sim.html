@@ -3963,9 +3963,9 @@ function initLayout() {
     tp.id = 'top';
     document.querySelector('.awning').after(tp);
     const hr = document.createElement('div');
-    // 1行目に所持金、2行目に難易度・季節・日付・天気（v1.3.0〜）
-    hr.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:0';
-    byId('dt').style.cssText = 'font-size:12px;text-align:left';
+    // 1行目に所持金、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
+    hr.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:0';
+    byId('dt').style.cssText = 'font-size:12px;text-align:right';
     hr.append(byId('m'), byId('dt'));
     tp.append(hr);
     const dd = byId('px').closest('details');
