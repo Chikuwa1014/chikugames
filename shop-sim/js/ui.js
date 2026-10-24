@@ -52,6 +52,8 @@ function render() {
     byId('pw').title = '季節×' + sea.p + ' 天気×' + we.p;
     const q = quota();
     byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
+    const qp = quotaParts();
+    byId('qx').textContent = '内訳: 損益分岐点¥' + fmt(qp.b) + '（月収¥' + fmt(state.sal) + '込み）' + (state.prev == null ? '' : ' / 前月比¥' + fmt(qp.g)) + ' → 高い方がノルマ';
     byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
     byId('qb').className = 'bar' + (state.mSales >= q ? '' : ' low');
     const left = state.day === 0 ? MD : MD - ((d - 1) % MD) - 1;
