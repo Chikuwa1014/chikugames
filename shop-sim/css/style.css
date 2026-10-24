@@ -1004,3 +1004,35 @@ button.achr {
 .ovbox.achbox {
   border-top-color:#c8a45a;
 }
+
+/* ---- v1.4.1：営業中の現在時刻（購買欲ゲージの上） ---- */
+.clk {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  padding:6px 12px;
+  margin-bottom:8px;
+  border-radius:12px;
+  background:var(--ink);
+  color:var(--bg);
+}
+
+.clk[hidden] {
+  display:none;
+}
+
+.clkt {
+  font-size:28px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.5px;
+  line-height:1.2;
+}
+
+.clkr {
+  font-size:12px;
+  font-weight:700;
+  opacity:.8;
+  text-align:right;
+}

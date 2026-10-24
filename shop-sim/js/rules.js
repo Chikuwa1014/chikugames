@@ -6,7 +6,7 @@
 const pwr = d => SEA[seaOf(d)].p * WE[d === state.day ? state.weather : state.next].p * (state.flame > 0 ? difficulty().fl : 1);
 
 /** 月のテナント料（棚数で指数的に増加） */
-const tenantFee = () => r100(4000 * Math.pow(1.6, state.slots - 2) * state.feeMul * difficulty().fee);
+const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee);
 
 /** 現在の売値（原価÷(1-粗利率)） */
 const priceOf = p => Math.max(p.c + 1, Math.round(p.c / (1 - state.margin / 100)));
