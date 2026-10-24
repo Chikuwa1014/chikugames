@@ -54,8 +54,10 @@ function pp(x, y, b, o) {
     const h = o.hair || '#3b2a20';
     x = Math.round(x);
     y = Math.round(y);
-    Rc(x + 1, y, 3, 3, '#f1c27d');
-    Rc(x + 1, y, 3, 1, h);
+    // うつむく（マイナスのイベントの日のお客さん）：頭を1つ下げ、進む向きへ少し前に出す
+    const hx = x + 1 + (o.down ? (o.dir ? -1 : 1) : 0), hy = y + (o.down ? 1 : 0);
+    Rc(hx, hy, 3, 3, '#f1c27d');
+    Rc(hx, hy, 3, o.down ? 2 : 1, h);
     if (o.g)
         Rc(x, y + 1, 1, 3, h);
     Rc(x, y + 3, 5, 4, b);
@@ -152,12 +154,25 @@ function pxSec() {
     cx.globalAlpha = 1;
 }
 
+/** 赤い空を横切るカラス（3羽。羽ばたきは2コマ） */
+function pxCrows(W) {
+    for (let k = 0; k < 3; k++) {
+        const x = W + 20 - ((fr * (1.1 + k * 0.3) + k * 70) % (W + 50)), y = 8 + k * 9 + (((fr >> 1) + k) % 6 < 3 ? 0 : 1), up = ((fr >> 1) + k) % 2;
+        Rc(x, y, 4, 2, '#151015');
+        Rc(x - 1, y, 1, 1, '#151015');
+        Rc(x + 1, y + (up ? -2 : 2), 2, 2, '#151015');
+        Rc(x + 4, y + 1, 2, 1, '#151015');
+    }
+}
+
 /** ドット絵の描画（1フレーム） */
 function drawPx() {
     const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
     const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
-    ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt].split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
-    if (wt === 0) {
+    const bad = badDay();
+    // マイナスのイベントがあった日は、閉店（翌日）まで空を赤く（v1.4.1〜）
+    (bad ? '#7a1010,#a01818,#c42a22,#d8462e,#e4643c,#ee8a5a' : ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt]).split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
+    if (wt === 0 && !bad) {
         if (night)
             Rc(160, 8, 6, 6, '#f5f0c8');
         else {
@@ -175,6 +190,8 @@ function drawPx() {
             Rc(x + 2, y + 4, 18, 1, 'rgba(0,0,0,.08)');
         }
     }
+    if (bad)
+        pxCrows(W);
     [[0, 14, 10], [12, 22, 14], [28, 16, 10], [150, 18, 12], [164, 26, 16], [182, 14, 10]].forEach(([x, h, w]) => {
         Rc(x, 62 - h, w, h, '#8ea4b8');
         for (let j = 0; j < h - 4; j += 4)
@@ -246,7 +263,7 @@ function drawPx() {
     pxSec();
     if (state.kama)
         pxKama();
-    const k = op ? (state.spd || 1) : 1;
+    const k = (op ? (state.spd || 1) : 1) * (badDay() ? 0.6 : 1);
     for (const c of PXC) {
         if (c.st === 0) {
             const dx = 93 - c.x;
@@ -319,7 +336,7 @@ function pxKama() {
 function pxPeople(op) {
     PXC.forEach(c => {
         if (c.st !== 1)
-            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
+            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), badDay() ? '#6b6f78' : (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L, down: badDay() });
     });
     const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
     for (let i = 0; i < n; i++) {
