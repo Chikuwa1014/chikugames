@@ -220,24 +220,30 @@ body {
 
 .log {
   font-size:13px;
-  color:var(--sub);
-  min-height:40px;
-  margin-bottom:8px;
-}
-
-.log div:first-child {
+  line-height:1.5;
   color:var(--ink);
   font-weight:600;
+  /* 4行分の枠でスクロール（v1.4.0〜）。行が増えてもほかの表示は動かない */
+  height:calc(4 * 1.5em + 8px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:4px 8px;
+  margin-bottom:8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--card);
+}
+
+.log div {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .log div.sale {
   color:var(--sub);
   font-weight:400;
-}
-
-.log div.sale + div {
-  color:var(--ink);
-  font-weight:600;
 }
 
 .card.off {
@@ -870,6 +876,141 @@ button.big.rstb.arm {
   height:100%;
   background:var(--ok);
 }
+
+/* ---- v1.4.0：所持金の行の実績バッジ・実績のポップアップ・タブの倍速・更新履歴 ---- */
+.mrow {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.mrow .money {
+  min-width:0;
+}
+
+button.achb {
+  flex:none;
+  width:auto;
+  padding:3px 10px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+#achm {
+  position:fixed;
+  inset:0;
+  z-index:40;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+#achm[hidden] {
+  display:none;
+}
+
+.ovbox.achbox {
+  display:flex;
+  flex-direction:column;
+  height:min(620px, 100%);
+  padding:12px 14px;
+  overflow:hidden;
+}
+
+.achtop {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--line);
+}
+
+.achtop .achn {
+  margin-left:auto;
+}
+
+button.achx {
+  flex:none;
+  width:34px;
+  padding:4px 0;
+}
+
+.achbody {
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+}
+
+button.achr {
+  width:100%;
+  margin-top:10px;
+}
+
+.achask {
+  margin-top:10px;
+}
+
+.achask .btns {
+  margin-top:8px;
+}
+
+#tabs .spd {
+  flex:none;
+  display:flex;
+  gap:3px;
+}
+
+#tabs .spd button {
+  width:36px;
+  flex:none;
+  font-variant-numeric:tabular-nums;
+}
+
+#tabs {
+  gap:5px;
+}
+
+.chg {
+  font-size:13px;
+  color:var(--sub);
+}
+
+.chg b {
+  color:var(--ink);
+}
+
+.chg ul {
+  margin:6px 0 0;
+  padding-left:1.2em;
+}
+
+.chg li {
+  margin:2px 0;
+}
+
+.chg details summary {
+  cursor:pointer;
+  color:var(--ink);
+  font-weight:700;
+  margin-top:6px;
+}
+
+.achask button.rstb {
+  background:var(--red);
+  color:#fff;
+}
+
+.ovbox.achbox {
+  border-top-color:#c8a45a;
+}
 </style>
 </head>
 <body>
@@ -890,10 +1031,10 @@ button.big.rstb.arm {
 <div class="grid" id="sh"></div>
 <h2>投資</h2>
 <div id="up"></div>
-<div class="card" id="ach"></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="dbg"></div>
 <div class="card rst"><b>🔄 最初からやり直す</b><div class="meta">今のお店をたたんで、難易度えらびからやり直します。セーブデータを残したいときは、先に書き出してください。</div><button class="big rstb" data-a="reset">最初からやり直す</button></div>
+<div class="card chg" id="chg"></div>
 <div class="foot"><div class="ver" id="ver"></div></div>
 <!-- ちくわゲームズ共通部品（common/v1）。build.py・make-artifact.py が中に埋め込む -->
 <script>
@@ -1460,8 +1601,22 @@ const WW = [
 /** フェーズ名 */
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
-/** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる。履歴は claude/未実装タスク.md） */
-const VERSION = '1.3.0';
+/** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
+const VERSION = '1.4.0';
+
+/**
+ * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
+ * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
+ */
+const CHANGES = [
+    ['1.4.0', '2026-10-24', '更新履歴を設定タブに表示。実績を所持金の横のバッジ（🏅）に移し、タップで一覧を開くように。実績のリセットを追加（確認画面つき）。一時停止・倍速ボタンをタブの行の右端にまとめ、倍速は押すたびに×1→×2→×4→×8と切り替え。営業タブのログ欄を4行分の枠にし、直近50件までさかのぼれるように（売れた商品を時刻つきで記録）。デバッグ欄の見出しを「🐞 デバッグ」に'],
+    ['1.3.0', '2026-10-24', '実績（累計売上・営業・貯金・インフェルノの18個）を追加。季節を実際の1年と同じ3ヶ月ごとに（1ヶ月目＝4月）。日付に暦の月を表示'],
+    ['1.2.0', '2026-10-24', 'セーブコード（コピー・貼り付けで読み込み）を追加。横画面に対応。「最初からやり直す」を目立たせた。共有・セーブ・デバッグ送信をちくわゲームズ共通部品に置き換え'],
+    ['1.1.1', '2026-10-23', 'デバッグログの送信（設定タブ）を追加。投資タブに「投資できない理由」を表示'],
+    ['1.1.0', '2026-10-22', '台風・大雪の新しい仕様（土嚢・かまくら・甘酒ミニゲーム）。ゲージの説明を「？」アイコンに。購買力を店の様子の行に表示'],
+    ['1.0.1', '2026-10-22', '直近の販売をログ欄に表示。開店中のお金タブをグレーアウト。×8速でお客さんの歩く速さを合わせた。夜に人が窓の明かりに隠れる不具合を修正'],
+    ['1.0.0', '2026-10-22', 'バージョン表記を開始。倒産ポップアップ・セーブのファイル書き出し／読み込み・「？」の説明を含む']
+];
 
 /** 著作権表記 */
 const COPYRIGHT = '© 2026 ちくわげーむず';
@@ -1774,8 +1929,32 @@ if (!state || !state.shelf) {
     state.weather = state.next;
 }
 
-/** ログに1行追加（最新3件） */
-const addLog = t => {
+/**
+ * 営業タブのログ欄に出す履歴（v1.4.0〜）。直近 LOGN 件。セーブには入れない（再読み込みで消える）。
+ * 形：{ t: 文, s: 販売の行なら true }。state が入れ替わったら（やり直し・読み込み）state.log から作り直す
+ */
+const LOGN = 50;
+let logHist = [], logOwner = null, logSeq = 0;
+const logList = () => {
+    if (logOwner !== state) {
+        logOwner = state;
+        logSeq++;
+        logHist = (state.log || []).map(t => ({ t }));
+    }
+    return logHist;
+};
+const pushHist = (t, s) => {
+    const L = logList();
+    L.unshift({ t, s: !!s });
+    logSeq++;
+    if (L.length > LOGN)
+        L.length = LOGN;
+};
+
+/** ログに1行追加（state.log は最新3件。noHist なら履歴には足さない＝販売の行は engine.js がまとめて足す） */
+const addLog = (t, noHist) => {
+    if (!noHist)
+        pushHist(t);
     state.log.unshift(t);
     state.log = state.log.slice(0, 3);
 };
@@ -2631,10 +2810,12 @@ function tick() {
         if (state.boost === 0)
             state.gauge = Math.min(100, state.gauge + 2);
         if (q * pp >= 1000)
-            addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp));
+            addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp), true);
     }
     if (bc)
         lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +¥' + fmt(sy);
+    if (bc)
+        pushHist('🛒 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + ' ' + lastSale, true);
     pxArrive(gs, bc);
     if (state.flame > 0)
         state.gauge = Math.min(state.gauge, 4);
@@ -3597,6 +3778,22 @@ function restart() {
     save();
 }
 
+/**
+ * 営業タブのログ欄（v1.4.0〜）。高さ4行分の枠でスクロールし、直近 LOGN 件までさかのぼれる。
+ * 新しい行は上に足す。さかのぼって読んでいる間は、新しい行が来ても読んでいる位置がずれないようにする
+ */
+let logSig = '';
+function syncLog() {
+    const el = byId('lg'), L = logList(), sig = logSeq + '|' + L.length;
+    if (sig === logSig && el.innerHTML)
+        return;
+    logSig = sig;
+    const st = el.scrollTop, sh = el.scrollHeight;
+    el.innerHTML = L.map(l => '<div' + (l.s ? ' class="sale"' : '') + '>' + l.t + '</div>').join('');
+    if (st > 0)
+        el.scrollTop = st + (el.scrollHeight - sh);
+}
+
 /** 画面全体の描画 */
 /** 閉店後以外は、お金の欄を無効化してグレーアウトする（？アイコンは押せるまま） */
 const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g, 'class="card off"').replace(/<(input|select)/g, '<$1 disabled').replace(/<button data-a="sv/g, '<button disabled data-a="sv').replace(/<button class="alt" data-a="sv/g, '<button class="alt" disabled data-a="sv');
@@ -3632,7 +3829,7 @@ function render() {
     syncOver();
     syncSave();
     syncAma();
-    byId('lg').innerHTML = (state.phase === 'open' && lastSale ? '<div class="sale">🛒 ' + lastSale + '</div>' : '') + state.log.map(l => '<div>' + l + '</div>').join('');
+    syncLog();
     let pn = '';
     if (state.evs.length)
         pn += '<div class="card"><b>本日のできごと</b>' + state.evs.map(t => '<div class="meta">' + t + '</div>').join('') + '</div>';
@@ -3668,7 +3865,6 @@ function render() {
             byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
     }
     byId('pn').innerHTML = pn;
-    byId('sd').innerHTML = '<button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + '>' + (state.paused ? '▶' : '⏸') + '</button>' + [1, 2, 4, 8].map(v => '<button class="' + ((state.spd || 1) === v ? '' : 'alt') + '" data-a="spd" data-v="' + v + '">×' + v + '</button>').join('');
     if (!dragMg)
         byId('mnyA').innerHTML = '';
     if (!dragMg)
@@ -3710,7 +3906,9 @@ function render() {
         }
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
-        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('');
+        // タブの右端に一時停止と倍速（v1.4.0〜。倍速は押すたび×1→×2→×4→×8）
+        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('') +
+            '<span class="spd"><button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? '' : 'alt') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button></span>';
         [0, 1, 2, 3].forEach(i => {
             const e = byId('p' + i);
             if (e)
@@ -3844,8 +4042,9 @@ document.addEventListener('click', e => {
         saveResultImage();
     if (a === 'shcopy')
         copyShareText(b);
-    if (a === 'spd') {
-        state.spd = +b.dataset.v;
+    if (a === 'spd' || a === 'spdc') {
+        const S = [1, 2, 4, 8];
+        state.spd = a === 'spd' ? +b.dataset.v : S[(S.indexOf(state.spd || 1) + 1) % S.length];
         render();
         save();
     }
@@ -3963,14 +4162,19 @@ function initLayout() {
     tp.id = 'top';
     document.querySelector('.awning').after(tp);
     const hr = document.createElement('div');
-    // 1行目に所持金、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
+    // 1行目に所持金と実績のバッジ（v1.4.0〜）、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
     hr.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:0';
     byId('dt').style.cssText = 'font-size:12px;text-align:right';
-    hr.append(byId('m'), byId('dt'));
+    const mr = document.createElement('div');
+    mr.className = 'mrow';
+    mr.append(byId('m'));
+    mr.insertAdjacentHTML('beforeend', '<button class="alt achb" id="achb" data-a="achopen" aria-label="実績"></button>');
+    hr.append(mr, byId('dt'));
     tp.append(hr);
     const dd = byId('px').closest('details');
     dd.style.margin = '4px 0';
-    tp.append(dd, byId('sd'));
+    tp.append(dd);
+    byId('sd').remove();
     const tb = document.createElement('div');
     tb.id = 'tabs';
     tb.className = 'sd';
@@ -3985,7 +4189,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('ach'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
@@ -3996,7 +4200,9 @@ function initLayout() {
 /**
  * achv.js — 実績（v1.3.0〜）。
  *
- * 条件を満たすと解除され、「⚙設定」タブの「🏅 実績」欄に並ぶ。解除の瞬間は画面下にお知らせ（CG.toast）。
+ * 条件を満たすと解除される。所持金の行のバッジ「🏅 解除数/18」（#achb）をタップすると一覧のポップアップ（#achm）が開く（v1.4.0〜。
+ * それまでは設定タブに置いていた）。解除の瞬間は画面下にお知らせ（CG.toast）。
+ * 一覧の下の「実績をリセット」で、ページ内の確認画面を出してから ACH_KEY を消す（v1.4.0〜）。
  * 保存はゲームとは別の localStorage（ACH_KEY）なので、最初からやり直しても・倒産しても消えない。
  *   形：{ <実績のid>: { at: 解除した日時(ISO), diff: 難易度のキー } }
  * 判定（achCheck）は閉店のあと（endDay）と預金の操作のあと（svMove）。ほかの関数を包むだけで、ゲームの動きは変えない。
@@ -4036,6 +4242,9 @@ if (!achGot || typeof achGot !== 'object' || Array.isArray(achGot))
 
 let achSig = '';
 
+/** ポップアップを開いているか／リセットの確認画面を出しているか */
+let achOpen = false, achAsk = false;
+
 /** 条件を満たしたものを解除する（新しく解除したものの一覧を返す） */
 function achCheck() {
     if (!state || !state.diff)
@@ -4052,22 +4261,47 @@ function achCheck() {
         CG.toast('🏅 実績解除：' + nw.map(a => a.name).join('・'), 3500);
         if (typeof dbgAdd === 'function')
             dbgAdd('achv', { got: nw.map(a => a.id) });
+        syncAchBadge();
         syncAch(true);
     }
     return nw;
 }
 
-/** 「設定」タブの実績欄（解除数が変わったとき・開いたときだけ作り直す） */
-function syncAch(force) {
-    const el = byId('ach');
-    if (!el)
+/** 所持金の行のバッジ（解除数） */
+function syncAchBadge() {
+    const b = byId('achb');
+    if (!b)
         return;
+    const t = '🏅 ' + ACHS.filter(a => achGot[a.id]).length + '/' + ACHS.length;
+    if (b.textContent !== t)
+        b.textContent = t;
+}
+
+/** 実績のポップアップ（開いているときだけ、内容が変わったら作り直す） */
+function syncAch(force) {
+    let el = byId('achm');
+    if (!achOpen) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'achm';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                achShow(false);
+        });
+        document.body.appendChild(el);
+    }
+    el.hidden = false;
     const got = ACHS.filter(a => achGot[a.id]).length;
-    const sig = got + '|' + (state.tab || 0) + '|' + state.day + '|' + Math.floor((state.tot || 0) / 1e6) + '|' + Math.floor((state.sv || 0) / 1e5);
+    const sig = got + '|' + achAsk + '|' + state.day + '|' + Math.floor((state.tot || 0) / 1e6) + '|' + Math.floor((state.sv || 0) / 1e5);
     if (!force && sig === achSig && el.innerHTML)
         return;
     achSig = sig;
-    let h = '<div class="row"><b>🏅 実績' + helpIcon('achv') + '</b><span class="achn">' + got + ' / ' + ACHS.length + '</span></div>';
+    const box = el.querySelector('.achbody'), st = box ? box.scrollTop : 0;
+    let h = '<div class="ovbox achbox"><div class="achtop"><b>🏅 実績' + helpIcon('achv') + '</b><span class="achn">' + got + ' / ' + ACHS.length + '</span><button class="alt achx" data-a="achclose" aria-label="閉じる">✕</button></div><div class="achbody">';
     ACH_GROUPS.forEach(G => {
         const cur = G.v();
         h += '<div class="achg"><div class="achgh"><span>' + G.g + '</span><span class="meta">' + G.fmt(cur) + '</span></div><div class="achl">';
@@ -4085,9 +4319,56 @@ function syncAch(force) {
         });
         h += '</div></div>';
     });
-    h += '<div class="meta">実績は最初からやり直しても消えません。</div>';
+    h += '<div class="meta" style="margin-top:10px">実績は最初からやり直しても消えません。</div>';
+    if (achAsk)
+        h += '<div class="card rst achask"><b>⚠ 本当に消しますか？</b><div class="meta">解除した実績' + got + '個がすべて消え、元に戻せません。今のお店の数字がすでに条件を満たしている実績は、次の閉店のあとにもう一度解除されます。</div><div class="btns"><button class="rstb" data-a="achdel">消す</button><button class="alt" data-a="achno">やめる</button></div></div>';
+    else
+        h += '<button class="alt achr" data-a="achask"' + (got ? '' : ' disabled') + '>🗑 実績をリセット</button>';
+    h += '</div></div>';
     el.innerHTML = h;
+    const nb = el.querySelector('.achbody');
+    if (nb)
+        nb.scrollTop = achAsk ? nb.scrollHeight : st;
 }
+
+/** ポップアップを開く・閉じる */
+function achShow(on) {
+    achOpen = on;
+    achAsk = false;
+    achSig = '';
+    if (!on)
+        hideHelp();
+    syncAch(true);
+}
+
+/** 実績をすべて消す（確認画面の「消す」） */
+function achReset() {
+    achGot = {};
+    CG.ls.setJSON(ACH_KEY, achGot);
+    achAsk = false;
+    if (typeof dbgAdd === 'function')
+        dbgAdd('achv', { reset: true });
+    CG.toast('🗑 実績をリセットしました', 2500);
+    syncAchBadge();
+    syncAch(true);
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'achopen')
+        achShow(true);
+    if (a === 'achclose')
+        achShow(false);
+    if (a === 'achask' || a === 'achno') {
+        achAsk = a === 'achask';
+        syncAch(true);
+    }
+    if (a === 'achdel')
+        achReset();
+});
 
 // 閉店のあと・預金の操作のあとに判定する
 ['endDay', 'svMove'].forEach(name => {
@@ -4099,13 +4380,13 @@ function syncAch(force) {
     };
 });
 
-// 描画のたびに実績欄をそろえる（設定タブを開いているときだけ中身を作り直す）
+// 描画のたびにバッジをそろえる（ポップアップは開いているときだけ中身を作り直す）
 {
     const r0 = render;
     window.render = function () {
         r0.apply(this, arguments);
-        if ((state.tab || 0) === 3)
-            syncAch();
+        syncAchBadge();
+        syncAch();
     };
 }
 </script>
@@ -4197,7 +4478,7 @@ function syncDbg(force) {
         return;
     dbgSig = sig;
     const old = byId('dbgn'), note = old ? old.value : '';
-    let h = '<b>🐞 デバッグログ</b>' + helpIcon('dbg') +
+    let h = '<b>🐞 デバッグ</b>' + helpIcon('dbg') +
         '<textarea id="dbgn" rows="2" maxlength="500" placeholder="どんなことが起きた？（任意）例：2ヶ月目に投資ボタンが押せない" style="width:100%;box-sizing:border-box;margin:6px 0;font:inherit;font-size:13px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)"></textarea>' +
         '<button data-a="dbgsend"' + (dbgMsg && dbgMsg.busy ? ' disabled' : '') + '>' + (dbgMsg && dbgMsg.busy ? '送信中…' : '🐞 デバッグログを送る') + '</button>' +
         '<div class="meta">直近' + CG.debug.log.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>';
@@ -4237,6 +4518,12 @@ if (!LA.includes(state.ln.a))
 applyDiff();
 initLayout();
 byId('ver').innerHTML = 'ちいさなお店 v' + VERSION + '<br>' + COPYRIGHT;
+{
+    // 更新履歴（最新だけ表示し、過去の分は開いて見る）
+    const li = c => '<li><b>v' + c[0] + '</b>（' + c[1] + '）' + c[2] + '</li>';
+    byId('chg').innerHTML = '<b>📝 更新履歴</b><ul>' + li(CHANGES[0]) + '</ul>' +
+        (CHANGES.length > 1 ? '<details><summary>過去の更新履歴</summary><ul>' + CHANGES.slice(1).map(li).join('') + '</ul></details>' : '');
+}
 setInterval(() => {
     fr++;
     drawPx();

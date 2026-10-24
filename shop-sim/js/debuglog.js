@@ -85,7 +85,7 @@ function syncDbg(force) {
         return;
     dbgSig = sig;
     const old = byId('dbgn'), note = old ? old.value : '';
-    let h = '<b>🐞 デバッグログ</b>' + helpIcon('dbg') +
+    let h = '<b>🐞 デバッグ</b>' + helpIcon('dbg') +
         '<textarea id="dbgn" rows="2" maxlength="500" placeholder="どんなことが起きた？（任意）例：2ヶ月目に投資ボタンが押せない" style="width:100%;box-sizing:border-box;margin:6px 0;font:inherit;font-size:13px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)"></textarea>' +
         '<button data-a="dbgsend"' + (dbgMsg && dbgMsg.busy ? ' disabled' : '') + '>' + (dbgMsg && dbgMsg.busy ? '送信中…' : '🐞 デバッグログを送る') + '</button>' +
         '<div class="meta">直近' + CG.debug.log.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>';

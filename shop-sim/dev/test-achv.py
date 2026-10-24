@@ -41,17 +41,26 @@ with sync_playwright() as p:
     print('インフェルノ84日:', got())
     assert 'inf42' in got() and 'inf84' in got() and 'inf420' not in got()
 
-    # 設定タブの表示（スマホ幅と横画面）
-    pg.click('[data-a="tab"][data-v="3"]')
+    # 所持金の横のバッジとポップアップ（v1.4.0〜。スマホ幅と横画面）
+    print('バッジ:', pg.inner_text('#achb'))
+    pg.click('#achb')
     pg.wait_for_timeout(300)
-    print('欄の見出し:', pg.inner_text('#ach .row'))
-    pg.locator('#ach').scroll_into_view_if_needed()
+    print('ポップアップの見出し:', pg.inner_text('#achm .achtop'))
     pg.screenshot(path=OUT + '/achv-p.png')
-    pg.locator('#ach').screenshot(path=OUT + '/achv-card.png')
     pg.set_viewport_size({'width': 844, 'height': 390})
     pg.wait_for_timeout(200)
-    pg.locator('#ach').scroll_into_view_if_needed()
     pg.screenshot(path=OUT + '/achv-l.png')
+    pg.set_viewport_size({'width': 390, 'height': 844})
+    # リセット：確認画面 →「やめる」で消えない →「消す」で 0 個
+    n0 = len(got())
+    pg.click('[data-a="achask"]'); pg.click('[data-a="achno"]')
+    assert len(got()) == n0
+    pg.click('[data-a="achask"]'); pg.wait_for_timeout(200)
+    pg.screenshot(path=OUT + '/achv-reset.png')
+    pg.click('[data-a="achdel"]'); pg.wait_for_timeout(200)
+    print('リセット後:', got(), pg.inner_text('#achb'))
+    assert got() == {} or got() == []
+    pg.click('[data-a="achclose"]')
     sw = pg.evaluate('document.documentElement.scrollWidth')
     print('横スクロール:', 'なし' if sw <= 844 else sw)
     b.close()
