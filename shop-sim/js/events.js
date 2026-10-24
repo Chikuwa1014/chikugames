@@ -46,7 +46,7 @@ function rollProd() {
     const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
     if (on(0) && R() < 0.02) {
         resetInv(1);
-        addEvent('💣 熱ばくだんおにぎりが爆発！棚が1つだけ残り、投資がすべてリセットされました');
+        addEvent('💣 熱ばくだんおにぎりが爆発！棚が1つだけ残り、投資がすべてリセットされました', 1);
     }
     if (on(1) && R() < 0.02) {
         state.happy = clamp100(state.happy - 25);
@@ -60,7 +60,7 @@ function rollProd() {
         const f = 0.75 + R() * 1.2;
         state.cm[6] = Math.min(5, Math.max(0.5, state.cm[6] * f));
         applyUp();
-        addEvent('📈 アップレの原価が' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%変動しました');
+        addEvent('📈 アップレの原価が' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%変動しました', f > 1);
     }
     if (on(7) && R() < 0.25) {
         state.rb = 3;
@@ -69,13 +69,13 @@ function rollProd() {
     if (on(8) && R() < 0.05) {
         state.up[4] = 0;
         applyUp();
-        addEvent('👩‍🏫 教育ママが来店。雑誌のアップグレードがリセットされました');
+        addEvent('👩‍🏫 教育ママが来店。雑誌のアップグレードがリセットされました', 1);
     }
     if (on(10) && R() < 0.05) {
         state.flame = 14;
         state.boost = 0;
         state.gauge = Math.min(state.gauge, 4);
-        addEvent('📱 無断撮影（盗撮）トラブルがSNSで炎上。2ヶ月間、購買欲が5以上になりません');
+        addEvent('📱 無断撮影（盗撮）トラブルがSNSで炎上。2ヶ月間、購買欲が5以上になりません', 1);
     }
     if (on(11) && R() < 0.05) {
         let n = 0;
@@ -85,7 +85,7 @@ function rollProd() {
             state.money -= 10000;
             state.happy = clamp100(state.happy - 5);
         }
-        addEvent('🛴💥 店前で大事故！6台の車が店に突っ込み、棚' + n + '台を失い修繕費¥60,000');
+        addEvent('🛴💥 店前で大事故！6台の車が店に突っ込み、棚' + n + '台を失い修繕費¥60,000', 1);
     }
 }
 
@@ -114,11 +114,27 @@ function guard(a) {
     return a - r;
 }
 
-/** イベントを記録してログに出す */
-function addEvent(t) {
+/** イベントを記録してログに出す。bad が真ならマイナスのイベント（その日は空を赤く・悲しい演出。v1.4.1〜） */
+function addEvent(t, bad) {
     state.evs.push(t);
     addLog(t);
+    if (bad)
+        markBad();
 }
+
+/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす） */
+function markBad() {
+    state.bad = state.day;
+    const c = byId('px');
+    if (c) {
+        c.classList.remove('shake');
+        void c.offsetWidth;
+        c.classList.add('shake');
+    }
+}
+
+/** 今日はマイナスのイベントがあった日か */
+const badDay = () => state.bad !== undefined && state.bad === state.day && !state.over;
 
 /** 棚を1つ失う */
 function lose() {
@@ -140,18 +156,18 @@ function rollEvents() {
     if (state.day > 1 && state.day % MD === 1 && r() < 0.05) {
         const f = Math.round((0.9 + R() * 0.8) * 100) / 100;
         state.feeMul = Math.round(state.feeMul * f * 100) / 100;
-        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）');
+        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）', f > 1);
     }
     if (r() < 0.0001) {
         resetInv(2);
         state.happy = clamp100(state.happy - 20);
-        addEvent('🌋 大地震！投資がすべてリセットされました');
+        addEvent('🌋 大地震！投資がすべてリセットされました', 1);
     }
     if (r() < 0.01) {
         const lost = lose();
         state.money -= 10000;
         state.happy = clamp100(state.happy - 5);
-        addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000');
+        addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000', 1);
     }
     const pr = state.prep || {}, ok = () => Math.random() < 0.55;
     let typ = false, sn = false;
@@ -170,7 +186,7 @@ function rollEvents() {
             if (s)
                 s.st = 0;
         });
-        addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に');
+        addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に', 1);
     }
     if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
         state.kama = 1;
@@ -184,7 +200,7 @@ function rollEvents() {
         snow = true;
         state.hol = false;
         state.weather = 3;
-        addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）');
+        addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）', 1);
     }
     if ((pr.typ && !typ) || (pr.snow && !sn)) {
         snow = true;

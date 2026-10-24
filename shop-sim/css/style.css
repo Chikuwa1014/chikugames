@@ -1036,3 +1036,21 @@ button.achr {
   opacity:.8;
   text-align:right;
 }
+
+/* ---- v1.4.1：マイナスのイベントが起きた瞬間に店の絵を揺らす ---- */
+#px.shake {
+  animation:pxshake .6s ease-out;
+}
+
+@keyframes pxshake {
+  0%, 100% { transform:translate(0,0); }
+  15% { transform:translate(-4px,1px); }
+  30% { transform:translate(4px,-1px); }
+  45% { transform:translate(-3px,1px); }
+  60% { transform:translate(3px,0); }
+  80% { transform:translate(-1px,0); }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #px.shake { animation:none; }
+}
