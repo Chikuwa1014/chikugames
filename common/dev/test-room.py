@@ -25,7 +25,10 @@ with sync_playwright() as p:
     code = host.inner_text(".cg-room-num")
     print("部屋コード", code)
 
-    g1 = page("こ1"); g1.goto(BASE + "?room=" + code)       # リンクで参加
+    g1 = page("こ1"); g1.goto(BASE + "?room=" + code)       # リンクで参加（名前欄があるので、名前を入れてから「参加する」）
+    g1.wait_for_selector(".cg-room-name", timeout=8000)
+    assert g1.input_value(".cg-room-code") == code and g1.locator(".cg-room-num").count() == 0, "リンクで開いたら、部屋コード入りで参加前に止まる"
+    g1.fill(".cg-room-name", "リンクの子"); g1.click('[data-cg="join"]')
     g1.wait_for_selector(".cg-room-num", timeout=15000)
     g2 = page("こ2"); g2.goto(BASE)                          # コードを入れて参加
     g2.fill(".cg-room-code", code); g2.click('[data-cg="join"]')
@@ -39,6 +42,7 @@ with sync_playwright() as p:
 
     # 3台までの部屋に4台目 → 満員
     g3 = page("こ3"); g3.goto(BASE + "?room=" + code)
+    g3.wait_for_selector(".cg-room-name", timeout=8000); g3.click('[data-cg="join"]')
     g3.wait_for_selector(".cg-room-err", timeout=15000)
     print("4台目:", g3.inner_text(".cg-room-err"))
 
