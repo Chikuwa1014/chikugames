@@ -1054,3 +1054,26 @@ button.achr {
 @media (prefers-reduced-motion:reduce) {
   #px.shake { animation:none; }
 }
+
+/* ---- v1.4.2：ドット絵の右上にセキュリティのストック残数 ---- */
+.pxw {
+  position:relative;
+}
+
+.secn {
+  position:absolute;
+  top:12px;
+  right:6px;
+  padding:1px 7px;
+  border-radius:999px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  pointer-events:none;
+}
+
+.secn[hidden] {
+  display:none;
+}
