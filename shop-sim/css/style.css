@@ -1051,8 +1051,20 @@ button.achr {
   80% { transform:translate(-1px,0); }
 }
 
+/* ---- v1.5.0：大地震の日は店の絵が揺れ続ける ---- */
+#px.quake {
+  animation:pxquake .28s linear infinite;
+}
+
+@keyframes pxquake {
+  0%, 100% { transform:translate(0,0); }
+  25% { transform:translate(-2px,1px); }
+  50% { transform:translate(2px,-1px); }
+  75% { transform:translate(-1px,0); }
+}
+
 @media (prefers-reduced-motion:reduce) {
-  #px.shake { animation:none; }
+  #px.shake, #px.quake { animation:none; }
 }
 
 /* ---- v1.4.2：ドット絵の右上にセキュリティのストック残数 ---- */
