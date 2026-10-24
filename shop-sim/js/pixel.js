@@ -1,5 +1,8 @@
 /**
  * pixel.js — ドット絵の描画。
+ * v1.4.3〜：キャンバスは 384×184（従来の 192×92 の縦横2倍）。
+ * 座標は従来どおり「論理座標（192×92）」で書き、`Rc` が2倍にして塗る（0.5刻みの位置も使える）。
+ * 人物・商品など細かく描きたいものだけ、実ピクセル（384×184）で塗る `Rp` を使う。
  */
 
 /** ドット絵のキャンバス */
@@ -11,15 +14,30 @@ const cx = cv.getContext('2d');
 /** アニメーションのフレーム数 */
 let fr = 0;
 
-/** 四角形を塗る */
-const Rc = (x, y, w, h, c) => {
+/** キャンバスの実ピクセルの大きさ（論理座標の2倍） */
+const PXW = 384, PXH = 184;
+
+/** 四角形を塗る（実ピクセル座標） */
+const Rp = (x, y, w, h, c) => {
+    x = Math.round(x);
+    y = Math.round(y);
     cx.fillStyle = c;
-    cx.fillRect(Math.round(x), Math.round(y), w, h);
+    cx.fillRect(x, y, w, h);
     if (pxDk) {
         cx.fillStyle = 'rgba(8,16,48,0.5)';
-        cx.fillRect(Math.round(x), Math.round(y), w, h);
+        cx.fillRect(x, y, w, h);
     }
 };
+
+/** 四角形を塗る（論理座標。実ピクセルでは2倍） */
+const Rc = (x, y, w, h, c) => Rp(x * 2, y * 2, w * 2, h * 2, c);
+
+/** 色を明るく（k>0）・暗く（k<0）する */
+function shade(c, k) {
+    const n = parseInt(c.slice(1), 16), t = k < 0 ? 0 : 255, a = Math.abs(k);
+    const f = v => Math.round(v + (t - v) * a);
+    return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join('');
+}
 
 /** 夜に人物を描き直すとき、夜の暗さを重ねる */
 let pxDk = false;
@@ -27,11 +45,25 @@ let pxDk = false;
 /** 来店中のお客さん */
 const PXC = [];
 
-/** ドット文字を描く */
+/** ドット文字を描く（1ドット＝論理1px） */
 function pxText(x, y, t, c) {
     [...t].forEach((ch, i) => PXF[ch].forEach((r, j) => [...r].forEach((v, k) => {
         if (v === '1')
             Rc(x + i * 4 + k, y + j, 1, 1, c);
+    })));
+}
+
+/** 小さなドット文字（3×5・実ピクセル）。OPEN／CLOSE の札に使う */
+const PXG = {
+    O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'], E: ['111', '100', '110', '100', '111'], N: ['111', '101', '101', '101', '101'],
+    C: ['111', '100', '100', '100', '111'], L: ['100', '100', '100', '100', '111'], S: ['111', '100', '111', '001', '111']
+};
+
+/** 小さなドット文字を描く（実ピクセル座標。文字間1px） */
+function pxTextP(x, y, t, c) {
+    [...t].forEach((ch, i) => PXG[ch].forEach((r, j) => [...r].forEach((v, k) => {
+        if (v === '1')
+            Rp(x + i * 4 + k, y + j, 1, 1, c);
     })));
 }
 
@@ -48,28 +80,89 @@ function pxArrive(gs, bc) {
     });
 }
 
-/** 人物を描く */
+/**
+ * 人物を描く（実ピクセルで 10×約19。顔の表情つき）。x・y は論理座標（0.5刻みで動ける）
+ * o.mood：'neutral'（ふつう）・'happy'（にこにこ・ほほ染め）・'meh'（がっかり）・'sad'（落ち込み・まゆと涙）
+ * o.g：女性（長い髪・スカート）／o.bag：買い物袋／o.dir：左へ進む／o.down：うつむく
+ * o.walk：歩きのコマ（0・1。足が交互に出る）／o.apron：エプロン（店員）／o.shades：サングラス
+ */
 function pp(x, y, b, o) {
     o = o || {};
-    const h = o.hair || '#3b2a20';
-    x = Math.round(x);
-    y = Math.round(y);
-    // うつむく（マイナスのイベントの日のお客さん）：頭を1つ下げ、進む向きへ少し前に出す
-    const hx = x + 1 + (o.down ? (o.dir ? -1 : 1) : 0), hy = y + (o.down ? 1 : 0);
-    Rc(hx, hy, 3, 3, '#f1c27d');
-    Rc(hx, hy, 3, o.down ? 2 : 1, h);
+    const h = o.hair || '#3b2a20', sk = '#f1c27d', mood = o.mood || (o.sad ? 'sad' : 'neutral');
+    const X = Math.round(x * 2), Y = Math.round(y * 2), d = o.dir ? -1 : 1;
+    const R = (dx, dy, w, hh, c) => Rp(X + dx, Y + dy, w, hh, c);
+    const legH = o.g ? 3 : 4, fy = o.g ? 16 : 13;
+    // 足もとの影
+    R(0, fy + legH + 1, 10, 1, 'rgba(0,0,0,.18)');
+    // 足（歩くときは片足ずつ上げる）
+    const lh = o.walk === 1 ? legH - 1 : legH, rh = o.walk === 0 ? legH - 1 : legH;
+    const lc = o.g ? sk : '#2f3b52';
+    R(o.g ? 3 : 2, fy, o.g ? 1 : 2, lh, lc);
+    R(o.g ? 6 : 6, fy, o.g ? 1 : 2, rh, lc);
+    R((o.g ? 3 : 2) + (d > 0 ? 0 : -1), fy + lh, o.g ? 2 : 3, 1, '#1a1a1a');
+    R((o.g ? 6 : 6) + (d > 0 ? 0 : -1), fy + rh, o.g ? 2 : 3, 1, '#1a1a1a');
+    // 服（スカートはすそが広がる）
     if (o.g)
-        Rc(x, y + 1, 1, 3, h);
-    Rc(x, y + 3, 5, 4, b);
+        R(1, 13, 8, 3, shade(b, .12));
+    R(2, 7, 6, 6, b);
+    R(2, 7, 6, 1, shade(b, .22));
+    // 腕と手
+    R(1, 7, 1, 5, shade(b, -.18));
+    R(8, 7, 1, 5, shade(b, -.18));
+    R(1, 12, 1, 1, sk);
+    R(8, 12, 1, 1, sk);
+    if (o.apron) {
+        R(3, 9, 4, 4, '#f6f6f2');
+        R(4, 8, 2, 1, '#f6f6f2');
+        R(4, 10, 2, 1, '#d9d9d2');
+    }
+    if (o.bag) {
+        const bx = o.dir ? -3 : 10;
+        R(bx + (o.dir ? 1 : 0), 8, 2, 1, '#8a6a2a');
+        R(bx, 9, 3, 4, '#d9a441');
+        R(bx, 9, 3, 1, '#ecc16a');
+        R(bx + 1, 11, 1, 1, '#b8842a');
+    }
+    // 頭（うつむくときは頭を下げて、進む向きへ少し前に出す）
+    const hx = o.down ? d : 0, hy = o.down ? 2 : 0;
+    const H = (dx, dy, w, hh, c) => R(hx + dx, hy + dy, w, hh, c);
+    if (o.g) {
+        H(1, 1, 1, 8, h);
+        H(8, 1, 1, 8, h);
+    }
+    H(2, 2, 6, 5, sk);
+    H(o.g ? 1 : 2, 0, o.g ? 8 : 6, 2, h);
+    H(2, 2, 1, o.g ? 2 : 1, h);
+    H(7, 2, 1, o.g ? 2 : 1, h);
     if (o.g)
-        Rc(x, y + 7, 5, 2, b);
-    const ly = y + (o.g ? 9 : 7);
-    Rc(x + 1, ly, 1, 2, '#2a2a2a');
-    Rc(x + 3, ly, 1, 2, '#2a2a2a');
-    if (o.sad)
-        Rc(x + 2, y + 2, 1, 1, '#7a2e2e');
-    if (o.bag)
-        Rc(x + (o.dir ? -2 : 5), y + 5, 2, 3, '#d9a441');
+        H(3, 2, 2, 1, h);
+    // 目・口・まゆ
+    const ey = '#222';
+    if (o.shades)
+        H(2, 3, 6, 2, '#111');
+    else {
+        H(3, 3, 1, 1, ey);
+        H(6, 3, 1, 1, ey);
+    }
+    if (mood === 'happy') {
+        H(3, 4, 1, 1, '#f4a6a0');
+        H(6, 4, 1, 1, '#f4a6a0');
+        H(3, 5, 1, 1, '#b3382c');
+        H(6, 5, 1, 1, '#b3382c');
+        H(4, 6, 2, 1, '#b3382c');
+    }
+    else if (mood === 'sad') {
+        H(3, 2, 1, 1, '#5a3a22');
+        H(6, 2, 1, 1, '#5a3a22');
+        H(4, 5, 2, 1, '#7a2e2e');
+        H(3, 6, 1, 1, '#7a2e2e');
+        H(6, 6, 1, 1, '#7a2e2e');
+        H(3, 4, 1, 1, '#6ab4e8');
+    }
+    else if (mood === 'meh')
+        H(4, 6, 2, 1, '#7a4a3a');
+    else
+        H(4, 5, 2, 1, '#9a5a4a');
 }
 
 /** 窓・ドア・棚の商品を描く */
@@ -78,24 +171,39 @@ function pxLights(op, night) {
     [[52, 0], [108, 6]].forEach(([fx, s0]) => {
         Rc(fx, 41, 32, 19, '#3f332b');
         Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#8fbfd9');
+        // 棚板
+        Rc(fx + 1, 58, 30, 1, '#8a6a45');
+        Rp(fx * 2 + 2, 116, 60, 1, '#b08a5a');
         for (let i = 0; i < 6; i++) {
             const s = state.shelf[s0 + i];
             if (!s)
                 continue;
-            const h = s.st > 0 ? Math.max(2, Math.round(s.st / state.cap * 12)) : 0;
-            Rc(fx + 3 + i * 5, 58 - h, 4, h, COL[s.id]);
+            // 在庫の量だけ箱が積み上がる（1箱＝実ピクセルで4の高さ）
+            const h = s.st > 0 ? Math.max(3, Math.round(s.st / state.cap * 24)) : 0, bx = (fx + 3 + i * 5) * 2, c = COL[s.id];
+            if (!h)
+                continue;
+            Rp(bx, 116 - h, 8, h, c);
+            Rp(bx, 116 - h, 8, 1, shade(c, .35));
+            Rp(bx + 7, 117 - h, 1, h - 1, shade(c, -.25));
+            for (let k = 1; k * 4 < h; k++)
+                Rp(bx, 116 - k * 4, 8, 1, shade(c, -.2));
+            if (h >= 8)
+                Rp(bx + 2, 116 - h + 3, 3, 2, 'rgba(255,255,255,.65)');
         }
-        Rc(fx + 1, 50, 30, 1, '#8a6a45');
-        Rc(fx + 1, 55, 30, 1, '#8a6a45');
-        Rc(fx + 3, 43, 1, 6, 'rgba(255,255,255,.5)');
+        // ガラスの反射
+        Rp(fx * 2 + 8, 86, 2, 12, 'rgba(255,255,255,.5)');
+        Rp(fx * 2 + 12, 86, 1, 6, 'rgba(255,255,255,.4)');
     });
     Rc(88, 38, 16, 24, '#3f332b');
     Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#6b8296');
     Rc(95, 40, 2, 22, '#3f332b');
     Rc(99, 52, 1, 3, '#ddd');
     if (op)
-        pp(92, 45, '#ffd23f');
-    Rc(93, 41, 6, 3, op ? '#2a9d8f' : '#e63946');
+        pp(92, 45, '#ffd23f', { apron: true, mood: 'happy' });
+    // 札：営業中は OPEN、そのほかは CLOSE
+    Rp(181, 82, 22, 8, op ? '#2a9d8f' : '#e63946');
+    Rp(181, 82, 22, 1, shade(op ? '#2a9d8f' : '#e63946', .35));
+    pxTextP(op ? 184 : 182, 84, op ? 'OPEN' : 'CLOSE', '#fff');
 }
 
 /** セキュリティを描く */
@@ -142,8 +250,7 @@ function pxSec() {
         pp(122, 57, '#1d3557');
     }
     if (L === 9) {
-        pp(108, 57, '#6c584c', { hair: '#222' });
-        Rc(109, 58, 3, 1, '#111');
+        pp(108, 57, '#6c584c', { hair: '#222', shades: true });
     }
     if (L === 10) {
         Rc(93, 12, 10, 5, '#444');
@@ -236,7 +343,7 @@ function drawPx() {
     });
     if (se === 0 || se === 2)
         for (let i = 0; i < 8; i++)
-            Rc((i * 27 + fr * 0.5) % W, (i * 13 + fr * 0.8) % 66, 1, 1, se ? '#e07b2d' : '#f7b6d2');
+            Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#e07b2d' : '#f7b6d2');
     Rc(40, 38, 2, 24, '#2f2f2f');
     Rc(36, 36, 10, 3, '#2f2f2f');
     Rc(46, 20, 100, 6, '#5b4a3f');
@@ -263,6 +370,7 @@ function drawPx() {
     pxSec();
     if (state.kama)
         pxKama();
+    pxFxShop();
     const k = (op ? (state.spd || 1) : 1) * (badDay() ? 0.6 : 1);
     for (const c of PXC) {
         if (c.st === 0) {
@@ -291,21 +399,23 @@ function drawPx() {
         if (PXC[i].dead)
             PXC.splice(i, 1);
     pxPeople(op);
+    pxFxTop();
+    cv.classList.toggle('quake', fxList().includes('quake'));
     if (wt === 2)
         for (let i = 0; i < 70; i++)
-            Rc((i * 37 + fr * 2) % W, (i * 23 + fr * 6) % H, 1, 3, '#7ab8ea');
+            Rp((i * 37 + fr * 2) % W * 2, (i * 23 + fr * 6) % H * 2, 1, 5, '#7ab8ea');
     if (wt === 3) {
         for (let i = 0; i < 70; i++)
-            Rc((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W, (i * 17 + fr) % H, 1, 1, '#fff');
+            Rp((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W * 2, (i * 17 + fr) % H * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(0, 62, W, 2, '#f4f8fb');
         Rc(46, 18, 100, 2, '#fff');
     }
     if (night) {
         cx.fillStyle = 'rgba(8,16,48,0.5)';
-        cx.fillRect(0, 0, W, H);
+        cx.fillRect(0, 0, PXW, PXH);
         if (wt === 0)
             for (let i = 0; i < 14; i++)
-                Rc((i * 47) % W, (i * 13) % 24, 1, 1, '#fff');
+                Rp((i * 47) % W * 2, (i * 13) % 24 * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
         Rc(37, 37, 8, 2, '#ffe9a8');
         pxLights(op, true);
@@ -324,7 +434,7 @@ function pxKama() {
     Rc(158, 51, 10, 11, '#3b4a5a');
     Rc(159, 53, 8, 9, '#ffb347');
     if (state.kama === 1)
-        pp(144 + (fr % 8 < 4 ? 0 : 1), 52, '#ffd23f');
+        pp(144 + (fr % 8 < 4 ? 0 : 0.5), 52, '#ffd23f', { apron: true, mood: 'happy' });
     else {
         Rc(130, 57, 8, 5, '#555');
         Rc(131, 54 - (fr % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
@@ -332,15 +442,18 @@ function pxKama() {
     }
 }
 
-/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す） */
+/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す）。表情：買えて帰る客はにこにこ、買えずに帰る客はがっかり、マイナスのイベントの日は落ち込み */
 function pxPeople(op) {
+    const bd = badDay();
     PXC.forEach(c => {
-        if (c.st !== 1)
-            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), badDay() ? '#6b6f78' : (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L, down: badDay() });
+        if (c.st === 1)
+            return;
+        const wk = Math.floor((fr + Math.floor(c.x)) / 2) % 2, mood = bd ? 'sad' : (c.st === 2 ? (c.bag ? 'happy' : 'meh') : 'neutral');
+        pp(c.x, 56 + (wk ? 0.5 : 0), bd ? '#6b6f78' : (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L, down: bd, mood, walk: wk });
     });
     const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
     for (let i = 0; i < n; i++) {
         const sad = e < 0 || state.dn > 0;
-        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
+        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 0.5 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { mood: sad ? 'sad' : (op ? 'happy' : 'neutral'), apron: !sad });
     }
 }
