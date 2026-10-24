@@ -11,8 +11,14 @@ const fmt = n => Math.round(n).toLocaleString();
 /** 100円単位に丸める（最低100） */
 const r100 = x => Math.max(100, Math.round(x / 100) * 100);
 
-/** 日付から季節番号（0〜3）を求める */
-const seaOf = d => Math.floor(Math.floor((Math.max(d, 1) - 1) / MD) / 2) % 4;
+/** 日付から、通算の月（1〜） */
+const monOf = d => Math.floor((Math.max(d, 1) - 1) / MD) + 1;
+
+/** 日付から暦の月（1〜12）。1ヶ月目＝4月（START_MONTH） */
+const calOf = d => (monOf(d) - 1 + START_MONTH - 1) % 12 + 1;
+
+/** 日付から季節番号（0〜3：春夏秋冬）。実際の1年と同じく3ヶ月ずつ（春4〜6月・夏7〜9月・秋10〜12月・冬1〜3月） */
+const seaOf = d => Math.floor((calOf(d) + 8) % 12 / 3);
 
 /** 季節に応じた天気を抽選 */
 function roll(d) {
