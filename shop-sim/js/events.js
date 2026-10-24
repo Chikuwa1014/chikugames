@@ -118,6 +118,9 @@ function guard(a) {
 function addEvent(t, bad) {
     state.evs.push(t);
     addLog(t);
+    const fk = fxKind(t);
+    if (fk)
+        markFx(fk);
     if (bad)
         markBad();
 }
