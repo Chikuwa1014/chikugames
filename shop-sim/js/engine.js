@@ -15,14 +15,14 @@ function endDay() {
         state.money -= L0;
         if (!ac)
             state.mSales = 0;
-        addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''));
+        addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''), 1);
     }
     if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         state.clerk--;
         state.happy = clamp100(state.happy - 4);
-        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれ、解雇しました');
+        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれ、解雇しました', 1);
     }
     state.happy = clamp100(state.happy + (state.dOpen ? hdl(1.5 - 0.5 * (state.closeH - state.openH - 6)) : (state.cleanDay ? 0 : rec(state.happy))));
     state.low = state.happy < 20 ? (state.low || 0) + 1 : 0;
@@ -39,7 +39,7 @@ function endDay() {
     if (state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
-        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''));
+        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''), 1);
         if (state.clerk > 0) {
             let f = 1;
             for (let i = 1; i < state.clerk; i++)
@@ -52,7 +52,7 @@ function endDay() {
                 state.dn = Math.min((state.dn || 0) + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
                 m = '。不当解雇で士気が下がり、残った店員の能力が' + dr + 'Lv低下';
             }
-            addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m);
+            addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m, 1);
         }
     }
     if (state.money < 0 && state.shelf.every(s => !s || s.st <= 0) && !state.over) {
