@@ -78,6 +78,7 @@
 - 設定タブの「🐞 デバッグログを送る」→ `POST /shop-sim/debug`（`worker/index.js` の `saveDebugLog`）→ D1 `chikuwa-debug`（id `85202db5-5844-4a6e-963c-e4b4778011fe`）の `debug_logs` に保存し、6文字の受付番号を返す。
 - 中身（`body` 列の JSON）：`note`（ユーザーのメモ）、`why`（送信時の投資できない理由）、`state` 全体、`log`（`ev`・時刻 `t`・日 `d`・フェーズ `ph`/`ph0`・所持金 `m`・増減 `dm`・無視された理由 `ign`・病気 `sk`・うつ `dp`・かまくら `km` など）。
 - 読むとき：Cloudflare の MCP で `SELECT id, code, version, note, at FROM debug_logs ORDER BY id DESC LIMIT 20`、受付番号で `body` を取る。
+- デバッグ報告のメモには、不具合だけでなく改善の要望が書かれることがある。要望は `claude/未実装タスク.md` に【保留】で記録し（「デバッグ報告から」と添える）、実装は確認をとってから。
 - 上限：1件 300KB、全体で 1日 300件（`DEBUG_MAX_*`）。アーティファクト版からは送れない（公開サイトのみ）。
 
 ## 付録：ゲームの仕様（実装済み）
