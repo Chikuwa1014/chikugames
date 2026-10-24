@@ -135,7 +135,7 @@
 - 仲介は `worker/index.js` の `MultiRoom`（Durable Objects）を使い回す。部屋コードは 4 桁の数字、最大 8 台、最初に入った端末が親。
   - 新しいゲームでは `worker/index.js` の `WS_GAMES` に「フォルダ名: 1部屋の台数」を 1 行足すだけ。`/<フォルダ>/ws` で受け、部屋の名前にゲーム名が付くので、ほかのゲームと部屋は混ざらない（例：`battle-othello: 2`）。
 - ゲームの進行（乱数・勝ち負け・時間）は親が決めて配る。子は操作を送るだけにする。
-- 招待はリンク（`?room=1234` を開くと自動で参加）・部屋コード・QR コード（cdnjs の qrcodejs）の 3 つを用意する。
+- 招待はリンク（`?room=1234` を開くと参加画面。共通部品のロビーは名前を入れてから参加）・部屋コード・QR コード（cdnjs の qrcodejs）の 3 つを用意する。
 - **新しいゲームは共通部品 `common/v1/room.js`（15 章）を使う。** 部屋を作る・参加・招待（リンク／コード／QR）・メンバー一覧・親子の接続までできているので、ゲーム側はメッセージの処理だけ書く。
 - 仕組みの詳しい説明は `roulette/CLAUDE.md` の「マルチプレイの仕組み」（ルーレット・バトルオセロは共通部品より前に作ったので、自前の同じ処理を持っている）。
 
@@ -200,7 +200,8 @@
 - 共通部品を直したら、使っているゲームをすべて確かめる（下の一覧）。共通部品だけの変更でプレイに影響が無ければ、ゲームの版数は上げなくてよい。
 - **β版で使うときは、β リポジトリ（chikugames-beta）に `common/` をコピーする**（本番から読み込まない。本番の push を待たずに β で使えるように）。β の push のときに本番の `common/` と同じ中身にそろえる。
 - テスト：`common/dev/room-test.html`（ルームの見本）と `python3 common/dev/test-room.py`（`node roulette/dev/server.mjs` を先に起動）。
-- 使っているゲーム：`shop-sim`（core・share・save・debug）。
+- 使っているゲーム：`shop-sim`（core・share・save・debug）、`hayaoshi-chikupon`（core・share・room）。
+- `room.js` のロビーは、`?room=` 付き（招待リンク・QR）で開くと部屋コードを入れておく。名前欄（`nameKey`）があるときは名前を入れてから「参加する」を押してもらい、無いときはそのまま自動で参加する（2026-10-24。途中参加で名前を入れられない不具合の修正）。
 
 ## 16. 作業環境のメモ（Claude の作業用・試行錯誤を減らすため）
 
@@ -238,5 +239,6 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 | `stage-kobo/` | つくれ！おでん横丁（旧名：ステージ工房） | `stage-kobo-v1`・`stage-kobo-progress` |
 | `roulette/` | まわせ！ちくわルーレット | `chikuwa-roulette-v1`・`chikuwa-roulette-name` |
 | `battle-othello/` | バトルオセロ | `battle-othello-name`・`battle-othello-board`・`battle-othello-debuglog` |
+| `hayaoshi-chikupon/` | 早押し！ちくぽん！ | `hayaoshi-chikupon-best-v1`・`hayaoshi-chikupon-name` |
 
 β版のゲーム一覧（公開の種類と状態）は、β版リポジトリの `cards.js` と `README.md` を参照する。
