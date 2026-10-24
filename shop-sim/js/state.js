@@ -91,8 +91,32 @@ if (!state || !state.shelf) {
     state.weather = state.next;
 }
 
-/** ログに1行追加（最新3件） */
-const addLog = t => {
+/**
+ * 営業タブのログ欄に出す履歴（v1.4.0〜）。直近 LOGN 件。セーブには入れない（再読み込みで消える）。
+ * 形：{ t: 文, s: 販売の行なら true }。state が入れ替わったら（やり直し・読み込み）state.log から作り直す
+ */
+const LOGN = 50;
+let logHist = [], logOwner = null, logSeq = 0;
+const logList = () => {
+    if (logOwner !== state) {
+        logOwner = state;
+        logSeq++;
+        logHist = (state.log || []).map(t => ({ t }));
+    }
+    return logHist;
+};
+const pushHist = (t, s) => {
+    const L = logList();
+    L.unshift({ t, s: !!s });
+    logSeq++;
+    if (L.length > LOGN)
+        L.length = LOGN;
+};
+
+/** ログに1行追加（state.log は最新3件。noHist なら履歴には足さない＝販売の行は engine.js がまとめて足す） */
+const addLog = (t, noHist) => {
+    if (!noHist)
+        pushHist(t);
     state.log.unshift(t);
     state.log = state.log.slice(0, 3);
 };

@@ -272,10 +272,12 @@ function tick() {
         if (state.boost === 0)
             state.gauge = Math.min(100, state.gauge + 2);
         if (q * pp >= 1000)
-            addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp));
+            addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp), true);
     }
     if (bc)
         lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +¥' + fmt(sy);
+    if (bc)
+        pushHist('🛒 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + ' ' + lastSale, true);
     pxArrive(gs, bc);
     if (state.flame > 0)
         state.gauge = Math.min(state.gauge, 4);

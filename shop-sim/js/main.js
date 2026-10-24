@@ -12,6 +12,12 @@ if (!LA.includes(state.ln.a))
 applyDiff();
 initLayout();
 byId('ver').innerHTML = 'ちいさなお店 v' + VERSION + '<br>' + COPYRIGHT;
+{
+    // 更新履歴（最新だけ表示し、過去の分は開いて見る）
+    const li = c => '<li><b>v' + c[0] + '</b>（' + c[1] + '）' + c[2] + '</li>';
+    byId('chg').innerHTML = '<b>📝 更新履歴</b><ul>' + li(CHANGES[0]) + '</ul>' +
+        (CHANGES.length > 1 ? '<details><summary>過去の更新履歴</summary><ul>' + CHANGES.slice(1).map(li).join('') + '</ul></details>' : '');
+}
 setInterval(() => {
     fr++;
     drawPx();

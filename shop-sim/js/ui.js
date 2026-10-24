@@ -19,6 +19,22 @@ function restart() {
     save();
 }
 
+/**
+ * 営業タブのログ欄（v1.4.0〜）。高さ4行分の枠でスクロールし、直近 LOGN 件までさかのぼれる。
+ * 新しい行は上に足す。さかのぼって読んでいる間は、新しい行が来ても読んでいる位置がずれないようにする
+ */
+let logSig = '';
+function syncLog() {
+    const el = byId('lg'), L = logList(), sig = logSeq + '|' + L.length;
+    if (sig === logSig && el.innerHTML)
+        return;
+    logSig = sig;
+    const st = el.scrollTop, sh = el.scrollHeight;
+    el.innerHTML = L.map(l => '<div' + (l.s ? ' class="sale"' : '') + '>' + l.t + '</div>').join('');
+    if (st > 0)
+        el.scrollTop = st + (el.scrollHeight - sh);
+}
+
 /** 画面全体の描画 */
 /** 閉店後以外は、お金の欄を無効化してグレーアウトする（？アイコンは押せるまま） */
 const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g, 'class="card off"').replace(/<(input|select)/g, '<$1 disabled').replace(/<button data-a="sv/g, '<button disabled data-a="sv').replace(/<button class="alt" data-a="sv/g, '<button class="alt" disabled data-a="sv');
@@ -54,7 +70,7 @@ function render() {
     syncOver();
     syncSave();
     syncAma();
-    byId('lg').innerHTML = (state.phase === 'open' && lastSale ? '<div class="sale">🛒 ' + lastSale + '</div>' : '') + state.log.map(l => '<div>' + l + '</div>').join('');
+    syncLog();
     let pn = '';
     if (state.evs.length)
         pn += '<div class="card"><b>本日のできごと</b>' + state.evs.map(t => '<div class="meta">' + t + '</div>').join('') + '</div>';
@@ -90,7 +106,6 @@ function render() {
             byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
     }
     byId('pn').innerHTML = pn;
-    byId('sd').innerHTML = '<button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + '>' + (state.paused ? '▶' : '⏸') + '</button>' + [1, 2, 4, 8].map(v => '<button class="' + ((state.spd || 1) === v ? '' : 'alt') + '" data-a="spd" data-v="' + v + '">×' + v + '</button>').join('');
     if (!dragMg)
         byId('mnyA').innerHTML = '';
     if (!dragMg)
@@ -132,7 +147,9 @@ function render() {
         }
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
-        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('');
+        // タブの右端に一時停止と倍速（v1.4.0〜。倍速は押すたび×1→×2→×4→×8）
+        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('') +
+            '<span class="spd"><button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? '' : 'alt') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button></span>';
         [0, 1, 2, 3].forEach(i => {
             const e = byId('p' + i);
             if (e)
@@ -266,8 +283,9 @@ document.addEventListener('click', e => {
         saveResultImage();
     if (a === 'shcopy')
         copyShareText(b);
-    if (a === 'spd') {
-        state.spd = +b.dataset.v;
+    if (a === 'spd' || a === 'spdc') {
+        const S = [1, 2, 4, 8];
+        state.spd = a === 'spd' ? +b.dataset.v : S[(S.indexOf(state.spd || 1) + 1) % S.length];
         render();
         save();
     }
@@ -385,14 +403,19 @@ function initLayout() {
     tp.id = 'top';
     document.querySelector('.awning').after(tp);
     const hr = document.createElement('div');
-    // 1行目に所持金、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
+    // 1行目に所持金と実績のバッジ（v1.4.0〜）、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
     hr.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:0';
     byId('dt').style.cssText = 'font-size:12px;text-align:right';
-    hr.append(byId('m'), byId('dt'));
+    const mr = document.createElement('div');
+    mr.className = 'mrow';
+    mr.append(byId('m'));
+    mr.insertAdjacentHTML('beforeend', '<button class="alt achb" id="achb" data-a="achopen" aria-label="実績"></button>');
+    hr.append(mr, byId('dt'));
     tp.append(hr);
     const dd = byId('px').closest('details');
     dd.style.margin = '4px 0';
-    tp.append(dd, byId('sd'));
+    tp.append(dd);
+    byId('sd').remove();
     const tb = document.createElement('div');
     tb.id = 'tabs';
     tb.className = 'sd';
@@ -407,7 +430,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('ach'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);

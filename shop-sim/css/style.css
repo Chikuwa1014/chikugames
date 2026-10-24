@@ -213,24 +213,30 @@ body {
 
 .log {
   font-size:13px;
-  color:var(--sub);
-  min-height:40px;
-  margin-bottom:8px;
-}
-
-.log div:first-child {
+  line-height:1.5;
   color:var(--ink);
   font-weight:600;
+  /* 4行分の枠でスクロール（v1.4.0〜）。行が増えてもほかの表示は動かない */
+  height:calc(4 * 1.5em + 8px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:4px 8px;
+  margin-bottom:8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--card);
+}
+
+.log div {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .log div.sale {
   color:var(--sub);
   font-weight:400;
-}
-
-.log div.sale + div {
-  color:var(--ink);
-  font-weight:600;
 }
 
 .card.off {
@@ -862,4 +868,139 @@ button.big.rstb.arm {
   display:block;
   height:100%;
   background:var(--ok);
+}
+
+/* ---- v1.4.0：所持金の行の実績バッジ・実績のポップアップ・タブの倍速・更新履歴 ---- */
+.mrow {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.mrow .money {
+  min-width:0;
+}
+
+button.achb {
+  flex:none;
+  width:auto;
+  padding:3px 10px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+#achm {
+  position:fixed;
+  inset:0;
+  z-index:40;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+#achm[hidden] {
+  display:none;
+}
+
+.ovbox.achbox {
+  display:flex;
+  flex-direction:column;
+  height:min(620px, 100%);
+  padding:12px 14px;
+  overflow:hidden;
+}
+
+.achtop {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--line);
+}
+
+.achtop .achn {
+  margin-left:auto;
+}
+
+button.achx {
+  flex:none;
+  width:34px;
+  padding:4px 0;
+}
+
+.achbody {
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+}
+
+button.achr {
+  width:100%;
+  margin-top:10px;
+}
+
+.achask {
+  margin-top:10px;
+}
+
+.achask .btns {
+  margin-top:8px;
+}
+
+#tabs .spd {
+  flex:none;
+  display:flex;
+  gap:3px;
+}
+
+#tabs .spd button {
+  width:36px;
+  flex:none;
+  font-variant-numeric:tabular-nums;
+}
+
+#tabs {
+  gap:5px;
+}
+
+.chg {
+  font-size:13px;
+  color:var(--sub);
+}
+
+.chg b {
+  color:var(--ink);
+}
+
+.chg ul {
+  margin:6px 0 0;
+  padding-left:1.2em;
+}
+
+.chg li {
+  margin:2px 0;
+}
+
+.chg details summary {
+  cursor:pointer;
+  color:var(--ink);
+  font-weight:700;
+  margin-top:6px;
+}
+
+.achask button.rstb {
+  background:var(--red);
+  color:#fff;
+}
+
+.ovbox.achbox {
+  border-top-color:#c8a45a;
 }
