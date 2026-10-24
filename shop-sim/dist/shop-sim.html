@@ -1433,7 +1433,7 @@ const PRODUCTS = [
 
 ];
 
-/** 季節（春夏秋冬）と購買力の倍率 */
+/** 季節（春夏秋冬）と購買力の倍率。巡り方は util.js の seaOf（3ヶ月ずつ） */
 const SEA = [
     { n: '春', e: '🌸', p: 1.1 },
     { n: '夏', e: '🌻', p: 1.25 },
@@ -1474,6 +1474,9 @@ CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: VERSION });
 
 /** 1ヶ月の日数 */
 const MD = 7;
+
+/** 1ヶ月目が暦の何月か（季節の巡りと日付の表示に使う。4月＝春から） */
+const START_MONTH = 4;
 
 /** 時給の基準額（愛知県の最低賃金） */
 const BASEW = 1195;
@@ -1621,8 +1624,14 @@ const fmt = n => Math.round(n).toLocaleString();
 /** 100円単位に丸める（最低100） */
 const r100 = x => Math.max(100, Math.round(x / 100) * 100);
 
-/** 日付から季節番号（0〜3）を求める */
-const seaOf = d => Math.floor(Math.floor((Math.max(d, 1) - 1) / MD) / 2) % 4;
+/** 日付から、通算の月（1〜） */
+const monOf = d => Math.floor((Math.max(d, 1) - 1) / MD) + 1;
+
+/** 日付から暦の月（1〜12）。1ヶ月目＝4月（START_MONTH） */
+const calOf = d => (monOf(d) - 1 + START_MONTH - 1) % 12 + 1;
+
+/** 日付から季節番号（0〜3：春夏秋冬）。実際の1年と同じく3ヶ月ずつ（春4〜6月・夏7〜9月・秋10〜12月・冬1〜3月） */
+const seaOf = d => Math.floor((calOf(d) + 8) % 12 / 3);
 
 /** 季節に応じた天気を抽選 */
 function roll(d) {
@@ -3596,7 +3605,7 @@ function render() {
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
     byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
     byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
-    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + m + 'ヶ月目 ' + ((d - 1) % MD + 1) + '日目（通算' + state.day + '日）' + we.e + we.n;
+    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + calOf(d) + '月' + ((d - 1) % MD + 1) + '日目（通算' + m + 'ヶ月' + state.day + '日）' + we.e + we.n;
     byId('sp').innerHTML = Object.keys(PHN).map(k => '<span class="' + (state.phase === k ? 'on' : '') + '">' + PHN[k] + '</span>').join('');
     byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
     byId('gb').style.width = state.gauge + '%';
