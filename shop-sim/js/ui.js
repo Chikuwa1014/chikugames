@@ -438,7 +438,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span><div class="bnote" id="bnote" hidden></div>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');

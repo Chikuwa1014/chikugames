@@ -125,6 +125,38 @@ function addEvent(t, bad) {
         markBad(t);
 }
 
+/**
+ * 悪いイベントのお知らせ（v1.5.2〜）。店の絵の上に 0.8 秒（実時間。ゲーム速度に関係なし）出してフェードアウト。
+ * 複数あるときは前のお知らせが消えてから順に出す（キューに積む）
+ */
+const NOTICE_MS = 800, NOTICE_FADE = 300;
+let noticeQ = [], noticeBusy = false;
+function noticeBad(t) {
+    noticeQ.push(String(t).split(/[。（]/)[0]);
+    if (!noticeBusy)
+        noticeNext();
+}
+function noticeNext() {
+    const e = byId('bnote'), t = noticeQ.shift();
+    if (t === undefined || !e) {
+        noticeQ = [];
+        noticeBusy = false;
+        return;
+    }
+    noticeBusy = true;
+    e.textContent = '⚠ ' + t;
+    e.classList.remove('out');
+    e.hidden = false;
+    setTimeout(() => {
+        e.classList.add('out');
+        setTimeout(() => {
+            e.hidden = true;
+            e.classList.remove('out');
+            noticeNext();
+        }, NOTICE_FADE);
+    }, NOTICE_MS);
+}
+
 /** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす）。t は理由の表示用（v1.5.1〜。店の絵の下に出す） */
 function markBad(t) {
     if (state.bad !== state.day)
@@ -135,6 +167,8 @@ function markBad(t) {
         if (s && !a.includes(s) && a.length < 3)
             a.push(s);
     }
+    if (t)
+        noticeBad(t);
     const c = byId('px');
     if (c) {
         c.classList.remove('shake');

@@ -236,9 +236,10 @@ body {
 }
 
 .log div {
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  /* v1.5.2：長い行は「...」で切らずに折り返し、2行目以降を1文字分下げる */
+  padding-left:1em;
+  text-indent:-1em;
+  overflow-wrap:anywhere;
 }
 
 .log div.sale {
@@ -1119,6 +1120,35 @@ button.achr {
 .badw[hidden] {
   display:none;
 }
+
+/* ---- v1.5.2：悪いイベントのお知らせ（ドット絵の上。0.8秒出してフェードアウト） ---- */
+.bnote {
+  position:absolute;
+  left:50%;
+  top:26%;
+  transform:translateX(-50%);
+  max-width:calc(100% - 20px);
+  padding:5px 12px;
+  border-radius:10px;
+  background:rgba(122,16,16,.9);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  line-height:1.4;
+  box-sizing:border-box;
+  pointer-events:none;
+  opacity:1;
+  transition:opacity .3s;
+}
+
+.bnote.out {
+  opacity:0;
+}
+
+.bnote[hidden] {
+  display:none;
+}
 </style>
 </head>
 <body>
@@ -1710,13 +1740,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
     ['1.5.1', '2026-10-25', '店員が不当解雇されたときの表示を修正（能力カードに「本来Lv・士気低下」を併記、能力低下の文面は実際に下がったLv数に、全員解雇された日は士気低下なし）。空が赤い日は、店の絵の左下にその理由（イベント名）を表示。夜（閉店後を含む）に、お花見ブームなどの行列の人が窓に隠れる・キャッシュレスの窓のステッカーが消える不具合を修正。営業時間を長くしたとき（例：5:00〜23:00）、営業タブのログが15:00ごろからしか読めなかったのを、営業開始から終了まで読めるように（履歴を50件→200件に）'],
     ['1.5.0', '2026-10-24', '店の様子の絵の解像度を2倍に（お客さんや店員の表情・服・足の動き、店の窓の商品、OPEN/CLOSEの札がわかりやすく）。買えて帰るお客さんはにこにこ、買えずに帰るとがっかり、マイナスのイベントの日は落ち込んだ顔。イベントが起きた日は、店の絵にも反映（台風の浸水で店が水没・土嚢の壁、大雪で雪に埋もれる、車や6台の事故で窓が割れる、爆発・炎上・大地震（絵が揺れ続ける）、強盗・窃盗・泥棒の人影、超セレブのリムジン、パパ活のハート、バナナの皮・おにぎり・ブームの行列、テナント料の看板、決済ステッカー、清掃のモップがけなど）。翌日に戻る'],
     ['1.4.4', '2026-10-24', 'ノルマの内訳をゲージの下に表示（損益分岐点〔月収込み〕と前月比、高い方がノルマ）。月収を動かしてもノルマが変わらないのは、前月比のほうが高いときと分かるように'],
@@ -2370,6 +2401,38 @@ function addEvent(t, bad) {
         markBad(t);
 }
 
+/**
+ * 悪いイベントのお知らせ（v1.5.2〜）。店の絵の上に 0.8 秒（実時間。ゲーム速度に関係なし）出してフェードアウト。
+ * 複数あるときは前のお知らせが消えてから順に出す（キューに積む）
+ */
+const NOTICE_MS = 800, NOTICE_FADE = 300;
+let noticeQ = [], noticeBusy = false;
+function noticeBad(t) {
+    noticeQ.push(String(t).split(/[。（]/)[0]);
+    if (!noticeBusy)
+        noticeNext();
+}
+function noticeNext() {
+    const e = byId('bnote'), t = noticeQ.shift();
+    if (t === undefined || !e) {
+        noticeQ = [];
+        noticeBusy = false;
+        return;
+    }
+    noticeBusy = true;
+    e.textContent = '⚠ ' + t;
+    e.classList.remove('out');
+    e.hidden = false;
+    setTimeout(() => {
+        e.classList.add('out');
+        setTimeout(() => {
+            e.hidden = true;
+            e.classList.remove('out');
+            noticeNext();
+        }, NOTICE_FADE);
+    }, NOTICE_MS);
+}
+
 /** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす）。t は理由の表示用（v1.5.1〜。店の絵の下に出す） */
 function markBad(t) {
     if (state.bad !== state.day)
@@ -2380,6 +2443,8 @@ function markBad(t) {
         if (s && !a.includes(s) && a.length < 3)
             a.push(s);
     }
+    if (t)
+        noticeBad(t);
     const c = byId('px');
     if (c) {
         c.classList.remove('shake');
@@ -4885,7 +4950,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span><div class="bnote" id="bnote" hidden></div>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');
