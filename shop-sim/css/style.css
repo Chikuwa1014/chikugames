@@ -1091,15 +1091,15 @@ button.achr {
   display:none;
 }
 
-/* ---- v1.5.1：空が赤い日の理由（ドット絵の左下） ---- */
-.badw {
+/* ---- v1.5.3：月末の支払い予想（ドット絵の左下。黒背景・透過60%・白字） ---- */
+.payf {
   position:absolute;
   left:6px;
   bottom:6px;
   max-width:calc(100% - 12px);
   padding:2px 8px;
   border-radius:999px;
-  background:rgba(122,16,16,.82);
+  background:rgba(0,0,0,.6);
   color:#fff;
   font-size:11px;
   font-weight:700;
@@ -1110,7 +1110,7 @@ button.achr {
   pointer-events:none;
 }
 
-.badw[hidden] {
+.payf[hidden] {
   display:none;
 }
 
@@ -1141,4 +1141,27 @@ button.achr {
 
 .bnote[hidden] {
   display:none;
+}
+
+/* ---- v1.5.3：幸福度ゲージの下のプルダウン ---- */
+.dtl {
+  margin-top:4px;
+}
+
+.dtl summary {
+  font-size:12px;
+  color:var(--sub);
+  cursor:pointer;
+  padding:2px 0;
+}
+
+/* 支払い予想の「？」（ラベル自体はタップを通すが、アイコンだけ押せる。白抜き） */
+.payf button.hp {
+  pointer-events:auto;
+  width:16px;
+  height:16px;
+  margin-left:6px;
+  border-color:#fff;
+  color:#fff;
+  font-size:10px;
 }

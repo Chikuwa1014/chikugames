@@ -17,6 +17,9 @@ const demandFactor = () => Math.min(1.6, Math.max(0.5, 1 - (state.margin - 40) *
 /** 融資の月々の返済額の合計 */
 const loanPay = () => state.loans.reduce((a, l) => a + l.pay, 0);
 
+/** 月末の支払い予想（v1.5.3〜）：月末の閉店処理（engine.js）と同じ式。テナント料＋決済手数料（今月の売上×3.75%×決済数）＋融資返済＋自分の月収＋店員の給料（ここまでの未払い分） */
+const payForecast = () => tenantFee() + Math.round(state.mSales * 0.0375 * state.pays.length) + loanPay() + (state.sal || 0) + Math.round(state.mWage || 0);
+
 /** 1日の営業ティック数 */
 const dayTicks = () => (state.closeH - state.openH) * 5;
 
