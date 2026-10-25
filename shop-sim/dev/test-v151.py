@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v1.5.1 の確認：デバッグ報告 #9（店員の解雇）・#3（空が赤い理由）・#6（夜に窓の裏へ隠れる）。
+"""v1.5.1 の確認：デバッグ報告 #9（店員の解雇）・#3（空が赤い理由）・#6（夜に窓の裏へ隠れる）・#10（営業ログ）。
 使い方：python3 shop-sim/dev/test-v151.py [スクリーンショットの出力先]
 サーバー不要（file:// で index.html を開く）。"""
 import os
@@ -123,6 +123,23 @@ with sync_playwright() as p:
     pg.evaluate("()=>{ state.phase='closed'; state.fx=['ninja','flood','snow','crash6','bomb','quake','flame','mama','papa','thief','robber']; state.fxd=state.day; render(); }")
     pg.wait_for_timeout(700)
     check('#6 ページのエラーなし（全イベントの絵を夜に描く）', not errs, errs)
+    pg.close()
+
+    # ---- #10 営業ログが 15:00 ごろからしか読めない（営業時間 5:00〜23:00） ----
+    pg, errs = new_page(b)
+    pg.evaluate("""()=>{ state.diff='easy'; state.openH=5; state.closeH=23; state.ad=20; state.cap=100000;
+      state.shelf.forEach(s=>{ if(s) s.st=100000; }); state.phase='open'; state.t=0; state.paused=false; state.kama=0; state.hol=false;
+      state.dOpen=true; state.dSold=0; state.dRev=0; state.clerk=0; state.over=false; render(); }""")
+    n = pg.evaluate("""()=>{ let n=0; while(state.phase==='open' && n<200){ tick(); n++; } return n; }""")
+    r = pg.evaluate("""()=>{ const L=logList(), sales=L.filter(l=>l.s).map(l=>l.t);
+      const hrs=sales.map(t=>parseInt((t.match(/🛒 (\\d+):/)||[])[1])).filter(x=>!isNaN(x));
+      return {len:L.length, sales:sales.length, first:Math.min(...hrs), last:Math.max(...hrs), el:byId('lg').children.length}; }""")
+    check('#10 1日分（18時間）を最後まで進めた', n >= 85, n)
+    check('#10 履歴が50件を超えて残る', r['len'] > 50 and r['sales'] > 50, r)
+    check('#10 開店直後（5時台）の行が読める', r['first'] == 5, r)
+    check('#10 閉店ごろ（22時台）の行も読める', r['last'] >= 22, r)
+    check('#10 ログ欄にも全部並ぶ', r['el'] == r['len'], r)
+    check('#10 ページのエラーなし', not errs, errs)
     pg.close()
     b.close()
 

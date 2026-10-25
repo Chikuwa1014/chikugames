@@ -94,8 +94,10 @@ if (!state || !state.shelf) {
 /**
  * 営業タブのログ欄に出す履歴（v1.4.0〜）。直近 LOGN 件。セーブには入れない（再読み込みで消える）。
  * 形：{ t: 文, s: 販売の行なら true }。state が入れ替わったら（やり直し・読み込み）state.log から作り直す
+ * LOGN（v1.5.1〜 200）：営業時間は最長 5:00〜23:00＝90ティック。販売の行（1ティック1行まで）とイベントの行を足しても、
+ * 開店から閉店までが収まる数にする（50件だと 15:00 ごろから後しか読めなかった。デバッグ報告#10）
  */
-const LOGN = 50;
+const LOGN = 200;
 let logHist = [], logOwner = null, logSeq = 0;
 const logList = () => {
     if (logOwner !== state) {
