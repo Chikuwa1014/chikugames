@@ -122,12 +122,19 @@ function addEvent(t, bad) {
     if (fk)
         markFx(fk);
     if (bad)
-        markBad();
+        markBad(t);
 }
 
-/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす） */
-function markBad() {
+/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす）。t は理由の表示用（v1.5.1〜。店の絵の下に出す） */
+function markBad(t) {
+    if (state.bad !== state.day)
+        state.badWhy = [];
     state.bad = state.day;
+    if (t) {
+        const s = String(t).split(/[！。（]/)[0], a = state.badWhy = state.badWhy || [];
+        if (s && !a.includes(s) && a.length < 3)
+            a.push(s);
+    }
     const c = byId('px');
     if (c) {
         c.classList.remove('shake');

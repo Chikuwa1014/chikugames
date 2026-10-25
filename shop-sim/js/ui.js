@@ -75,6 +75,12 @@ function render() {
         e.textContent = '🛡×' + n;
         e.title = 'セキュリティのストック ' + n + '/5';
     }
+    // 空が赤い日の理由（v1.5.1〜。ドット絵の左下。マイナスのイベントの日だけ）
+    {
+        const e = byId('badw'), w = badDay() ? (state.badWhy && state.badWhy.length ? state.badWhy.join('／') : 'マイナスのイベントがありました') : '';
+        e.hidden = !w;
+        e.textContent = '☁ 空が赤い理由：' + w;
+    }
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -193,7 +199,7 @@ function render() {
     const SECR = [];
     SECR.push(row('seclv', '', '🛡 セキュリティ Lv.' + (state.sl || 0) + '/10' + (state.sl ? ' ' + SECN[state.sl - 1] : ''), (state.sl >= 10 ? '最大レベル' : '次: ' + SECN[state.sl || 0] + '（' + SECX[state.sl || 0] + '）'), cost.seclv(), (state.sl || 0) >= 10));
     SECR.push(row('secbuy', '', '🛡 ストックを買う（' + (state.ss || 0) + '/5）', (state.sl > 0 ? SECN[state.sl - 1] + '：' + SECX[state.sl - 1] + '。破損まで' + ((state.ss || 0) > 0 ? Math.max(0, (state.sb || 0) - state.day) + '日' : (SECD[state.sl - 1] / 7) + 'ヶ月') + '（盗難1回ごとに1つ消費）' : 'まずレベルを上げてください'), cost.secbuy(), !(state.sl > 0) ? 1 : (state.ss || 0) >= 5));
-    R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）', '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
+    R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）' + ((state.dn || 0) > 0 ? '<div class="meta">本来Lv.' + (state.sk || 0) + '・士気低下-' + state.dn + '（休業で回復）</div>' : ''), '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
     R.push(...SECR);
     PRODUCTS.forEach((p, i) => {
         if (!state.own.includes(i))
@@ -432,7 +438,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');

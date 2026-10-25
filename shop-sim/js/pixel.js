@@ -19,6 +19,8 @@ const PXW = 384, PXH = 184;
 
 /** 四角形を塗る（実ピクセル座標） */
 const Rp = (x, y, w, h, c) => {
+    if (pxOnlyPp && !pxInPp)
+        return;
     x = Math.round(x);
     y = Math.round(y);
     cx.fillStyle = c;
@@ -41,6 +43,9 @@ function shade(c, k) {
 
 /** 夜に人物を描き直すとき、夜の暗さを重ねる */
 let pxDk = false;
+
+/** 夜の描き直しで「人物だけ」を描くとき真（pp の中だけ塗る。窓の描き直しで隠れたイベントの人物を手前に出す。v1.5.1〜） */
+let pxOnlyPp = false, pxInPp = false;
 
 /** 来店中のお客さん */
 const PXC = [];
@@ -87,6 +92,8 @@ function pxArrive(gs, bc) {
  * o.walk：歩きのコマ（0・1。足が交互に出る）／o.apron：エプロン（店員）／o.shades：サングラス
  */
 function pp(x, y, b, o) {
+    const inPp0 = pxInPp;
+    pxInPp = true;
     o = o || {};
     const h = o.hair || '#3b2a20', sk = '#f1c27d', mood = o.mood || (o.sad ? 'sad' : 'neutral');
     const X = Math.round(x * 2), Y = Math.round(y * 2), d = o.dir ? -1 : 1;
@@ -163,6 +170,7 @@ function pp(x, y, b, o) {
         H(4, 6, 2, 1, '#7a4a3a');
     else
         H(4, 5, 2, 1, '#9a5a4a');
+    pxInPp = inPp0;
 }
 
 /** 窓・ドア・棚の商品を描く */
@@ -421,7 +429,12 @@ function drawPx() {
         pxLights(op, true);
         pxDk = true;
         pxPeople(op);
+        // 窓・ドアの描き直しで隠れた、イベントの人物（行列・泥棒など）を手前に描き直す。窓のステッカーも描き直す（v1.5.1）
+        pxOnlyPp = true;
+        pxFxTop();
+        pxOnlyPp = false;
         pxDk = false;
+        pxFxPay();
     }
 }
 

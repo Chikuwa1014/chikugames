@@ -1096,6 +1096,29 @@ button.achr {
 .secn[hidden] {
   display:none;
 }
+
+/* ---- v1.5.1：空が赤い日の理由（ドット絵の左下） ---- */
+.badw {
+  position:absolute;
+  left:6px;
+  bottom:6px;
+  max-width:calc(100% - 12px);
+  padding:2px 8px;
+  border-radius:999px;
+  background:rgba(122,16,16,.82);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  box-sizing:border-box;
+  pointer-events:none;
+}
+
+.badw[hidden] {
+  display:none;
+}
 </style>
 </head>
 <body>
@@ -1687,13 +1710,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['1.5.1', '2026-10-25', '店員が不当解雇されたときの表示を修正（能力カードに「本来Lv・士気低下」を併記、能力低下の文面は実際に下がったLv数に、全員解雇された日は士気低下なし）。空が赤い日は、店の絵の左下にその理由（イベント名）を表示。夜（閉店後を含む）に、お花見ブームなどの行列の人が窓に隠れる・キャッシュレスの窓のステッカーが消える不具合を修正'],
     ['1.5.0', '2026-10-24', '店の様子の絵の解像度を2倍に（お客さんや店員の表情・服・足の動き、店の窓の商品、OPEN/CLOSEの札がわかりやすく）。買えて帰るお客さんはにこにこ、買えずに帰るとがっかり、マイナスのイベントの日は落ち込んだ顔。イベントが起きた日は、店の絵にも反映（台風の浸水で店が水没・土嚢の壁、大雪で雪に埋もれる、車や6台の事故で窓が割れる、爆発・炎上・大地震（絵が揺れ続ける）、強盗・窃盗・泥棒の人影、超セレブのリムジン、パパ活のハート、バナナの皮・おにぎり・ブームの行列、テナント料の看板、決済ステッカー、清掃のモップがけなど）。翌日に戻る'],
     ['1.4.4', '2026-10-24', 'ノルマの内訳をゲージの下に表示（損益分岐点〔月収込み〕と前月比、高い方がノルマ）。月収を動かしてもノルマが変わらないのは、前月比のほうが高いときと分かるように'],
     ['1.4.3', '2026-10-24', '棚の補充ボタン「+5」を「最大容量の10%」に変更（容量75なら+8。端数は切り上げ、最低1。ボタンの表示も数に合わせて変わる）'],
@@ -2341,12 +2365,19 @@ function addEvent(t, bad) {
     if (fk)
         markFx(fk);
     if (bad)
-        markBad();
+        markBad(t);
 }
 
-/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす） */
-function markBad() {
+/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす）。t は理由の表示用（v1.5.1〜。店の絵の下に出す） */
+function markBad(t) {
+    if (state.bad !== state.day)
+        state.badWhy = [];
     state.bad = state.day;
+    if (t) {
+        const s = String(t).split(/[！。（]/)[0], a = state.badWhy = state.badWhy || [];
+        if (s && !a.includes(s) && a.length < 3)
+            a.push(s);
+    }
     const c = byId('px');
     if (c) {
         c.classList.remove('shake');
@@ -2701,10 +2732,13 @@ function endDay() {
                     f++;
             state.clerk -= f;
             let m = '';
-            if (Math.random() < 0.6) {
-                const dr = 1 + Math.floor(Math.random() * 10);
-                state.dn = Math.min((state.dn || 0) + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
-                m = '。不当解雇で士気が下がり、残った店員の能力が' + dr + 'Lv低下';
+            // 士気低下は残った店員がいるときだけ。能力Lvを上限に切られるので、実際に下がった分だけを文面に出す（v1.5.1）
+            if (state.clerk > 0 && Math.random() < 0.6) {
+                const dr = 1 + Math.floor(Math.random() * 10), d0 = state.dn || 0;
+                state.dn = Math.min(d0 + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
+                const real = state.dn - d0;
+                if (real > 0)
+                    m = '。不当解雇で士気が下がり、残った店員の能力が' + real + 'Lv低下';
             }
             addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m, 1);
         }
@@ -2990,6 +3024,8 @@ const PXW = 384, PXH = 184;
 
 /** 四角形を塗る（実ピクセル座標） */
 const Rp = (x, y, w, h, c) => {
+    if (pxOnlyPp && !pxInPp)
+        return;
     x = Math.round(x);
     y = Math.round(y);
     cx.fillStyle = c;
@@ -3012,6 +3048,9 @@ function shade(c, k) {
 
 /** 夜に人物を描き直すとき、夜の暗さを重ねる */
 let pxDk = false;
+
+/** 夜の描き直しで「人物だけ」を描くとき真（pp の中だけ塗る。窓の描き直しで隠れたイベントの人物を手前に出す。v1.5.1〜） */
+let pxOnlyPp = false, pxInPp = false;
 
 /** 来店中のお客さん */
 const PXC = [];
@@ -3058,6 +3097,8 @@ function pxArrive(gs, bc) {
  * o.walk：歩きのコマ（0・1。足が交互に出る）／o.apron：エプロン（店員）／o.shades：サングラス
  */
 function pp(x, y, b, o) {
+    const inPp0 = pxInPp;
+    pxInPp = true;
     o = o || {};
     const h = o.hair || '#3b2a20', sk = '#f1c27d', mood = o.mood || (o.sad ? 'sad' : 'neutral');
     const X = Math.round(x * 2), Y = Math.round(y * 2), d = o.dir ? -1 : 1;
@@ -3134,6 +3175,7 @@ function pp(x, y, b, o) {
         H(4, 6, 2, 1, '#7a4a3a');
     else
         H(4, 5, 2, 1, '#9a5a4a');
+    pxInPp = inPp0;
 }
 
 /** 窓・ドア・棚の商品を描く */
@@ -3392,7 +3434,12 @@ function drawPx() {
         pxLights(op, true);
         pxDk = true;
         pxPeople(op);
+        // 窓・ドアの描き直しで隠れた、イベントの人物（行列・泥棒など）を手前に描き直す。窓のステッカーも描き直す（v1.5.1）
+        pxOnlyPp = true;
+        pxFxTop();
+        pxOnlyPp = false;
         pxDk = false;
+        pxFxPay();
     }
 }
 
@@ -3655,14 +3702,18 @@ function pxFxShop() {
             Rc(x, 28, 5, 2, c);
             Rc(x + 1, 30, 3, 1, c);
         }
-    // キャッシュレス対応：窓のステッカー
-    if (has('pay')) {
-        Rc(56, 44, 9, 6, '#2a6fdb');
-        Rc(56, 46, 9, 1, '#e9c46a');
-        Rc(57, 48, 3, 1, '#fff');
-        Rc(112, 44, 8, 6, '#2a9d8f');
-        Rc(113, 46, 6, 1, '#fff');
-    }
+    pxFxPay();
+}
+
+/** キャッシュレス対応：窓のステッカー（夜に窓を描き直したあとにも呼ぶ。v1.5.1〜） */
+function pxFxPay() {
+    if (!fxList().includes('pay'))
+        return;
+    Rc(56, 44, 9, 6, '#2a6fdb');
+    Rc(56, 46, 9, 1, '#e9c46a');
+    Rc(57, 48, 3, 1, '#fff');
+    Rc(112, 44, 8, 6, '#2a9d8f');
+    Rc(113, 46, 6, 1, '#fff');
 }
 
 /** 人物より手前のもの（動く人物・水・煙・きらめき） */
@@ -4469,6 +4520,12 @@ function render() {
         e.textContent = '🛡×' + n;
         e.title = 'セキュリティのストック ' + n + '/5';
     }
+    // 空が赤い日の理由（v1.5.1〜。ドット絵の左下。マイナスのイベントの日だけ）
+    {
+        const e = byId('badw'), w = badDay() ? (state.badWhy && state.badWhy.length ? state.badWhy.join('／') : 'マイナスのイベントがありました') : '';
+        e.hidden = !w;
+        e.textContent = '☁ 空が赤い理由：' + w;
+    }
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -4587,7 +4644,7 @@ function render() {
     const SECR = [];
     SECR.push(row('seclv', '', '🛡 セキュリティ Lv.' + (state.sl || 0) + '/10' + (state.sl ? ' ' + SECN[state.sl - 1] : ''), (state.sl >= 10 ? '最大レベル' : '次: ' + SECN[state.sl || 0] + '（' + SECX[state.sl || 0] + '）'), cost.seclv(), (state.sl || 0) >= 10));
     SECR.push(row('secbuy', '', '🛡 ストックを買う（' + (state.ss || 0) + '/5）', (state.sl > 0 ? SECN[state.sl - 1] + '：' + SECX[state.sl - 1] + '。破損まで' + ((state.ss || 0) > 0 ? Math.max(0, (state.sb || 0) - state.day) + '日' : (SECD[state.sl - 1] / 7) + 'ヶ月') + '（盗難1回ごとに1つ消費）' : 'まずレベルを上げてください'), cost.secbuy(), !(state.sl > 0) ? 1 : (state.ss || 0) >= 5));
-    R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）', '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
+    R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）' + ((state.dn || 0) > 0 ? '<div class="meta">本来Lv.' + (state.sk || 0) + '・士気低下-' + state.dn + '（休業で回復）</div>' : ''), '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
     R.push(...SECR);
     PRODUCTS.forEach((p, i) => {
         if (!state.own.includes(i))
@@ -4826,7 +4883,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');

@@ -47,10 +47,13 @@ function endDay() {
                     f++;
             state.clerk -= f;
             let m = '';
-            if (Math.random() < 0.6) {
-                const dr = 1 + Math.floor(Math.random() * 10);
-                state.dn = Math.min((state.dn || 0) + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
-                m = '。不当解雇で士気が下がり、残った店員の能力が' + dr + 'Lv低下';
+            // 士気低下は残った店員がいるときだけ。能力Lvを上限に切られるので、実際に下がった分だけを文面に出す（v1.5.1）
+            if (state.clerk > 0 && Math.random() < 0.6) {
+                const dr = 1 + Math.floor(Math.random() * 10), d0 = state.dn || 0;
+                state.dn = Math.min(d0 + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
+                const real = state.dn - d0;
+                if (real > 0)
+                    m = '。不当解雇で士気が下がり、残った店員の能力が' + real + 'Lv低下';
             }
             addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m, 1);
         }
