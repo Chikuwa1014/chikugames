@@ -78,25 +78,7 @@ with sync_playwright() as p:
     check('#9 ページのエラーなし', not errs, errs)
     pg.close()
 
-    # ---- #3 空が赤い理由 ----
-    pg, errs = new_page(b)
-    pg.evaluate("()=>{ state.day=15; state.bad=undefined; state.badWhy=undefined; state.fx=[]; state.evs=[]; render(); }")
-    check('#3 赤くない日は理由を出さない', pg.evaluate("()=>byId('badw').hidden"))
-    pg.evaluate("()=>{ addEvent('📢 テナント料の改定：+34%（月¥7,500に）', true); addEvent('🌸 お花見ブーム！まとめ買いが増えます（3日間）'); render(); }")
-    r = pg.evaluate("()=>({h:byId('badw').hidden, t:byId('badw').textContent, why:state.badWhy})")
-    check('#3 赤い日は理由を出す', (not r['h']) and 'テナント料の改定：+34%' in r['t'] and r['why'] == ['📢 テナント料の改定：+34%'], r)
-    pg.evaluate("()=>{ addEvent('🦹 強盗被害！本日の売上金¥1を狙われ、被害¥1', true); addEvent('🦹 強盗被害！本日の売上金¥1を狙われ、被害¥1', true); render(); }")
-    r = pg.evaluate("()=>state.badWhy")
-    check('#3 同じ理由は重ねず、複数あれば並べる', r == ['📢 テナント料の改定：+34%', '🦹 強盗被害'], r)
-    if OUT:
-        pg.screenshot(path=os.path.join(OUT, 'v151-3-badw.png'))
-    pg.evaluate("()=>{ state.day=16; render(); }")
-    check('#3 翌日は消える', pg.evaluate("()=>byId('badw').hidden"))
-    pg.evaluate("()=>{ state.day=20; state.bad=20; state.badWhy=undefined; render(); }")
-    r = pg.evaluate("()=>byId('badw').textContent")
-    check('#3 理由が記録されていない古いセーブでも表示できる', 'マイナスのイベント' in r, r)
-    check('#3 ページのエラーなし', not errs, errs)
-    pg.close()
+    # ---- #3 空が赤い理由：v1.5.2 のお知らせ、v1.5.3 で左下ラベル（#badw）は廃止（dev/test-v152.py・test-v153.py を参照） ----
 
     # ---- #6 夜に窓の裏へ隠れる ----
     pg, errs = new_page(b)

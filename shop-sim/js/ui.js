@@ -75,11 +75,11 @@ function render() {
         e.textContent = '🛡×' + n;
         e.title = 'セキュリティのストック ' + n + '/5';
     }
-    // 空が赤い日の理由（v1.5.1〜。ドット絵の左下。マイナスのイベントの日だけ）
+    // 月末の支払い予想（v1.5.3〜。ドット絵の左下に常に表示。旧「空が赤い理由」ラベルの位置）
     {
-        const e = byId('badw'), w = badDay() ? (state.badWhy && state.badWhy.length ? state.badWhy.join('／') : 'マイナスのイベントがありました') : '';
-        e.hidden = !w;
-        e.textContent = '☁ 空が赤い理由：' + w;
+        const e = byId('payf');
+        e.hidden = !!state.over;
+        e.innerHTML = '💴 月末の支払い予想 ¥' + fmt(payForecast()) + helpIcon('payf');
     }
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
@@ -123,6 +123,9 @@ function render() {
         else if ((state.dn || 0) > 0)
             byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
     }
+    // 幸福度ゲージの下の情報はプルダウン（v1.5.3〜）。閉じている間は状態の一言（なければ月末まで何日）
+    byId('dsum').textContent = byId('hs').textContent.trim() || (left === 0 ? '本日が月末' : '月末まであと' + left + '日');
+    byId('hs').hidden = !byId('hs').textContent.trim();
     byId('pn').innerHTML = pn;
     if (!dragMg)
         byId('mnyA').innerHTML = '';
@@ -438,7 +441,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span><div class="bnote" id="bnote" hidden></div>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="payf" id="payf" hidden></span><div class="bnote" id="bnote" hidden></div>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');

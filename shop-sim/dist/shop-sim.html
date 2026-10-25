@@ -1098,15 +1098,15 @@ button.achr {
   display:none;
 }
 
-/* ---- v1.5.1：空が赤い日の理由（ドット絵の左下） ---- */
-.badw {
+/* ---- v1.5.3：月末の支払い予想（ドット絵の左下。黒背景・透過60%・白字） ---- */
+.payf {
   position:absolute;
   left:6px;
   bottom:6px;
   max-width:calc(100% - 12px);
   padding:2px 8px;
   border-radius:999px;
-  background:rgba(122,16,16,.82);
+  background:rgba(0,0,0,.6);
   color:#fff;
   font-size:11px;
   font-weight:700;
@@ -1117,7 +1117,7 @@ button.achr {
   pointer-events:none;
 }
 
-.badw[hidden] {
+.payf[hidden] {
   display:none;
 }
 
@@ -1149,6 +1149,29 @@ button.achr {
 .bnote[hidden] {
   display:none;
 }
+
+/* ---- v1.5.3：幸福度ゲージの下のプルダウン ---- */
+.dtl {
+  margin-top:4px;
+}
+
+.dtl summary {
+  font-size:12px;
+  color:var(--sub);
+  cursor:pointer;
+  padding:2px 0;
+}
+
+/* 支払い予想の「？」（ラベル自体はタップを通すが、アイコンだけ押せる。白抜き） */
+.payf button.hp {
+  pointer-events:auto;
+  width:16px;
+  height:16px;
+  margin-left:6px;
+  border-color:#fff;
+  color:#fff;
+  font-size:10px;
+}
 </style>
 </head>
 <body>
@@ -1159,7 +1182,7 @@ button.achr {
 <details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="384" height="184" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
 <div id="sp" style="display:none"></div>
 <div class="sd" id="sd"></div>
-<div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div><div class="meta" id="qx"></div></div>
+<div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><details class="dtl" id="dtl"><summary id="dsum"></summary><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div><div class="meta" id="qx"></div></details></div>
 
 
 <div id="act"></div>
@@ -1740,13 +1763,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.5.2';
+const VERSION = '1.5.3';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
     ['1.5.1', '2026-10-25', '店員が不当解雇されたときの表示を修正（能力カードに「本来Lv・士気低下」を併記、能力低下の文面は実際に下がったLv数に、全員解雇された日は士気低下なし）。空が赤い日は、店の絵の左下にその理由（イベント名）を表示。夜（閉店後を含む）に、お花見ブームなどの行列の人が窓に隠れる・キャッシュレスの窓のステッカーが消える不具合を修正。営業時間を長くしたとき（例：5:00〜23:00）、営業タブのログが15:00ごろからしか読めなかったのを、営業開始から終了まで読めるように（履歴を50件→200件に）'],
     ['1.5.0', '2026-10-24', '店の様子の絵の解像度を2倍に（お客さんや店員の表情・服・足の動き、店の窓の商品、OPEN/CLOSEの札がわかりやすく）。買えて帰るお客さんはにこにこ、買えずに帰るとがっかり、マイナスのイベントの日は落ち込んだ顔。イベントが起きた日は、店の絵にも反映（台風の浸水で店が水没・土嚢の壁、大雪で雪に埋もれる、車や6台の事故で窓が割れる、爆発・炎上・大地震（絵が揺れ続ける）、強盗・窃盗・泥棒の人影、超セレブのリムジン、パパ活のハート、バナナの皮・おにぎり・ブームの行列、テナント料の看板、決済ステッカー、清掃のモップがけなど）。翌日に戻る'],
@@ -1892,6 +1916,7 @@ const FH = ['#3a2418', '#7a4a21', '#d9a441', '#111'];
 
 /** ヘルプ（？アイコンを触ったときだけ出す説明）。改行は \n */
 const HELP = {
+    payf: '月末に引かれる額の予想です。テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。\n売上や給料はこれからも増えるため、月末に近づくほど額が増えます。',
     gauge: '販売で上昇、取り逃がしで減少。MAXで10秒間、来店数2倍。',
     quota: '今月の売上の目標（損益分岐点）。2ヶ月目以降は前月比+3%も必要。',
     happy: '休業で回復、長時間営業や赤字で低下。低いほど病気になりやすく、低迷が続くと深刻な状態に。',
@@ -2133,6 +2158,9 @@ const demandFactor = () => Math.min(1.6, Math.max(0.5, 1 - (state.margin - 40) *
 
 /** 融資の月々の返済額の合計 */
 const loanPay = () => state.loans.reduce((a, l) => a + l.pay, 0);
+
+/** 月末の支払い予想（v1.5.3〜）：月末の閉店処理（engine.js）と同じ式。テナント料＋決済手数料（今月の売上×3.75%×決済数）＋融資返済＋自分の月収＋店員の給料（ここまでの未払い分） */
+const payForecast = () => tenantFee() + Math.round(state.mSales * 0.0375 * state.pays.length) + loanPay() + (state.sal || 0) + Math.round(state.mWage || 0);
 
 /** 1日の営業ティック数 */
 const dayTicks = () => (state.closeH - state.openH) * 5;
@@ -2433,16 +2461,9 @@ function noticeNext() {
     }, NOTICE_MS);
 }
 
-/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす）。t は理由の表示用（v1.5.1〜。店の絵の下に出す） */
+/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす）。t は「お知らせ」に出す文（v1.5.2〜） */
 function markBad(t) {
-    if (state.bad !== state.day)
-        state.badWhy = [];
     state.bad = state.day;
-    if (t) {
-        const s = String(t).split(/[！。（]/)[0], a = state.badWhy = state.badWhy || [];
-        if (s && !a.includes(s) && a.length < 3)
-            a.push(s);
-    }
     if (t)
         noticeBad(t);
     const c = byId('px');
@@ -4587,11 +4608,11 @@ function render() {
         e.textContent = '🛡×' + n;
         e.title = 'セキュリティのストック ' + n + '/5';
     }
-    // 空が赤い日の理由（v1.5.1〜。ドット絵の左下。マイナスのイベントの日だけ）
+    // 月末の支払い予想（v1.5.3〜。ドット絵の左下に常に表示。旧「空が赤い理由」ラベルの位置）
     {
-        const e = byId('badw'), w = badDay() ? (state.badWhy && state.badWhy.length ? state.badWhy.join('／') : 'マイナスのイベントがありました') : '';
-        e.hidden = !w;
-        e.textContent = '☁ 空が赤い理由：' + w;
+        const e = byId('payf');
+        e.hidden = !!state.over;
+        e.innerHTML = '💴 月末の支払い予想 ¥' + fmt(payForecast()) + helpIcon('payf');
     }
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
@@ -4635,6 +4656,9 @@ function render() {
         else if ((state.dn || 0) > 0)
             byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
     }
+    // 幸福度ゲージの下の情報はプルダウン（v1.5.3〜）。閉じている間は状態の一言（なければ月末まで何日）
+    byId('dsum').textContent = byId('hs').textContent.trim() || (left === 0 ? '本日が月末' : '月末まであと' + left + '日');
+    byId('hs').hidden = !byId('hs').textContent.trim();
     byId('pn').innerHTML = pn;
     if (!dragMg)
         byId('mnyA').innerHTML = '';
@@ -4950,7 +4974,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="badw" id="badw" hidden></span><div class="bnote" id="bnote" hidden></div>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="payf" id="payf" hidden></span><div class="bnote" id="bnote" hidden></div>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');
