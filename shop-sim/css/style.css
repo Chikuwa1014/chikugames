@@ -229,9 +229,10 @@ body {
 }
 
 .log div {
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  /* v1.5.2：長い行は「...」で切らずに折り返し、2行目以降を1文字分下げる */
+  padding-left:1em;
+  text-indent:-1em;
+  overflow-wrap:anywhere;
 }
 
 .log div.sale {
@@ -1110,5 +1111,34 @@ button.achr {
 }
 
 .badw[hidden] {
+  display:none;
+}
+
+/* ---- v1.5.2：悪いイベントのお知らせ（ドット絵の上。0.8秒出してフェードアウト） ---- */
+.bnote {
+  position:absolute;
+  left:50%;
+  top:26%;
+  transform:translateX(-50%);
+  max-width:calc(100% - 20px);
+  padding:5px 12px;
+  border-radius:10px;
+  background:rgba(122,16,16,.9);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  line-height:1.4;
+  box-sizing:border-box;
+  pointer-events:none;
+  opacity:1;
+  transition:opacity .3s;
+}
+
+.bnote.out {
+  opacity:0;
+}
+
+.bnote[hidden] {
   display:none;
 }
