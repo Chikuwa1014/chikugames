@@ -205,6 +205,7 @@
 - 共通部品を直したら、使っているゲームをすべて確かめる（下の一覧）。共通部品だけの変更でプレイに影響が無ければ、ゲームの版数は上げなくてよい。
 - **β版で使うときは、β リポジトリ（chikugames-beta）に `common/` をコピーする**（本番から読み込まない。本番の push を待たずに β で使えるように）。β の push のときに本番の `common/` と同じ中身にそろえる。
 - テスト：`common/dev/room-test.html`（ルームの見本）と `python3 common/dev/test-room.py`（`node roulette/dev/server.mjs` を先に起動）。
+- **デバッグ報告の対応履歴**（D1 `chikuwa-debug`、2026-10-25〜）：報告（`debug_logs`）を直したら、対応の記録を `debug_handling`（`log_id`・`status`・`version`・`note`・`at`。履歴なので足していく）に 1 行足す。最新の状態は見る用のビュー `debug_logs_status`（`status`・`handled_ver`・`handled_note`・`handled_at`）で見る。記録のない報告は `open`（未対応）。`status`：`open`（未対応）・`fixed`（修正してコミット済み・まだ号口に出していない）・`released`（号口に公開済み）・`hold`（保留）・`wontfix`（直さない）・`dup`（別の報告と同じ。`note` に番号）・`info`（不具合ではない・テスト送信）。`fixed` のものは号口へ push したら `released` を足す。報告を直す・保留にする・直さないと決めたときに、そのつど足す（根拠がないものは書かない）。
 - 使っているゲーム：`shop-sim`（core・share・save・debug）、`hayaoshi-chikupon`（core・share・room）。
 - `room.js` のロビーは、`?room=` 付き（招待リンク・QR）で開くと部屋コードを入れておく。名前欄（`nameKey`）があるときは名前を入れてから「参加する」を押してもらい、無いときはそのまま自動で参加する（2026-10-24。途中参加で名前を入れられない不具合の修正）。
 
