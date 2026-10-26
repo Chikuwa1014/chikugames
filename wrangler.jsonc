@@ -3,6 +3,10 @@
 {
   "name": "chikuwa-games",
   "main": "worker/index.js",
+  // 独自ドメイン（2026-10-26。ダッシュボードで割り当て済みのものを設定にも書いておく）。workers.dev も当面そのまま動かす
+  "routes": [
+    { "pattern": "games.chikuwa-hookah.com", "custom_domain": true }
+  ],
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": ".",

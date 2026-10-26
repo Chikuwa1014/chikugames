@@ -30,9 +30,10 @@
 
 | 環境 | リポジトリ | 公開先 | 役割 |
 |---|---|---|---|
-| 号口 | `Chikuwa1014/chikugames`（`main`） | https://chikuwa-games.chikuwa-hookah.workers.dev/ | 正式に公開しているゲーム。トップページもここ |
+| 号口 | `Chikuwa1014/chikugames`（`main`） | https://games.chikuwa-hookah.com/ | 正式に公開しているゲーム。トップページもここ |
 | β版 | `Chikuwa1014/chikugames-beta`（`main`） | https://chikuwagames-beta.chikuwa-hookah.workers.dev/ | 試作・開発中のゲームと、号口の試作環境 |
 
+- 号口の独自ドメイン `games.chikuwa-hookah.com` は 2026-10-26 から（`wrangler.jsonc` の `routes`）。前の https://chikuwa-games.chikuwa-hookah.workers.dev/ も当面そのまま動かす。**セーブ（localStorage）はドメインごとに別**なので、workers.dev を新しいドメインへ移動させるのは、セーブの引っ越しを案内してから（`claude/未実装タスク.md` の【保留】）。
 - 呼び方：規約・文書・やりとりでは、公開先の本番を「号口」と呼ぶ（「正式版」とは呼ばない）。ただし、トップページの表示文言は今までどおり変えない。
 
 ### push のルール
@@ -221,7 +222,7 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 - **リポジトリの取得**：セッションに chikugames を追加してから `git clone --depth 1`。git の名前が既定では Claude になっているので、コミット時に `git -c user.name=Chikuwa1014 -c user.email=…` を付ける。
 - **バックグラウンドで動かしたサーバー（`dev/server.mjs` など）は時間の上限で止まる**。テストの途中で止まったら起動し直す。
 - 日本語を含むファイルの一部を書き換えるときは、Python で「置き換え前の文字列がちょうど 1 か所あること」を確かめてから置き換えると安全。
-- 本番の公開 URL は `dev/site.json` の `origin`（https://chikuwa-games.chikuwa-hookah.workers.dev）。招待リンクに使う。
+- 本番の公開 URL は `dev/site.json` の `origin`（https://games.chikuwa-hookah.com）。招待リンクに使う。
 
 ## 17. Git
 
