@@ -199,6 +199,7 @@
 | `share.js` | SNS 共有（7 章どおり。`#ちくわげーむず` を必ず付ける） | `CG.share.open({ msg, tags, url }, 画像)`、`.text()`・`.links()`・`.copy()` |
 | `save.js` | セーブデータのファイル書き出し・読み込みと**セーブコード**（`CK1.〜`、圧縮＋チェック値。別ゲーム・書き換えははじく） | `CG.save.wrap(data, 版)`、`.toFile()`・`.fromFile()`・`.toCode()`・`.fromCode()` |
 | `debug.js` | **デバッグ報告**：操作・エラーを端末に記録し、メモ付きで送って受付番号を返す | `CG.debug.init({ snap })`、`.add()`・`.wrap()`・`.send()`・`.mount(el)`。`worker/index.js` の `DEBUG_GAMES` にフォルダ名を足す |
+| `move.js` | **セーブの引っ越し**：運ぶ保存キーを渡すと「💾 セーブの引っ越し」の欄（コード・ファイルで保存と読み込み）を作る。アドレス（ドメイン）や端末が変わっても続きから遊べる。手順のページは `/hikkoshi/`（2026-10-27） | `CG.move.mount(el, { keys: [保存キー…] })`。core・save の後に読む。デバッグログのキーは入れない |
 | `room.js` | **オンライン対戦のルーム作成**（10 章の方式）。ロビー画面つき | `CG.room.create({ max, name, onMessage… })`、`CG.room.lobby(el, room, { nameKey })`。`WS_GAMES` にフォルダ名を足す |
 | `common.css` | ロビー画面・送信欄の見た目（`--cg-accent` などで色を変えられる） | `room.js` のロビーか `debug.js` の `mount` を使うときだけ読む |
 
@@ -207,7 +208,8 @@
 - **β版で使うときは、β リポジトリ（chikugames-beta）に `common/` をコピーする**（本番から読み込まない。本番の push を待たずに β で使えるように）。β の push のときに本番の `common/` と同じ中身にそろえる。
 - テスト：`common/dev/room-test.html`（ルームの見本）と `python3 common/dev/test-room.py`（`node roulette/dev/server.mjs` を先に起動）。
 - **デバッグ報告の対応履歴**（D1 `chikuwa-debug`、2026-10-25〜）：報告（`debug_logs`）を直したら、対応の記録を `debug_handling`（`log_id`・`status`・`version`・`note`・`at`。履歴なので足していく）に 1 行足す。最新の状態は見る用のビュー `debug_logs_status`（`status`・`handled_ver`・`handled_note`・`handled_at`）で見る。記録のない報告は `open`（未対応）。`status`：`open`（未対応）・`fixed`（修正してコミット済み・まだ号口に出していない）・`released`（号口に公開済み）・`hold`（保留）・`wontfix`（直さない）・`dup`（別の報告と同じ。`note` に番号）・`info`（不具合ではない・テスト送信）。`fixed` のものは号口へ push したら `released` を足す。報告を直す・保留にする・直さないと決めたときに、そのつど足す（根拠がないものは書かない）。
-- 使っているゲーム：`shop-sim`（core・share・save・debug）、`hayaoshi-chikupon`（core・share・room）。
+- 使っているゲーム：`shop-sim`（core・share・save・debug・move）、`hayaoshi-chikupon`（core・share・room・save・move）、`stage-kobo`・`roulette`・`battle-othello`（core・save・move）。
+- **新しいゲームにも `move.js` の欄を付ける**（5 章の「セーブの持ち運び」）。保存キーを増やしたら `keys` にも足す。
 - `room.js` のロビーは、`?room=` 付き（招待リンク・QR）で開くと部屋コードを入れておく。名前欄（`nameKey`）があるときは名前を入れてから「参加する」を押してもらい、無いときはそのまま自動で参加する（2026-10-24。途中参加で名前を入れられない不具合の修正）。
 
 ## 16. 作業環境のメモ（Claude の作業用・試行錯誤を減らすため）

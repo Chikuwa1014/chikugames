@@ -326,14 +326,17 @@ body.shared #collect,body.shared #bgPanel{display:none}
     </div>
   </section>
 
+  <div class="cg-move-wrap" id="cgMove"></div>
+
   <footer class="changelog">
     <h2>更新履歴</h2>
     <ul>
-      <li><b>v1.5.4</b>（2026-10-23）移動モードで画面全体が揺れる不具合を修正（スマホの移動モードはブラウザ本来のスクロールで動くように）。パーツ棚とテストプレイの操作の説明を「？」アイコンのヒントにまとめた。サイト版の画面の一番上に余計な文字が出ていたのを修正</li>
+      <li><b>v1.5.5</b>（2026-10-27）セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように</li>
     </ul>
     <details>
       <summary>過去の更新履歴</summary>
       <ul>
+        <li><b>v1.5.4</b>（2026-10-23）移動モードで画面全体が揺れる不具合を修正（スマホの移動モードはブラウザ本来のスクロールで動くように）。パーツ棚とテストプレイの操作の説明を「？」アイコンのヒントにまとめた。サイト版の画面の一番上に余計な文字が出ていたのを修正</li>
         <li><b>v1.5.3</b>（2026-10-23）編集画面で、二本指のドラッグで画面を上下左右に動かし、ピンチで拡大・縮小できるように。PC 用に「移動モード」ボタンと、拡大・縮小の －／＋ ボタン（35%〜200%）を追加</li>
         <li><b>v1.5.2</b>（2026-10-23）共有されたステージは、開いてすぐ始まらず「プレイ」ボタンを押してからスタートするように</li>
         <li><b>v1.5.1</b>（2026-10-23）スマホでも使いやすいように、パーツを種類ごと（基本／足場・しかけ／アイテム／敵・きけん）にプルダウンで切り替える形に。背景の選択を「ちくわとスタンプ」の上に移動。更新履歴は最新だけ表示し、過去の分は開いて見られるように。こおりの背景の名前を「カチンコチンコ」に変更</li>
@@ -379,7 +382,7 @@ body.shared #collect,body.shared #bgPanel{display:none}
 (() => {
 const T = 24, W = 40, H = 15, VW = 20, K = 2;
 const STORE = 'stage-kobo-v1';
-const VERSION = '1.5.4';
+const VERSION = '1.5.5';
 const BASE_URL = location.origin + location.pathname;
 const DEF = { gravity: 0.45, jump: 8.6, speed: 2.8, enemy: 0.9, lives: 3 };
 /* 調整用の数値（報酬・動き）。パーツの解放に必要なちくわは UNLOCKS の cost、スタンプの条件は STAMPS の goal。
@@ -1882,6 +1885,15 @@ if (readOnly) {
 }
 requestAnimationFrame(frame);
 })();
+</script>
+<!-- ちくわゲームズ共通部品（common/v1）：セーブの引っ越し -->
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/save.js"></script>
+<script src="../common/v1/move.js"></script>
+<script>
+// VERSION はゲーム本体の (() => {…})() の中にあるので渡さない（引っ越しでは使わない）
+CG.init({ game: 'stage-kobo', title: 'つくれ！おでん横丁' });
+CG.move.mount(document.getElementById('cgMove'), { keys: ['stage-kobo-v1', 'stage-kobo-progress'] });
 </script>
 </body>
 </html>
