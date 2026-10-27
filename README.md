@@ -1,6 +1,6 @@
 # ちくわゲームズ
 
-ブラウザですぐ遊べる、ちいさなゲームのあつまりです。Cloudflare Workers（`chikuwa-games`）の静的配信で公開しています。静的ファイルは assets が返し、assets に無いパス（いまはマルチプレイの仲介 `/roulette/ws`・`/battle-othello/ws`・`/hayaoshi-chikupon/ws` とデバッグログの受け口 `/shop-sim/debug`・`/battle-othello/debug`）を `worker/index.js` が受けます（Durable Objects `MultiRoom`）。`main` に push すると自動でデプロイされます。
+ブラウザですぐ遊べる、ちいさなゲームのあつまりです。Cloudflare Workers（`chikuwa-games`）の静的配信で公開しています。静的ファイルは assets が返し、assets に無いパス（いまはマルチプレイの仲介 `/roulette/ws`・`/battle-othello/ws`・`/hayaoshi-chikupon/ws`・`/horimogu/ws` とデバッグログの受け口 `/shop-sim/debug`・`/battle-othello/debug`）を `worker/index.js` が受けます（Durable Objects `MultiRoom`）。`main` に push すると自動でデプロイされます。
 
 | パス | 内容 |
 |---|---|
@@ -10,6 +10,7 @@
 | `/roulette/` | まわせ！ちくわルーレット（ひとり：すごろくRPG／みんな：最大8人の決めごとルーレット） |
 | `/battle-othello/` | バトルオセロ（2台で通信対戦するオセロ） |
 | `/hayaoshi-chikupon/` | 早押し！ちくぽん！（ひとり：反応速度／みんな：最大8台の早押し） |
+| `/horimogu/` | ほりほりもぐもぐ（お豆腐を掘り進む3Dバトル。ひとり：ボス5体を全滅／みんな：最大8台） |
 
 ## 開発のルール
 
