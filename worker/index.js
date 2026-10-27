@@ -8,7 +8,7 @@
 
 const MAX_PEERS = 8;
 // マルチプレイを使うゲーム（フォルダ名）と、1部屋に入れる台数。/<フォルダ>/ws で受ける
-export const WS_GAMES = { "roulette": 8, "battle-othello": 2, "hayaoshi-chikupon": 8 };
+export const WS_GAMES = { "roulette": 8, "battle-othello": 2, "hayaoshi-chikupon": 8, "horimogu": 8 };
 
 export default {
   async fetch(request, env) {
