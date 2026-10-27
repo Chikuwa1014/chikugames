@@ -11,6 +11,9 @@ if (!LA.includes(state.ln.a))
     state.ln.a = LA[0];
 applyDiff();
 initLayout();
+// セーブの引っ越し（新しいアドレス・別の端末へ。共通部品 common/v1/move.js）。お店のセーブと実績を運ぶ
+CG.move.mount(byId('cgMove'), { keys: [KEY, ACH_KEY] });
+CG.move.mount(byId('cgMoveD'), { keys: [KEY, ACH_KEY] });   // 難易度えらびの画面にも（新しいアドレスで最初に開いたとき用）
 byId('ver').innerHTML = 'ちいさなお店 v' + VERSION + '<br>' + COPYRIGHT;
 {
     // 更新履歴（最新だけ表示し、過去の分は開いて見る）
