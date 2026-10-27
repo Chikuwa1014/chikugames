@@ -9,10 +9,12 @@
   let G = null;               // ゲームの状態（sim.js）
   let curBase = 0, selRobot = 0, speed = 1;
   let placing = null;         // お店で選んだ、置くきかい
+  let placeHand = 'R';        // 90° 曲線を買うときの右曲がり・左曲がり
   const cams = {};            // 拠点ごとのカメラ { x, y, z }
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['1.1.0', '2026-10-28', '置いた直後に「↻ 向き」を押すと、そのきかいも回るように。90°曲線は買うときに右曲がり・左曲がりを選ぶ。置いたきかいの移動（恋ンがかかる）を調べる画面にも。Tコンベアを集約（2→1）・発散（1→2）で切りかえ、1本側の口も選べる'],
     ['1.0.0', '2026-10-28', 'ちくわゲームズに公開（β版から昇格）。設定に「💾 セーブの引っ越し」を足した'],
     ['β0.7.2', '2026-10-27', 'ファンクション（F1〜F3）の中では、停止のピースが「ファンクション終了」になる（呼んだところへもどる）'],
     ['β0.7.1', '2026-10-27', 'ちくわ君の見た目をかわいくした（大きな目・ほっぺ・♥のアンテナ・ちょこんとした足）'],
@@ -194,7 +196,7 @@
     $('#btnFridge').textContent = canF ? (r.brk.phase === 'in' ? '🧊 出す' : '🧊 入る') : '🧊 れいぞうこ';
     $('#btnFridge').classList.toggle('hot', !!canF);
     $('#placeBar').classList.toggle('hide', !placing);
-    if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
+    if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}${placing === 'curve' ? (placeHand === 'L' ? '・左曲がり' : '・右曲がり') : ''}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
     $('#placeRot').textContent = '↻ 向き ' + ARROW[(lastDir + viewRot) % 4];
     $('#editBar').classList.toggle('hide', !edit);
     $('#btnEdit').classList.toggle('on', !!edit);
@@ -202,6 +204,7 @@
       const o = edit.sel;
       $('#editTx').textContent = !o ? '🔧 動かしたいきかいをタップ' : edit.moving ? `${UC.MACHINES[o.type].name}：うつす先のマスをタップ` : `${UC.MACHINES[o.type].name}（向き ${ARROW[(o.dir + viewRot) % 4]}）`;
       ['#edRot', '#edMove', '#edDel'].forEach(k => $(k).disabled = !o);
+      $('#edMove').textContent = o ? `✥ 移動 ${moveCost(o)}恋ン` : '✥ 移動';
       $('#edMove').classList.toggle('on', !!edit.moving);
     }
     $('#placeUndo').disabled = !placedLog.length;
@@ -250,7 +253,13 @@
   $('#btnKanban').onclick = () => openKanban();
   $('#btnSet').onclick = () => openSettings();
   $('#placeEnd').onclick = () => { placing = null; placedLog.length = 0; refreshCtrl(); };
-  $('#placeRot').onclick = () => { lastDir = (lastDir + 1) % 4; Snd.click(); refreshCtrl(); };
+  // 向きを回す：これから置くものと、いま置いたばかりのもの（まだ置いてある）をいっしょに回す
+  $('#placeRot').onclick = () => {
+    lastDir = (lastDir + 1) % 4;
+    const e = placedLog[placedLog.length - 1];
+    if (e && e.base === curBase && G.bases[e.base].objs[UC.key(e.x, e.y)] === e.o) { e.o.dir = lastDir; flash = { x: e.x, y: e.y, until: performance.now() + 400 }; UC.save(G); }
+    Snd.click(); refreshCtrl();
+  };
 
   /* ---------- 配置がえモード（置いたきかいの移動・撤去・90°回転） ---------- */
   let edit = null;   // { sel: 選んだきかい, moving: うつす先を待っている }
@@ -265,12 +274,17 @@
     delete b.objs[UC.key(o.x, o.y)]; G.coin += back; edit.sel = null; edit.moving = false;
     Snd.put(); toast(`撤去しました（${back}恋ン もどった）`); UC.save(G); refreshTop(); refreshCtrl();
   };
+  /* 置いたきかいの移動の代金 */
+  const moveCost = o => Math.max(CFG.moveCostMin, Math.ceil(UC.MACHINES[o.type].cost * CFG.moveCostRate));
   function editTap(x, y) {
     const b = G.bases[curBase], o = b.objs[UC.key(x, y)];
     if (edit.moving && edit.sel) {
       const s = edit.sel;
       if (o === s) { edit.moving = false; refreshCtrl(); return; }
       if (!UC.canPlace(G, curBase, x, y)) { toast('そこにはうつせません'); return; }
+      const mc = moveCost(s);
+      if (G.coin < mc) { toast(`恋ンが足りません（移動は ${mc}恋ン）`); return; }
+      G.coin -= mc; refreshTop(); toast(`移動しました（${mc}恋ン）`);
       delete b.objs[UC.key(s.x, s.y)]; s.x = x; s.y = y; b.objs[UC.key(x, y)] = s; delete b.coins[UC.key(x, y)];
       edit.moving = false; flash = { x, y, until: performance.now() + 500 };
       if (s.feed) s.feed = null;   // 動かしたら製造ラインからはずれる
@@ -388,7 +402,10 @@
     const b = G.bases[curBase];
     if (shopTab === 'machine') {
       h += '<div class="note">買うと、工場のマスをタップして置けます（続けて置ける）。置いたきかいはタップで回す・撤去・アップグレード。</div>';
-      for (const k in UC.MACHINES) if (!UC.MACHINES[k].welfare) h += row(UC.MACHINES[k].name, UC.MACHINES[k].desc, UC.MACHINES[k].cost, 'place:' + k, false, '置く ' + UC.MACHINES[k].cost + '恋ン');
+      for (const k in UC.MACHINES) if (!UC.MACHINES[k].welfare) {
+        if (k === 'curve') { const m = UC.MACHINES[k]; h += `<div class="item"><div class="tx"><b>${m.name}</b><small>${m.desc}</small></div><div class="bb"><button data-a="place:curve-R" ${G.coin < m.cost ? 'disabled' : ''}>右曲がり ${m.cost}恋ン</button><button data-a="place:curve-L" ${G.coin < m.cost ? 'disabled' : ''}>左曲がり ${m.cost}恋ン</button></div></div>`; continue; }
+        h += row(UC.MACHINES[k].name, UC.MACHINES[k].desc, UC.MACHINES[k].cost, 'place:' + k, false, '置く ' + UC.MACHINES[k].cost + '恋ン');
+      }
       h += '<h3 style="font-size:14px;margin:14px 0 2px">アップグレード（' + esc(b.name) + '）</h3>';
       for (const k in UC.UPG) { const lv = b.upg[k], cost = UC.UPG[k].costs[lv]; h += row(`${UC.UPG[k].name} Lv${lv}`, UC.UPG[k].desc, cost || 0, 'upg:' + k, cost == null, cost == null ? 'MAX' : null); }
     }
@@ -427,7 +444,7 @@
     const [k, v] = a.split(':'), b = G.bases[curBase], r = robot();
     const pay = c => { if (G.coin < c) { toast('恋ンが足りません'); return false; } G.coin -= c; Snd.coin(); return true; };
     CG.debug.add('buy', { a });
-    if (k === 'place') { placing = v; edit = null; closeModal(); refreshCtrl(); return; }
+    if (k === 'place') { const [m, hd] = v.split('-'); placing = m; placeHand = hd || 'R'; edit = null; closeModal(); refreshCtrl(); return; }
     if (k === 'upg') { const c = UC.UPG[v].costs[b.upg[v]]; if (c != null && pay(c)) b.upg[v]++; }
     if (k === 'abil') { const c = UC.ABIL[v].costs[G.abil[v]]; if (c != null && pay(c)) G.abil[v]++; }
     if (k === 'care' && r) {
@@ -544,6 +561,12 @@
       else { Snd.click(); return; }
     }
     nav = null;
+    panel(x, y);
+  }
+  /* くわしく調べる画面（きかいの設定・回す・移動・撤去） */
+  function panel(x, y) {
+    const b = G.bases[curBase], o = b.objs[UC.key(x, y)];
+    if (!o) return;
     const name = objName(o);
     const pname = p => p ? (p.packed ? '📦梱包ずみ' : '') + UC.PRODUCTS[p.t].name : 'なし';
     let h = '';
@@ -558,16 +581,26 @@
     if (o.type === 'src') { const n = Object.values(b.objs).filter(v => UC.feedOf(b, v) === o).length; if (n) h += `<p>製造ラインに接続したコンベア：${n}本。製品は自動でコンベアへ流れます。</p>`; }
     if (o.type === 'pool') h += `<p>製品 ${o.stock.length}/${UC.poolCap(b)}個</p>`;
     if ('on' in o) h += `<p>スイッチ：<b>${o.on ? 'オン' : 'オフ'}</b>（ちくわ君の「操作する」で切りかえ）</p>`;
+    if (o.type === 'curve') h += `<p>${o.hand === 'L' ? '左曲がり' : '右曲がり'}（${o.hand === 'L' ? '左' : '右'}横から入って、矢印の向きへ出る。右・左は買ったときに決まります）</p>`;
+    if (o.type === 'tee') {
+      const PN = ['前', '右', '左'], one = o.one || 0, two = [0, 1, 2].filter(i => i !== one).map(i => PN[i]).join('・');
+      h += `<p><b>${o.mode === 'split' ? '発散（1本→2本）' : '集約（2本→1本）'}</b>：${o.mode === 'split' ? `${PN[one]}から入って、${two}へ交互に出る` : `${two}から入って、${PN[one]}へ出る`}（前・右・左は矢印の向きから見た口）</p>
+        <div class="cnt">しくみ</div><div class="seg"><button data-tm="merge" class="${o.mode !== 'split' ? 'on' : ''}">集約 2→1</button><button data-tm="split" class="${o.mode === 'split' ? 'on' : ''}">発散 1→2</button></div>
+        <div class="cnt">1本側の口</div><div class="seg">${PN.map((n, i) => `<button data-to="${i}" class="${one === i ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    }
     if (o.type === 'sorter') h += `<div class="cnt">左へよける製品</div><div class="seg">${UC.PRODUCTS.map((p, i) => `<button data-tg="${i}" class="${o.target === i ? 'on' : ''}">${p.name}</button>`).join('')}</div>`;
     const movable = !!UC.MACHINES[o.type];
-    if (movable) h += `<div class="edrow" style="margin-top:12px"><button id="iRot">↻ 回す</button><button id="iDel" class="pbtn red">撤去（${Math.floor(UC.MACHINES[o.type].cost / 2)}恋ン もどる）</button></div>`;
+    if (movable) h += `<div class="cnt" style="margin-top:12px">向き：<b>${ARROW[(o.dir + viewRot) % 4]}</b></div><div class="edrow"><button id="iRot">↻ 回す</button><button id="iMove">✥ 移動（${moveCost(o)}恋ン）</button><button id="iDel" class="pbtn red">撤去（${Math.floor(UC.MACHINES[o.type].cost / 2)}恋ン もどる）</button></div>`;
     openModal(name, h);
     const body = $('#mBody');
-    body.querySelectorAll('button[data-tg]').forEach(x => x.onclick = () => { o.target = +x.dataset.tg; Snd.click(); inspect(x0, y0); });
     const x0 = x, y0 = y;
+    body.querySelectorAll('button[data-tg]').forEach(v => v.onclick = () => { o.target = +v.dataset.tg; Snd.click(); UC.save(G); panel(x0, y0); });
+    body.querySelectorAll('button[data-tm]').forEach(v => v.onclick = () => { o.mode = v.dataset.tm; o.alt = 0; Snd.click(); UC.save(G); panel(x0, y0); });
+    body.querySelectorAll('button[data-to]').forEach(v => v.onclick = () => { o.one = +v.dataset.to; o.alt = 0; Snd.click(); UC.save(G); panel(x0, y0); });
     if (lsrc) $('#iLine').onclick = () => { o.feed = lon ? null : UC.key(lsrc.x, lsrc.y); Snd.click(); UC.save(G); closeModal(); toast(lon ? '製造ラインからはずしました' : '製造ラインに接続しました'); };
     if (movable) {
-      $('#iRot').onclick = () => { o.dir = (o.dir + 1) % 4; lastDir = o.dir; Snd.click(); };
+      $('#iRot').onclick = () => { o.dir = (o.dir + 1) % 4; lastDir = o.dir; Snd.click(); UC.save(G); panel(x0, y0); };
+      $('#iMove').onclick = () => { closeModal(); placing = null; nav = null; edit = { sel: o, moving: true }; Snd.click(); refreshCtrl(); toast('うつす先のマスをタップ'); };
       $('#iDel').onclick = () => {
         if (o.item || (o.stock && o.stock.length)) { toast('製品がのっているので撤去できません'); return; }
         delete b.objs[UC.key(x, y)]; G.coin += Math.floor(UC.MACHINES[o.type].cost / 2); Snd.put(); closeModal(); UC.save(G);
@@ -581,7 +614,7 @@
     G.coin -= m.cost;
     const b = G.bases[curBase];
     // 向きは、最後に回したきかいと同じ（続けて置くコンベアがそろうように）
-    const o = UC.put(b, placing, x, y, lastDir);
+    const o = UC.put(b, placing, x, y, lastDir, { hand: placeHand });
     placedLog.push({ base: curBase, x, y, o, cost: m.cost });
     flash = { x, y, until: performance.now() + 500 };
     delete b.coins[UC.key(x, y)];
@@ -860,8 +893,12 @@
       const col = { belt: '#FFFFFF', curve: '#9FE0FF', tee: '#FFE066', wye: '#FFB3D1', sorter: o.on ? '#8CF08C' : '#AAAAAA' }[o.type];
       if (o.type === 'wye') { UC.drawArrow(ctx, o.x, o.y, (o.dir + 2) % 4, (o.dir + 3) % 4, col); UC.drawArrow(ctx, o.x, o.y, (o.dir + 2) % 4, (o.dir + 1) % 4, col, t * 0.5); }
       else if (o.type === 'sorter') { UC.drawArrow(ctx, o.x, o.y, (o.dir + 2) % 4, o.dir, '#FFFFFF', t * 0.5); UC.drawArrow(ctx, o.x, o.y, null, (o.dir + 3) % 4, col); }
-      else if (o.type === 'curve') UC.drawArrow(ctx, o.x, o.y, (o.dir + 1) % 4, o.dir, col, t * 0.5);
-      else if (o.type === 'tee') { UC.drawArrow(ctx, o.x, o.y, (o.dir + 1) % 4, o.dir, col); UC.drawArrow(ctx, o.x, o.y, (o.dir + 3) % 4, o.dir, col, t * 0.5); }
+      else if (o.type === 'curve') UC.drawArrow(ctx, o.x, o.y, UC.curveFrom(o), o.dir, col, t * 0.5);
+      else if (o.type === 'tee') {
+        const p = UC.teePorts(o);
+        if (o.mode === 'split') p.pair.forEach((d, n) => UC.drawArrow(ctx, o.x, o.y, p.single, d, '#FFB070', n ? t * 0.5 : null));
+        else p.pair.forEach((d, n) => UC.drawArrow(ctx, o.x, o.y, d, p.single, col, n ? t * 0.5 : null));
+      }
       else UC.drawArrow(ctx, o.x, o.y, null, o.dir, col, t * 0.5);
       if (o.type === 'sorter') { const [sx, sy] = UC.iso(o.x + 0.5, o.y + 0.5); label(sx, sy - 16, UC.PRODUCTS[o.target].name, 'rgba(30,40,36,.7)'); }
       else if (UC.feedOf(b, o)) { const [sx, sy] = UC.iso(o.x + 0.5, o.y + 0.5); label(sx, sy - 16, 'ライン', '#C2551A'); }
