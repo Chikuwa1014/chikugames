@@ -84,8 +84,10 @@
     if (!b.lv) { b.lv = 1; b.shipped = 0; }
     ['src', 'yard'].forEach(t => spots(b, t).forEach((o, i) => { if (!o.no) o.no = i + 1; if (t === 'yard' && o.spec === undefined) o.spec = null; }));
   };
-  function put(b, type, x, y, dir) {
+  function put(b, type, x, y, dir, opt) {
     const o = { type, x, y, dir: dir || 0 };
+    if (type === 'curve') o.hand = opt && opt.hand === 'L' ? 'L' : 'R';   // 右曲がり・左曲がり（買うときに決める）
+    if (type === 'tee') { o.mode = 'merge'; o.one = 0; o.alt = 0; }      // 集約（2→1）・発散（1→2）と、1本側の口
     if (UC.BELTS.includes(type)) { o.item = null; o.prog = 0; }
     if (type === 'pool') o.stock = [];
     if (type === 'pack') o.item = null;
@@ -333,20 +335,34 @@
   }
 
   /* ---------- コンベア ---------- */
+  /* T コンベアの口：前（矢印）・右・左。one 番目が 1 本側、ほかの 2 つが 2 本側 */
+  UC.teePorts = o => {
+    const P = [o.dir, (o.dir + 1) % 4, (o.dir + 3) % 4], one = o.one || 0;
+    return { single: P[one], pair: P.filter((_, i) => i !== one) };
+  };
+  /* 90° 曲線の入り口（右曲がりは右横から、左曲がりは左横から） */
+  UC.curveFrom = o => (o.dir + (o.hand === 'L' ? 3 : 1)) % 4;
   function outDir(o) {
     if (o.type === 'wye') return (o.dir + (o.alt ? 1 : 3)) % 4;
+    if (o.type === 'tee') { const p = UC.teePorts(o); return o.mode === 'split' ? p.pair[o.alt ? 1 : 0] : p.single; }
     if (o.type === 'sorter' && o.on && o.item && o.item.t === o.target) return (o.dir + 3) % 4;
     return o.dir;
   }
   UC.outDir = outDir;
-  function accept(b, o, item) {
+  /* from：製品が入ってくる側（o から見た向き。コンベアから流れてきたときだけ） */
+  function accept(b, o, item, from) {
     if (!o) return false;
+    if (o.type === 'tee' && from != null) {   // T コンベアは入り口の口からだけ受ける
+      const p = UC.teePorts(o), ins = o.mode === 'split' ? [p.single] : p.pair;
+      if (!ins.includes(from)) return false;
+    }
     if (UC.BELTS.includes(o.type)) { if (o.item) return false; o.item = item; o.prog = 0; return true; }
     if (o.type === 'yard') { if (o.spec != null && item.t !== o.spec) return false; o.stock.push(item); return true; }   // 製品指定のあるヤードは、その製品だけ
     if (o.type === 'pool') { if (o.stock.length >= poolCap(b)) return false; o.stock.push(item); return true; }
     if (o.type === 'pack') { if (o.item) return false; o.item = item; return true; }
     return false;
   }
+  UC.stepBelts = (b, dt) => stepBelts(b, dt);   // テスト用
   function stepBelts(b, dt) {
     const bm = beltMin(b);
     // 下流から動かす（前が空けばすぐ詰められるように、2 回まわす）
@@ -355,7 +371,7 @@
       if (pass === 0) o.prog = Math.min(1, o.prog + dt / bm);
       if (o.prog < 1) continue;
       const d = outDir(o), n = b.objs[key(o.x + DX[d], o.y + DY[d])];
-      if (n && n !== o && accept(b, n, o.item)) { o.item = null; o.prog = 0; if (o.type === 'wye') o.alt ^= 1; }
+      if (n && n !== o && accept(b, n, o.item, (d + 2) % 4)) { o.item = null; o.prog = 0; if (o.type === 'wye' || (o.type === 'tee' && o.mode === 'split')) o.alt ^= 1; }
     }
   }
 

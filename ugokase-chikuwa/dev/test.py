@@ -272,6 +272,62 @@ def run(p, w, h, tag):
     check(st['gone'] and st['coin'] == c0 + 15, f'{tag}: 配置がえで撤去できる（半額もどる）')
     page.click('#edEnd')
 
+    # 置いた直後に「↻ 向き」を押すと、いま置いたきかいも回る
+    page.evaluate("() => { UCT.G.coin = 5000; delete UCT.G.bases[1].objs['30,20']; }")
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('button[data-a="place:belt"]'); page.wait_for_timeout(200)
+    page.evaluate('() => UCT.setDir(0)')
+    xy = page.evaluate("() => UCT.screenOf(30 + 0.5, 20 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(100)
+    if page.is_visible('#lnNo'): page.click('#lnNo')
+    page.click('#placeRot'); page.wait_for_timeout(50)
+    d = page.evaluate("() => UCT.G.bases[1].objs['30,20'].dir")
+    check(d == 1, f'{tag}: 置いた直後の「↻ 向き」で、置いたきかいも回る（{d}）')
+    page.click('#placeEnd')
+    # 90° 曲線は買うときに右・左を選ぶ
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('button[data-a="place:curve-L"]'); page.wait_for_timeout(200)
+    xy = page.evaluate("() => UCT.screenOf(33 + 0.5, 20 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(100)
+    if page.is_visible('#lnNo'): page.click('#lnNo')
+    page.click('#placeEnd')
+    h = page.evaluate("() => (UCT.G.bases[1].objs['33,20'] || {}).hand")
+    check(h == 'L', f'{tag}: 90° 曲線を左曲がりで買える（{h}）')
+    # 移動は恋ンがかかる（コンベア 20恋ン → 5恋ン）
+    page.click('#btnEdit'); xy = page.evaluate("() => UCT.screenOf(30 + 0.5, 20 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(100)
+    c0 = page.evaluate('() => UCT.G.coin')
+    page.click('#edMove'); xy = page.evaluate("() => UCT.screenOf(30 + 0.5, 22 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(100)
+    if page.is_visible('#lnNo'): page.click('#lnNo')
+    st = page.evaluate("() => ({ now: !!UCT.G.bases[1].objs['30,22'], coin: UCT.G.coin })")
+    check(st['now'] and st['coin'] < c0, f'{tag}: 移動すると恋ンがかかる（{c0} → {st["coin"]}）')
+    page.click('#edEnd')
+    # T コンベア：集約（2→1）と発散（1→2）、1本側の口
+    st = page.evaluate('''() => {
+      const b = UCT.G.bases[1], P = (x, y, t, d) => { delete b.objs[x + ',' + y]; return UC.put(b, t, x, y, d); };
+      const run = () => { for (let i = 0; i < 40; i++) UC.stepBelts(b, 0.5); };
+      // 発散：矢印は北。1本側＝左の口（西）から入って、前（北）・右（東）へ交互に出る
+      const t = P(40, 10, 'tee', 3); t.mode = 'split'; t.one = 2;
+      const a = P(39, 10, 'belt', 0), n = P(40, 9, 'belt', 3), e = P(41, 10, 'belt', 0);
+      P(40, 8, 'pool', 0); P(42, 10, 'pool', 0);
+      a.item = { t: 0, packed: false }; run(); a.item = { t: 1, packed: false }; run();
+      const split = [b.objs['40,8'].stock.length, b.objs['42,10'].stock.length];
+      // 集約：前（北）・右（東）から入って、左（西）へ出る
+      t.mode = 'merge'; t.alt = 0;
+      const n2 = P(40, 9, 'belt', 1), e2 = P(41, 10, 'belt', 2), w = P(39, 10, 'belt', 2); P(38, 10, 'pool', 0);
+      n2.item = { t: 2, packed: false }; e2.item = { t: 3, packed: false }; run();
+      const merge = b.objs['38,10'].stock.length;
+      // 入り口でない口（西）からは入らない
+      const ng = P(39, 10, 'belt', 0); ng.item = { t: 4, packed: false }; run();
+      return { split, merge, blocked: !!ng.item };
+    }''')
+    check(st['split'] == [1, 1] and st['merge'] == 2 and st['blocked'], f'{tag}: T の発散は 2 本へ交互、集約は 2 本から 1 本へ、入り口でない口からは入らない {st}')
+    page.click('#bases button[data-i="1"]'); page.wait_for_timeout(100)
+    xy = page.evaluate("() => UCT.screenOf(40 + 0.5, 10 + 0.5)"); page.evaluate("() => UCT.clearNav()")
+    page.evaluate("() => { UCT.inspect(40, 10); UCT.inspect(40, 10); }"); page.wait_for_timeout(200)
+    ok = page.is_visible('button[data-tm="split"]')
+    if ok: page.click('button[data-tm="split"]'); page.wait_for_timeout(100)
+    shot(page, tag + '-17t-tee')
+    check(ok and page.evaluate("() => UCT.G.bases[1].objs['40,10'].mode") == 'split', f'{tag}: T の集約・発散を画面で切りかえられる')
+    page.click('#mClose')
+
     # 製造ラインに接続：取り場（0,4）のとなりにコンベアを置くと聞かれる。する → 製品が自動で流れる
     page.click('#bases button[data-i="0"]'); page.wait_for_timeout(200)
     page.evaluate('''() => { const G = UCT.G, b = G.bases[0], r = G.robots[0];
