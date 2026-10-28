@@ -177,8 +177,8 @@ function pp(x, y, b, o) {
 function pxLights(op, night) {
     const lit = op || night;
     [[52, 0], [108, 6]].forEach(([fx, s0]) => {
-        Rc(fx, 41, 32, 19, '#3f332b');
-        Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#8fbfd9');
+        Rr(fx, 41, 32, 19, '#2c6e5f', 1);
+        Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#a9dcf2');
         // 棚板
         Rc(fx + 1, 58, 30, 1, '#8a6a45');
         Rp(fx * 2 + 2, 116, 60, 1, '#b08a5a');
@@ -202,15 +202,15 @@ function pxLights(op, night) {
         Rp(fx * 2 + 8, 86, 2, 12, 'rgba(255,255,255,.5)');
         Rp(fx * 2 + 12, 86, 1, 6, 'rgba(255,255,255,.4)');
     });
-    Rc(88, 38, 16, 24, '#3f332b');
-    Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#6b8296');
-    Rc(95, 40, 2, 22, '#3f332b');
+    Rr(88, 38, 16, 24, '#2c6e5f', 1);
+    Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#86b9cf');
+    Rc(95, 40, 2, 22, '#2c6e5f');
     Rc(99, 52, 1, 3, '#ddd');
     if (op)
-        pp(92, 45, '#ffd23f', { apron: true, mood: 'happy' });
+        pp(92, 45, '#2fbf97', { apron: true, mood: 'happy' });
     // 札：営業中は OPEN、そのほかは CLOSE
-    Rp(181, 82, 22, 8, op ? '#2a9d8f' : '#e63946');
-    Rp(181, 82, 22, 1, shade(op ? '#2a9d8f' : '#e63946', .35));
+    Rp(181, 82, 22, 8, op ? '#2fbf97' : '#ff7a68');
+    Rp(181, 82, 22, 1, shade(op ? '#2fbf97' : '#ff7a68', .35));
     pxTextP(op ? 184 : 182, 84, op ? 'OPEN' : 'CLOSE', '#fff');
 }
 
@@ -280,100 +280,162 @@ function pxCrows(W) {
     }
 }
 
+/** 角を丸めた四角形（論理座標。r＝角を削る段数。ドットの味を残した丸み。v2.0.0〜） */
+function Rr(x, y, w, h, c, r) {
+    r = Math.min(r == null ? 1 : r, Math.floor(w / 2), Math.floor(h / 2));
+    for (let i = 0; i < r; i++) {
+        const k = r - i;
+        Rc(x + k, y + i, w - k * 2, 1, c);
+        Rc(x + k, y + h - 1 - i, w - k * 2, 1, c);
+    }
+    Rc(x, y + r, w, h - r * 2, c);
+}
+
+/** 丸い木（v2.0.0〜。季節で色が変わる。冬は枝に雪） */
+function pxTree(x, se) {
+    Rc(x + 7, 44, 3, 18, '#7a5a44');
+    Rc(x + 8, 44, 1, 18, '#93705a');
+    if (se === 3) {
+        Rc(x + 2, 38, 13, 2, '#7a5a44');
+        Rc(x + 8, 30, 2, 10, '#7a5a44');
+        Rc(x + 4, 33, 2, 6, '#7a5a44');
+        Rc(x + 12, 33, 2, 6, '#7a5a44');
+        Rr(x + 1, 36, 16, 3, '#ffffff', 1);
+        Rr(x + 6, 29, 6, 2, '#ffffff', 1);
+        return;
+    }
+    const c = [['#ffb8d2', '#f48fb5', '#ffe0ec'], ['#5fcf86', '#3fae69', '#a6efbf'], ['#ffa25c', '#ee7d3b', '#ffd0a6']][se];
+    Rr(x, 28, 18, 18, c[0], 4);
+    Rr(x + 3, 37, 15, 9, c[1], 3);
+    Rr(x + 3, 30, 6, 4, c[2], 1);
+}
+
+/** 背景（空・雲・街並み・地面・道路・車・木・街灯・お店の建物）を描く（v2.0.0〜 ミント×コーラルの色で描き直し。位置は v1.x と同じ） */
+function pxScene(W, se, wt, night, bad) {
+    // 空：なめらかなグラデーション（マイナスのイベントの日は閉店まで赤い空。v1.4.1〜）
+    const sk = bad ? ['#8e1b2c', '#d8463e', '#f7a072'] : [['#4fb3f0', '#8fd3f7', '#e3f6ff'], ['#9fb4c4', '#c6d4de', '#eef2f5'], ['#6c7a88', '#8d9aa6', '#b9c2ca'], ['#b8c7d4', '#d6e0e8', '#f5f8fb']][wt];
+    const g = cx.createLinearGradient(0, 0, 0, 124);
+    g.addColorStop(0, sk[0]);
+    g.addColorStop(.55, sk[1]);
+    g.addColorStop(1, sk[2]);
+    cx.fillStyle = g;
+    cx.fillRect(0, 0, PXW, 124);
+    if (wt === 0 && !bad) {
+        if (night) {
+            Rr(158, 6, 8, 8, '#fff4c8', 2);
+            Rr(161, 6, 5, 6, sk[0], 2);
+        }
+        else {
+            // 太陽：やわらかい光の輪
+            const sg = cx.createRadialGradient(326, 22, 4, 326, 22, 30);
+            sg.addColorStop(0, 'rgba(255,236,150,.9)');
+            sg.addColorStop(1, 'rgba(255,236,150,0)');
+            cx.fillStyle = sg;
+            cx.fillRect(290, 0, 72, 56);
+            Rr(158, 6, 10, 10, se === 1 ? '#ffb43a' : '#ffd95a', 3);
+            Rr(160, 7, 4, 3, '#fff3b8', 1);
+        }
+    }
+    // 雲：丸みのある形（晴れの日も2つだけ浮かべる）
+    {
+        const n = wt > 0 ? 4 : 2, cc = wt === 2 ? '#7d8a96' : '#ffffff', cs = wt === 2 ? '#6a7682' : '#e2eef6';
+        for (let k = 0; k < n; k++) {
+            const x = ((fr * 0.25 + k * (wt > 0 ? 60 : 110)) % (W + 40)) - 24, y = 6 + k * (wt > 0 ? 7 : 9);
+            Rr(x, y, 24, 6, cc, 2);
+            Rr(x + 5, y - 3, 11, 6, cc, 2);
+            Rr(x + 12, y - 1, 8, 5, cc, 2);
+            Rc(x + 3, y + 5, 18, 1, cs);
+        }
+    }
+    if (bad)
+        pxCrows(W);
+    // 遠くの丘と街並み（パステルの色）
+    Rr(-10, 46, 70, 24, bad ? '#c76a5e' : '#bfe8d6', 8);
+    Rr(130, 44, 80, 26, bad ? '#b95c52' : '#a9dfc8', 8);
+    [[0, 14, 10, '#9ec7e0'], [12, 22, 14, '#b8b2e3'], [28, 16, 10, '#9fd8cc'], [150, 18, 12, '#b8b2e3'], [164, 26, 16, '#9ec7e0'], [182, 14, 10, '#9fd8cc']].forEach(([x, h, w, c]) => {
+        Rr(x, 62 - h, w, h + 2, c, 1);
+        Rc(x + 1, 62 - h, w - 2, 1, shade(c, .3));
+        for (let j = 0; j < h - 5; j += 4)
+            for (let i = 2; i < w - 2; i += 4)
+                Rc(x + i, 62 - h + 3 + j, 2, 2, night ? '#ffe9a8' : shade(c, .45));
+    });
+    // 植え込み・歩道・道路
+    const gr = [['#8fde8a', '#6cc56c'], ['#4fc46e', '#38a656'], ['#d6b25a', '#bf9646'], ['#f4f8fb', '#dde7ee']][se];
+    Rr(0, 54, 48, 9, gr[0], 2);
+    Rr(146, 54, 46, 9, gr[0], 2);
+    Rc(0, 60, 48, 2, gr[1]);
+    Rc(146, 60, 46, 2, gr[1]);
+    Rc(0, 62, W, 6, '#efe4d2');
+    Rc(0, 62, W, 1, '#fff6e6');
+    for (let x = 0; x < W; x += 8)
+        Rc(x, 63, 1, 5, '#dccdb6');
+    Rc(0, 67, W, 1, '#cbb99e');
+    Rc(0, 68, W, 24, '#4b5662');
+    Rc(0, 68, W, 2, '#5c6875');
+    for (let x = 0; x < W; x += 32)
+        Rr(x, 79.5, 16, 1.5, '#f6e7b8', 0);
+    {
+        // 車（丸みのあるパステルの車）
+        const cxp = ((fr * 1.6) % 260) - 40, ci = Math.floor(fr * 1.6 / 260) % 3, cc = ['#ff7a68', '#2fbf97', '#ffc94d'][ci];
+        Rr(cxp, 74, 21, 6, cc, 1);
+        Rr(cxp + 4, 70.5, 12, 5, cc, 1);
+        Rc(cxp + 5.5, 71.5, 4, 3, '#d6f1ff');
+        Rc(cxp + 10.5, 71.5, 4, 3, '#d6f1ff');
+        Rc(cxp + 1, 75, 19, 1, shade(cc, .3));
+        Rc(cxp + 19, 75.5, 2, 1.5, '#fff6c8');
+        Rr(cxp + 2.5, 78.5, 5, 4, '#2a2f36', 1);
+        Rr(cxp + 13.5, 78.5, 5, 4, '#2a2f36', 1);
+        Rc(cxp + 4.5, 80, 1, 1, '#9aa4ae');
+        Rc(cxp + 15.5, 80, 1, 1, '#9aa4ae');
+    }
+    pxTree(4, se);
+    pxTree(172, se);
+    if (se === 0 || se === 2)
+        for (let i = 0; i < 8; i++)
+            Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#ffa25c' : '#ffc4da');
+    // 街灯（ミントの柱と丸い明かり）
+    Rc(40, 38, 2, 24, '#2c6e5f');
+    Rc(36, 36, 10, 2, '#2c6e5f');
+    Rr(35, 37, 4, 3, night ? '#fff1b0' : '#e8f7f1', 1);
+    // お店の建物：ミントの屋根・クリームの壁・腰板
+    Rr(45, 19, 102, 7, '#23806a', 1);
+    Rc(46, 19, 100, 1, '#3fb596');
+    Rc(48, 26, 96, 36, '#fff4e3');
+    for (let x = 52; x < 144; x += 6)
+        Rc(x, 40, 1, 16, '#f5e6cf');
+    Rc(48, 56, 96, 6, '#2fbf97');
+    Rc(48, 56, 96, 1, '#5fd9b5');
+    for (let x = 50; x < 144; x += 4)
+        Rc(x, 58, 2, 1, '#28a888');
+    Rc(140, 26, 4, 36, 'rgba(31,58,53,.08)');
+    // 看板：コーラルの丸い看板に白い文字
+    Rr(75, 9, 42, 13, '#c9443a', 2);
+    Rr(76, 9, 40, 12, '#ff7a68', 2);
+    Rc(78, 10, 36, 1, '#ffab9e');
+    pxText(88, 13, 'SHOP', '#ffffff');
+    // 日よけ：コーラルと白のしましま、すそは波形
+    for (let i = 0; i < 16; i++) {
+        const c = i % 2 ? '#fffaf2' : '#ff7a68';
+        Rc(48 + i * 6, 29, 6, 7, c);
+        Rc(48.5 + i * 6, 36, 5, 1, c);
+        Rc(49.5 + i * 6, 37, 3, 1, c);
+    }
+    Rc(48, 29, 96, 1, 'rgba(255,255,255,.55)');
+    Rc(48, 38, 96, 2, 'rgba(31,58,53,.18)');
+    // 入口のわきの植木鉢
+    [[46, 56], [141, 56]].forEach(([x, y]) => {
+        Rr(x, y + 2, 5, 4, '#e0855f', 1);
+        Rr(x - 0.5, y - 2, 6, 5, se === 3 ? '#f4f8fb' : '#3fae69', 2);
+        Rc(x + 1.5, y - 1, 1, 1, '#ffb8d2');
+    });
+}
+
 /** ドット絵の描画（1フレーム） */
 function drawPx() {
     const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
     const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
     const bad = badDay();
-    // マイナスのイベントがあった日は、閉店（翌日）まで空を赤く（v1.4.1〜）
-    (bad ? '#7a1010,#a01818,#c42a22,#d8462e,#e4643c,#ee8a5a' : ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt]).split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
-    if (wt === 0 && !bad) {
-        if (night)
-            Rc(160, 8, 6, 6, '#f5f0c8');
-        else {
-            Rc(158, 6, 10, 10, se === 1 ? '#ffb300' : '#ffd54a');
-            Rc(155, 10, 16, 2, 'rgba(255,230,120,.4)');
-            Rc(162, 3, 2, 16, 'rgba(255,230,120,.4)');
-        }
-    }
-    if (wt > 0) {
-        const cc = wt === 2 ? '#6f7b87' : '#fff';
-        for (let k = 0; k < 4; k++) {
-            const x = ((fr * 0.25 + k * 60) % (W + 40)) - 24, y = 6 + k * 7;
-            Rc(x, y, 22, 5, cc);
-            Rc(x + 5, y - 3, 12, 4, cc);
-            Rc(x + 2, y + 4, 18, 1, 'rgba(0,0,0,.08)');
-        }
-    }
-    if (bad)
-        pxCrows(W);
-    [[0, 14, 10], [12, 22, 14], [28, 16, 10], [150, 18, 12], [164, 26, 16], [182, 14, 10]].forEach(([x, h, w]) => {
-        Rc(x, 62 - h, w, h, '#8ea4b8');
-        for (let j = 0; j < h - 4; j += 4)
-            Rc(x + 2, 62 - h + 3 + j, 2, 2, '#aebfcf');
-    });
-    const gr = ['#8fd16a', '#4fae4a', '#c9a14a', '#f4f8fb'][se];
-    Rc(0, 54, 48, 8, gr);
-    Rc(146, 54, 46, 8, gr);
-    Rc(0, 62, W, 6, '#cfcab9');
-    for (let x = 0; x < W; x += 12)
-        Rc(x, 62, 1, 6, '#b8b3a1');
-    Rc(0, 68, W, 24, '#5d636b');
-    Rc(0, 68, W, 1, '#8a8f98');
-    for (let x = 0; x < W; x += 32)
-        Rc(x, 80, 16, 1, '#e9e2b4');
-    {
-        const cxp = ((fr * 1.6) % 260) - 40, ci = Math.floor(fr * 1.6 / 260) % 3, cc = ['#d62828', '#2a6fdb', '#e9c46a'][ci];
-        Rc(cxp, 74, 20, 6, cc);
-        Rc(cxp + 4, 71, 11, 4, cc);
-        Rc(cxp + 5, 72, 4, 3, '#bfe3f5');
-        Rc(cxp + 10, 72, 4, 3, '#bfe3f5');
-        Rc(cxp + 3, 79, 4, 3, '#222');
-        Rc(cxp + 13, 79, 4, 3, '#222');
-    }
-    [4, 172].forEach(x => {
-        Rc(x + 7, 46, 3, 16, '#5b3f28');
-        Rc(x + 8, 46, 1, 16, '#74513a');
-        if (se === 3) {
-            Rc(x + 1, 40, 16, 2, '#5b3f28');
-            Rc(x + 8, 32, 2, 10, '#5b3f28');
-            Rc(x + 3, 34, 2, 6, '#5b3f28');
-            Rc(x + 13, 34, 2, 6, '#5b3f28');
-            Rc(x + 1, 39, 16, 1, '#fff');
-        }
-        else {
-            const c = [['#f4a6c6', '#e58bb0'], ['#3f9e44', '#2f7d34'], ['#e07b2d', '#c45e1a']][se];
-            Rc(x, 32, 18, 14, c[0]);
-            Rc(x + 2, 28, 14, 5, c[0]);
-            Rc(x + 2, 40, 16, 6, c[1]);
-            Rc(x + 10, 32, 6, 8, c[1]);
-        }
-    });
-    if (se === 0 || se === 2)
-        for (let i = 0; i < 8; i++)
-            Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#e07b2d' : '#f7b6d2');
-    Rc(40, 38, 2, 24, '#2f2f2f');
-    Rc(36, 36, 10, 3, '#2f2f2f');
-    Rc(46, 20, 100, 6, '#5b4a3f');
-    Rc(46, 20, 100, 1, '#7a6657');
-    Rc(48, 26, 96, 36, '#b95c3e');
-    for (let y = 28, r = 0; y < 62; y += 3, r++) {
-        Rc(48, y, 96, 1, '#9c4a31');
-        for (let x = 48 + (r % 2) * 4; x < 144; x += 8)
-            Rc(x, y + 1, 1, 2, '#9c4a31');
-    }
-    Rc(140, 26, 4, 36, 'rgba(0,0,0,.12)');
-    Rc(76, 10, 40, 12, '#1f3a5f');
-    Rc(76, 10, 40, 1, '#e9c46a');
-    Rc(76, 21, 40, 1, '#e9c46a');
-    pxText(88, 13, 'SHOP', '#ffd23f');
-    for (let i = 0; i < 16; i++) {
-        const c = i % 2 ? '#f4f1de' : '#d62828';
-        Rc(48 + i * 6, 30, 6, 6, c);
-        Rc(48 + i * 6, 36, 6, 1, c);
-        Rc(49 + i * 6, 37, 4, 1, c);
-    }
-    Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
+    pxScene(W, se, wt, night, bad);
     pxLights(op, night);
     pxSec();
     if (state.kama)
@@ -416,10 +478,13 @@ function drawPx() {
         for (let i = 0; i < 70; i++)
             Rp((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W * 2, (i * 17 + fr) % H * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(0, 62, W, 2, '#f4f8fb');
-        Rc(46, 18, 100, 2, '#fff');
+        // 屋根の雪（看板の部分はよける）
+        Rc(46, 18, 29, 2, '#fff');
+        Rc(117, 18, 29, 2, '#fff');
+        Rr(76, 8, 40, 2, '#fff', 1);
     }
     if (night) {
-        cx.fillStyle = 'rgba(8,16,48,0.5)';
+        cx.fillStyle = 'rgba(18,20,70,0.48)';
         cx.fillRect(0, 0, PXW, PXH);
         if (wt === 0)
             for (let i = 0; i < 14; i++)
@@ -427,6 +492,9 @@ function drawPx() {
         Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
         Rc(37, 37, 8, 2, '#ffe9a8');
         pxLights(op, true);
+        // 夜は看板に明かりをともす（v2.0.0〜）
+        Rr(76, 9, 40, 12, 'rgba(255,122,104,.55)', 2);
+        pxText(88, 13, 'SHOP', '#fff6e0');
         pxDk = true;
         pxPeople(op);
         // 窓・ドアの描き直しで隠れた、イベントの人物（行列・泥棒など）を手前に描き直す。窓のステッカーも描き直す（v1.5.1）

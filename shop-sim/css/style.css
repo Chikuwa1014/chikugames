@@ -108,8 +108,8 @@ body {
 .awning {
   flex:none;
   position:relative;
-  height:12px;
-  margin:0 -12px 10px;
+  height:10px;
+  margin:0 -12px 9px;
   background:repeating-linear-gradient(90deg,var(--coral) 0 24px,#fff 24px 48px);
 }
 
@@ -139,8 +139,9 @@ body {
   z-index:30;
   background:var(--bg);
   margin:0 -12px;
-  padding:2px 12px 8px;
+  padding:2px 12px 0;
   border-radius:0 0 22px 22px;
+  overflow:hidden;
   box-shadow:0 6px 16px -8px rgba(31,58,53,.25);
 }
 
@@ -158,8 +159,8 @@ body {
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  padding:8px 10px 8px 14px;
-  border-radius:18px;
+  padding:5px 8px 5px 14px;
+  border-radius:16px;
   background:linear-gradient(135deg,var(--mint),var(--mint2));
   color:#fff;
   box-shadow:var(--shadow);
@@ -170,7 +171,7 @@ body {
   padding:0;
   min-width:0;
   flex:none;
-  font-size:26px;
+  font-size:24px;
   font-weight:900;
   font-variant-numeric:tabular-nums;
   letter-spacing:-.3px;
@@ -212,7 +213,7 @@ button.achb, button.alt.achb {
   flex-wrap:wrap;
   justify-content:flex-end;
   gap:4px;
-  margin-top:6px;
+  margin-top:5px;
 }
 
 .chip {
@@ -245,74 +246,137 @@ button.achb, button.alt.achb {
   .chip { padding:1px 6px; font-size:11px; }
 }
 
-/* ---- 店の様子（ドット絵） ---- */
+/* ---- 店の様子（ドット絵）。v2.0.0〜 画面の端まで広げ、見出しの行は絵の上に重ねる ---- */
 details.shop {
-  margin:6px 0 0;
-  padding:6px 8px 8px;
-  border-radius:18px;
+  position:relative;
+  margin:8px -12px 0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
 }
 
 details.shop > summary {
+  position:absolute;
+  z-index:2;
+  top:6px;
+  left:8px;
+  right:8px;
   margin:0;
   display:flex;
   align-items:center;
   gap:4px;
   list-style:none;
   font-weight:700;
+  font-size:12px;
 }
 
 details.shop > summary::-webkit-details-marker {
   display:none;
 }
 
-details.shop > summary::before {
-  content:"▸";
-  display:inline-block;
-  color:var(--mint);
-  transition:transform .2s;
+/* 見出しの文字は半透明の黒いラベルに白字（どの空の色でも読めるように） */
+.shn, .pw {
+  display:inline-flex;
+  align-items:center;
+  padding:0 9px;
+  border-radius:999px;
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  line-height:22px;
+  white-space:nowrap;
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
 }
 
-details.shop[open] > summary::before {
-  transform:rotate(90deg);
+.shn::before {
+  content:"▾";
+  margin-right:4px;
+  opacity:.8;
 }
 
 #ph {
   display:inline-block;
-  margin-left:6px;
   padding:0 9px;
   border-radius:999px;
-  background:var(--mintl);
+  background:#fff;
   color:var(--mint2);
   font-size:12px;
   font-weight:800;
-  line-height:1.7;
+  line-height:22px;
+  box-shadow:0 1px 3px rgba(0,0,0,.15);
+}
+
+details.shop > summary button.hp {
+  background:rgba(0,0,0,.45);
+  color:#fff;
 }
 
 .pw {
   margin-left:auto;
-  font-size:12px;
-  font-weight:700;
-  color:var(--sub);
-  line-height:22px;
+}
+
+.pw:empty {
+  display:none;
+}
+
+/* 見出しは看板（絵の中央の上）にかからないよう、左右に寄せて小さく */
+@media (max-width:389px) {
+  .shn, .pw, #ph { font-size:11px; padding:0 7px; }
+}
+
+/* 絵を閉じたとき：見出しは普通の行に戻し、「店の様子」の文字も出す */
+details.shop:not([open]) .shn::after {
+  content:" 店の様子";
+}
+
+details.shop:not([open]) {
+  padding:6px 12px;
+}
+
+details.shop:not([open]) > summary {
+  position:static;
+}
+
+details.shop:not([open]) .shn::before {
+  content:"▸";
 }
 
 #px {
   width:100%;
   image-rendering:pixelated;
   display:block;
-  border-radius:12px;
-  margin-top:6px;
+  margin:0;
 }
 
 .pxw {
   position:relative;
 }
 
-/* 一時停止・倍速（v2.0.0〜 店の絵の右下。#top の中で絵の右下に重ねる。絵を閉じたときは下に並べる） */
+/* スクロールで縮んだとき（v2.0.0〜）：店の絵を細い帯にして、店のまわりだけ見せる */
+body.mini #px {
+  height:76px;
+  object-fit:cover;
+  object-position:50% 62%;
+}
+
+body.mini .chips {
+  display:none;
+}
+
+body.mini .secn, body.mini .payf {
+  display:none;
+}
+
+/* 一時停止・倍速（v2.0.0〜 店の絵の右下に重ねる。絵を閉じたときは下に並べる） */
 .spd {
   position:absolute;
-  right:20px;
-  bottom:22px;
+  z-index:3;
+  right:6px;
+  bottom:6px;
   display:flex;
   gap:4px;
 }
@@ -320,7 +384,7 @@ details.shop[open] > summary::before {
 details.shop:not([open]) + .spd {
   position:static;
   justify-content:flex-end;
-  margin-top:6px;
+  margin:0 0 8px;
 }
 
 .spd button, .spd button.alt {
@@ -696,8 +760,20 @@ button:focus-visible {
 /* ---- 陳列棚 ---- */
 .grid {
   display:grid;
-  grid-template-columns:1fr 1fr;
+  /* 幅に余裕があれば3列以上（v2.0.0〜） */
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:10px;
+}
+
+/* 投資の行も、幅に余裕があれば2列（v2.0.0〜） */
+#up {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+  column-gap:10px;
+}
+
+#up > .ivb {
+  grid-column:1 / -1;
 }
 
 .shelf {
@@ -1486,7 +1562,7 @@ button.achr {
 /* セキュリティのストック残数（右上） */
 .secn {
   position:absolute;
-  top:12px;
+  top:34px;
   right:6px;
   padding:1px 8px;
   border-radius:999px;
@@ -1568,14 +1644,14 @@ button.achr {
   display:none;
 }
 
-/* ---- 横画面（横向きで高さ 560px 以下）：左に上の部分、右にタブの中身とタブバー ---- */
-@media (orientation:landscape) and (max-height:560px) {
+/* ---- 横画面（横向きで高さ 560px 以下）と PC・タブレット（幅 900px 以上）：左に上の部分、右にタブの中身とタブバー ---- */
+@media (orientation:landscape) and (max-height:560px), (min-width:900px) {
   body {
-    max-width:none;
+    max-width:1280px;
     display:grid;
     grid-template-columns:minmax(260px,42%) minmax(0,1fr);
     grid-template-rows:auto minmax(0,1fr) auto;
-    column-gap:14px;
+    column-gap:18px;
     padding-left:max(12px,env(safe-area-inset-left,0px));
     padding-right:max(12px,env(safe-area-inset-right,0px));
   }
@@ -1594,6 +1670,18 @@ button.achr {
     border-radius:0;
     overflow-y:auto;
     min-height:0;
+  }
+
+  details.shop {
+    margin:8px 0 0;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+
+  details.shop:not([open]) {
+    box-shadow:none;
+    overflow:visible;
   }
 
   #scr {
@@ -1625,11 +1713,38 @@ button.achr {
   .spd {
     position:static;
     justify-content:flex-end;
-    margin-top:6px;
+    margin:8px 0;
   }
+}
 
+@media (orientation:landscape) and (max-height:560px) {
   #px {
     max-height:42vh;
     object-fit:contain;
+  }
+}
+
+/* PC では文字とタブを少し大きく */
+@media (min-width:900px) {
+  body {
+    padding-bottom:12px;
+  }
+
+  #tabs {
+    border-bottom:1px solid var(--line);
+    border-radius:18px;
+  }
+
+  #tabs button.tab {
+    font-size:14px;
+    padding:8px 0;
+  }
+
+  #tabs button.tab .ti {
+    font-size:18px;
+  }
+
+  .money {
+    font-size:30px;
   }
 }
