@@ -3,7 +3,7 @@
 <head>
 <!-- ちいさなお店 ver.1（v1.5.4）の画面。v2.0.0 の公開時（2026-10-28）に、ver.1 の画面で遊びたい人のために残したもの。
      中身は v1.5.4 の build.py の出力そのまま（直さない）。セーブは /shop-sim/ と同じキーを読むので、どちらの画面でも続きから遊べる。
-     変えたのは、フォルダが1段深くなった分のパス（デバッグ報告の送り先・引っ越しの手順）だけ -->
+     変えたのは、フォルダが1段深くなった分のパス（デバッグ報告の送り先・引っ越しの手順）と、設定タブの「新しい画面（ver.2）で遊ぶ」リンク（#v2c）だけ -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ちいさなお店 - 商品販売シミュレーター</title>
@@ -334,6 +334,18 @@ button {
   flex:1;
   cursor:pointer;
   touch-action:manipulation;
+}
+
+a.v2l {
+  display:block;
+  margin-top:8px;
+  padding:10px 12px;
+  color:var(--ink);
+  border:1.5px solid var(--ink);
+  border-radius:10px;
+  font-weight:700;
+  text-align:center;
+  text-decoration:none;
 }
 
 button.alt {
@@ -1195,6 +1207,7 @@ button.achr {
 <div class="grid" id="sh"></div>
 <h2>投資</h2>
 <div id="up"></div>
+<div class="card" id="v2c"><b>✨ 新しい画面（ver.2）で遊ぶ</b><div class="meta">v2.0.0 の新しい見た目で遊べます。セーブは同じなので、どちらの画面でも続きから遊べます（同じ端末・同じアドレスのとき）。</div><a class="v2l" href="../">ver.2 の画面を開く</a></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="cgMove"></div>
 <div class="card" id="dbg"></div>
@@ -5198,7 +5211,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('v2c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
