@@ -403,13 +403,68 @@ details.shop:not([open]) + .spd {
   flex:none;
   position:relative;
   z-index:30;
-  display:flex;
-  gap:4px;
   margin:0 -12px;
   padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));
   background:var(--card);
   border-top:1px solid var(--line);
   box-shadow:0 -6px 18px -10px rgba(31,58,53,.3);
+  /* 取っ手で隠す・出すときに、せり下がる・せり上がる（v2.0.0〜。下へのずらし量は js/ui.js の tabBar） */
+  transition:margin-bottom .28s cubic-bezier(.3,.8,.3,1);
+}
+
+#tabs.noanim {
+  transition:none;
+}
+
+#tabr {
+  display:flex;
+  gap:4px;
+}
+
+/* タブバーの上のふちの真ん中の取っ手（隠すと、これだけが画面の下に残る） */
+#tabs button.tbh {
+  position:absolute;
+  left:50%;
+  bottom:100%;
+  transform:translateX(-50%);
+  width:64px;
+  height:20px;
+  padding:0;
+  border:1px solid var(--line);
+  border-bottom:0;
+  border-radius:12px 12px 0 0;
+  background:var(--card);
+  color:var(--mint2);
+  font-size:10px;
+  line-height:1;
+  box-shadow:0 -4px 10px -6px rgba(31,58,53,.35);
+}
+
+#tabs button.tbh:active:not(:disabled) {
+  transform:translateX(-50%);
+  box-shadow:0 -4px 10px -6px rgba(31,58,53,.35);
+}
+
+#tabs.off {
+  box-shadow:none;
+}
+
+/* 隠したときは、いちばん下の中身が取っ手に隠れないよう余白を足す */
+body:has(#tabs.off) #scr {
+  padding-bottom:40px;
+}
+
+#tabs.off button.tbh {
+  width:72px;
+  height:24px;
+  font-size:12px;
+  background:var(--mint);
+  border-color:var(--mint);
+  color:#fff;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #tabs { transition:none; }
 }
 
 #tabs button.tab {
