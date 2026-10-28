@@ -272,6 +272,29 @@ def run(p, w, h, tag):
     check(st['gone'] and st['coin'] == c0 + 15, f'{tag}: 配置がえで撤去できる（半額もどる）')
     page.click('#edEnd')
 
+    # 製品の需要：毎日動き、集荷の個数にかかる（月・曜日の倍率も）
+    st = page.evaluate('''() => { const G = UCT.G, t0 = G.time, d0 = G.demand.hist.length;
+      const vals = [];
+      for (let i = 0; i < 40; i++) { G.time = (Math.floor(G.time / 1440) + 1) * 1440 + 1; UC.step(G, 0.01); vals.push(G.demand.v); }
+      const c = UC.cal(G.time), r = UC.demandRate(G, c);
+      G.time = t0; G.lastDay = UC.cal(t0).day; G.bases.forEach(b => { b.kanban = []; b.carry = {}; });
+      return { n: G.demand.hist.length, uniq: new Set(vals.map(v => v.toFixed(1))).size, min: Math.min(...vals), max: Math.max(...vals), rate: r }; }''')
+    check(st['n'] == 28 and st['uniq'] > 20 and 55 <= st['min'] and st['max'] <= 180, f'{tag}: 製品の需要が毎日動く {st}')
+    page.click('#btnKanban'); page.wait_for_timeout(200)
+    check(page.locator('#mBody svg polyline').count() == 1, f'{tag}: かんばんに需要のグラフが出る')
+    st = page.evaluate('''() => { const E = UC.economy, Y = 84;
+      return { p: [E(0).phase, E(3 * Y).phase, E(7 * Y).phase, E(10 * Y).phase], peak: Math.round(E(7 * Y - 1).base), end: Math.round(E(10 * Y - 1).base) }; }''')
+    check(st['p'] == ['avg', 'up', 'down', 'avg'] and 180 < st['peak'] < 200 and 95 < st['end'] < 105, f'{tag}: 景気は 10 年で 1 周（平均 3・上昇 4・下落 3） {st}')
+    page.click('#mClose')
+    page.evaluate("() => { const G = UCT.G; G.demand.phase = 'avg'; const t0 = G.time, d0 = G.lastDay; G.time = 3 * 84 * 1440 + 1; UC.step(G, 0.01); G.time = t0; G.lastDay = d0; G.bases.forEach(b => { b.kanban = []; b.carry = {}; }); }")
+    page.wait_for_timeout(500)
+    check(page.is_visible('#cutin') and '好景気' in page.inner_text('#cutin'), f'{tag}: 上昇周期に入ると好景気のカットインが出る')
+    shot(page, tag + '-16c-boom')
+    page.click('#cutin'); page.wait_for_timeout(100)
+    page.click('#btnKanban'); page.wait_for_timeout(200)
+    shot(page, tag + '-16k-demand')
+    page.click('#mClose')
+
     # 置いた直後に「↻ 向き」を押すと、いま置いたきかいも回る
     page.evaluate("() => { UCT.G.coin = 5000; delete UCT.G.bases[1].objs['30,20']; }")
     page.click('#btnShop'); page.wait_for_timeout(200)
