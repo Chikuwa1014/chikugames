@@ -1880,7 +1880,8 @@ button.achr {
 }
 
 .tutbt button.alt {
-  flex:0 0 96px;
+  flex:0 0 118px;
+  font-size:13px;
 }
 
 .tutc button {
@@ -1936,4 +1937,24 @@ button.achr {
 
 .tutbt button[hidden] {
   display:none;
+}
+
+/* 難易度えらびの「遊び方を表示しない」（v2.0.0〜） */
+.dftut {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin:-6px 0 14px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--sub);
+  cursor:pointer;
+}
+
+.dftut input {
+  width:18px;
+  height:18px;
+  margin:0;
+  accent-color:var(--mint);
 }

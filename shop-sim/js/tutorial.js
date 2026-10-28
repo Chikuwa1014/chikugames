@@ -2,7 +2,7 @@
  * tutorial.js — 遊び方（チュートリアル。v2.0.0〜）。
  * 画面を暗くして説明する場所だけを光らせ、ちくわくんの吹き出しで順に案内する。タブは自動で切り替える。
  * ・最初に難易度を選んだ直後に1回だけ出す（`newGame` を包む）。今遊んでいる人（セーブがある人）には自動では出さない
- * ・どの場面でも「スキップ」で飛ばせる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
+ * ・どの場面でも「すべてスキップ」で、そこから先の説明と練習をまとめて飛ばせる。難易度えらびの画面のチェック（#tutoff）で、最初から出さないこともできる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
  * ・設定タブの「📖 遊び方を見る」（data-a="tutorial"）でいつでも見直せる。営業中に開いたら、その間は一時停止する
  * ・初めての人（難易度えらびの直後）だけ、説明のあとに1日目を実際にいっしょに進める（`TUT_PRACTICE`。開業→補充→開店→営業→閉店後）。
  *   見直しのときは説明だけ（実際のお金と日付が進むため）
@@ -92,7 +92,7 @@ function tutStart(practice) {
     if (!o) {
         o = document.createElement('div');
         o.id = 'tut';
-        o.innerHTML = '<div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">スキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
+        o.innerHTML = '<div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">すべてスキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
         document.body.append(o);
         tutFace(byId('tutf'));
     }
@@ -207,6 +207,7 @@ function tutEnd() {
     clearInterval(tutTimer);
     byId('tut').hidden = true;
     CG.ls.set(TUT_KEY, '1');
+    tutSyncOff();
     state.tab = tutPrev.tab;
     if (state.phase === 'open')
         state.paused = tutPrev.paused;
@@ -229,6 +230,17 @@ document.addEventListener('click', e => {
     if (a === 'tutnext')
         tutNext();
 });
+
+/** 難易度えらびの画面の「遊び方を表示しない」のチェックを、保存した状態にそろえる（見た・飛ばした端末はチェック済み） */
+function tutSyncOff() {
+    const c = byId('tutoff');
+    if (c)
+        c.checked = CG.ls.get(TUT_KEY) === '1';
+}
+
+// チェックを入れると次の難易度えらびのあとに出さない。外すと、次に難易度を選んだときにもう一度出す
+byId('tutoff').addEventListener('change', e => CG.ls.set(TUT_KEY, e.target.checked ? '1' : '0'));
+tutSyncOff();
 
 addEventListener('resize', () => requestAnimationFrame(tutPlace));
 document.addEventListener('keydown', e => {
