@@ -384,8 +384,10 @@
         G.toHost({ t: 'st', p: r, yw: +me.yaw.toFixed(3), pt: +me.pitch.toFixed(3), mv: G.players.get(me.pid).mv, lz: me.laser ? 1 : 0, ld: me.laser ? me.laserDir.map(v => +v.toFixed(3)) : null });
       }
     } else {
+      // 親（ひとりプレイも）の自分のレーザー。updateMe の rec.lz はアイテムを使う前に入るので、ここで入れ直す
+      // （入れ直さないと、親のおたまレーザーが当たらず、ほかの人にも見えなかった。デバッグ報告#12）
       const rec = G.players.get(me.pid);
-      if (rec) rec.ld = me.laser ? me.laserDir : null;
+      if (rec) { rec.lz = me.laser ? 1 : 0; rec.ld = me.laser ? me.laserDir : null; }
     }
     // ほかの人の見た目の位置（なめらかに追いかける）
     for (const pl of G.players.values()) {
