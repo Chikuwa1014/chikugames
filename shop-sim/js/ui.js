@@ -489,7 +489,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('tutc'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
