@@ -11,6 +11,23 @@ os.makedirs(OUT, exist_ok=True)
 errors = []
 
 
+NOTE_JS = """() => {
+  const G = UCT.G, b = G.bases[0], r = G.robots[0], o = b.objs['10,3'];
+  if (!o) return null;
+  const down0 = o.down; o.cnt = 1;
+  UC.stop(G, r); r.brk = null; r.path = null; r.walk = null; r.injured = false; r.sulk = false; r.hp = 100; r.mp = 100;
+  delete b.objs['9,3']; r.x = 9; r.y = 3; r.dir = 0;
+  G.time = (Math.floor(G.time / 1440 / 7) + 1) * 7 * 1440 + 9 * 60 + 5;
+  r.prog.main = ['work', 'work', 'if:!ok', 'right', 'endif', 'stop'];
+  UC.step(G, 0.1); UC.run(G, r);
+  for (let i = 0; i < 80; i++) UC.step(G, 0.25);
+  const dn = { cnt: o.cnt, dir: r.dir };
+  o.down = false; r.dir = 0; r.prog.main = ['work', 'work', 'work', 'stop']; UC.run(G, r);
+  for (let i = 0; i < 80; i++) UC.step(G, 0.25);
+  return { down0, dn, up: o.cnt };
+}"""
+
+
 def shot(page, name):
     page.screenshot(path=os.path.join(OUT, name + '.png'))
 
@@ -421,6 +438,56 @@ def run(p, w, h, tag):
     check(st == [12, 6], f'{tag}: 視点を回しても、絵をタップして選べる {st}')
     page.click('#rotR'); page.wait_for_timeout(100)
     check(page.evaluate('() => UCT.viewRot') == 0, f'{tag}: 4 回で 1 周する')
+
+    # 1.3.0：ファンクションははじめ F1 だけ（F2・F3 はかぎ）。ファンクションに登録・容量オーバーはエラー
+    page.evaluate("() => { const G = UCT.G, r = G.robots[0]; UC.stop(G, r); G.lib = { mainCap: 0, funcs: 0, funcCap: 0 }; r.prog.f = [[], [], [], [], []]; r.prog.main = ['fwd:1', 'right', 'fwd:1', 'stop']; }")
+    page.click('#btnBuild'); page.wait_for_timeout(200)
+    st = page.evaluate("() => ({ lock: document.querySelectorAll('#bWrap .tabs button.lock').length, f2: !!document.querySelector('#bPal .piece[data-k=f2]'), f1: !!document.querySelector('#bPal .piece[data-k=f1]') })")
+    check(st == {'lock': 4, 'f2': False, 'f1': True}, f'{tag}: はじめは F1 だけ（F2〜F5 はかぎ・パレットにも出ない）{st}')
+    page.click('#bReg'); page.wait_for_timeout(100)
+    page.select_option('#rFrom', '0'); page.select_option('#rTo', '2'); page.check('#rRep'); page.wait_for_timeout(100)
+    shot(page, tag + '-21-reg')
+    page.click('#rGo'); page.wait_for_timeout(150)
+    st = page.evaluate("() => { const r = UCT.G.robots[0]; return { f: r.prog.f[0].join(), m: r.prog.main.join() } }")
+    check(st == {'f': 'fwd:1,right,fwd:1', 'm': 'f1,stop'}, f'{tag}: 範囲のピースをファンクションに登録し、メインを呼び出しにおきかえる {st}')
+    page.evaluate("() => { UCT.G.robots[0].prog.main = ['fwd:1','left','fwd:1','right','fwd:1','left','fwd:1','right','fwd:1','stop']; }")
+    page.click('#bWrap .tabs button[data-t="main"]'); page.wait_for_timeout(100)
+    page.click('#bReg'); page.wait_for_timeout(100)
+    page.select_option('#rTo', '8'); page.click('#rGo'); page.wait_for_timeout(150)
+    shot(page, tag + '-22-reg-err')
+    st = page.evaluate("() => ({ err: (document.querySelector('.steps.err') || {}).textContent || '', f: UCT.G.robots[0].prog.f[0].length })")
+    check('8 個まで' in st['err'] and st['f'] == 3, f'{tag}: ファンクションの容量より多いとエラー（登録しない）{st}')
+    page.click('#mClose')
+    # コンサルの「指示書」：ファンクション購入・容量
+    page.evaluate('() => { UCT.G.coin = 9000 }')
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('#sWrap .tabs button[data-t="lib"]'); page.wait_for_timeout(100)
+    shot(page, tag + '-23-lib')
+    page.click('button[data-a="lib:funcs"]'); page.click('button[data-a="lib:funcCap"]'); page.click('button[data-a="lib:mainCap"]'); page.wait_for_timeout(100)
+    page.click('#mClose')
+    st = page.evaluate("() => ({ nf: UC.funcCount(UCT.G), fm: UC.funcMax(UCT.G), mm: UC.mainMax(UCT.G) })")
+    check(st == {'nf': 2, 'fm': 12, 'mm': 20}, f'{tag}: ファンクション購入・ファンクション容量・指示書容量を買える {st}')
+    page.click('#btnBuild'); page.wait_for_timeout(200)
+    page.click('#bReg'); page.wait_for_timeout(100)
+    page.select_option('#rTo', '8'); page.select_option('#rDst', '1'); page.click('#rGo'); page.wait_for_timeout(150)
+    st = page.evaluate("() => UCT.G.robots[0].prog.f[1].length")
+    check(st == 9, f'{tag}: 容量を増やすと登録できる（F2 に 9 個）{st}')
+    page.click('#mClose')
+    # きろく：デスクのノートに向かって作業すると数える（カウントアップ／ダウン。ダウンは 0 で「？」）
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('#sWrap .tabs button[data-t="machine"]'); page.wait_for_timeout(100)
+    page.click('button[data-a="place:note-down"]'); page.wait_for_timeout(150)
+    page.evaluate("() => { delete UCT.G.bases[0].objs['10,3']; }")
+    xy = page.evaluate("() => UCT.screenOf(10 + 0.5, 3 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    page.click('#placeEnd')
+    st = page.evaluate(NOTE_JS)
+    check(st and st['down0'] and st['dn'] == {'cnt': 0, 'dir': 1} and st['up'] == 3, f'{tag}: きろくはカウントダウン（0 で「？」）・カウントアップで数える {st}')
+    page.evaluate("() => UCT.clearNav()"); page.wait_for_timeout(100)
+    shot(page, tag + '-24-note')
+    xy = page.evaluate("() => UCT.screenOf(10 + 0.5, 3 + 0.5, 6)"); page.mouse.click(*xy); page.wait_for_timeout(100); page.mouse.click(*xy); page.wait_for_timeout(200)
+    check(page.locator('button[data-nd]').count() == 2, f'{tag}: きろくをタップして、カウントアップ／ダウンを変えられる')
+    shot(page, tag + '-25-note-panel')
+    page.click('#mClose')
     b.close()
 
 
