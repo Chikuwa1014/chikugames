@@ -1997,3 +1997,20 @@ button.ths.on {
   border-color:var(--mint);
   background:var(--mintl);
 }
+
+/* 前の画面（ver.1）へのリンク（設定タブ。v2.0.0〜） */
+a.v1l {
+  display:block;
+  margin-top:10px;
+  padding:11px 12px;
+  border:2px solid var(--line);
+  border-radius:999px;
+  color:var(--mint2);
+  font-weight:800;
+  text-align:center;
+  text-decoration:none;
+}
+
+a.v1l:active {
+  background:var(--mintl);
+}
