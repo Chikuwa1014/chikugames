@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v2.0.0 の確認：遊び方（チュートリアル）。最初の難易度えらびの直後に1回だけ出る・9場面を進める・スキップ・次からは出ない・
+"""v2.0.0 の確認：遊び方（チュートリアル）。最初の難易度えらびの直後に1回だけ出る・説明10場面＋1日目の練習5場面を進める・スキップ・次からは出ない・
 設定タブから見直せる（営業中は一時停止して、終わったら戻す）・セーブがある人には自動で出ない。
 使い方：python3 shop-sim/dev/test-tutorial.py [出力先]。サーバー不要（file://）。"""
 import os, sys
@@ -29,18 +29,47 @@ with sync_playwright() as p:
     pg.click('[data-a="diff"][data-v="hard"]')
     pg.wait_for_timeout(600)
     check('最初の難易度えらびの直後に出る', pg.evaluate(shown))
-    check('1場面目の番号', pg.inner_text('#tutn') == '1 / 9', pg.inner_text('#tutn'))
+    check('1場面目の番号（説明10＋練習5）', pg.inner_text('#tutn') == '1 / 15', pg.inner_text('#tutn'))
     tabs = []
-    for i in range(8):
+    for i in range(9):
         pg.click('#tutgo')
         pg.wait_for_timeout(350)
         tabs.append(pg.evaluate('()=>state.tab'))
         if OUT and i in (2, 6):
             pg.screenshot(path=os.path.join(OUT, 'tut-%d.png' % (i + 2)))
-    check('タブを自動で切り替える（投資・お金・設定）', tabs[-3:] == [1, 2, 3], tabs)
+    check('タブを自動で切り替える（投資・お金・設定・営業時間）', tabs[-4:] == [1, 2, 3, 3], tabs)
+    r = pg.evaluate("()=>{const h=byId('tuth').getBoundingClientRect(), t=document.querySelector('[data-a=\"oh\"]').getBoundingClientRect(); return [h.left<=t.left && h.right>=t.right && h.top<=t.top && h.bottom>=t.bottom, h.width]}")
+    check('営業時間の場面：営業時間の欄を光らせる', r[0], r)
+    check('営業時間の場面：時給125%の説明', '125%' in pg.inner_text('#tutm'))
+    pg.click('#tutgo')
+    pg.wait_for_timeout(400)
+    # 1日目の練習：光っている所だけ押せる
+    check('練習1：開業するを待つ（次へは出さない）', pg.inner_text('#tutt') == '実際にやってみよう！' and not pg.is_visible('#tutgo'))
+    pg.mouse.click(5, 5)
+    pg.wait_for_timeout(200)
+    check('練習1：光っていない所はふさぐ', pg.evaluate('()=>state.day') == 0)
+    pg.click('#act [data-a="next"]')
+    pg.wait_for_timeout(600)
+    check('練習2：開店準備に進む', pg.inner_text('#tutt') == '開店準備' and pg.evaluate('()=>state.phase') == 'prep')
+    check('練習2：補充するまで次へは押せない', pg.is_disabled('#tutgo'))
+    pg.click('#sh [data-n="999"]')
+    pg.wait_for_timeout(500)
+    check('練習2：補充すると次へが押せる', not pg.is_disabled('#tutgo'))
+    pg.click('#tutgo')
+    pg.wait_for_timeout(400)
+    pg.click('#act [data-a="open"]')
+    pg.wait_for_timeout(700)
+    check('練習4：営業中は暗くせず、ゲームを動かす', pg.inner_text('#tutt') == '営業中' and pg.evaluate("()=>state.phase==='open' && !state.paused && getComputedStyle(byId('tuth')).display==='none'"))
+    pg.evaluate("()=>{ state.spd = 8; }")
+    for i in range(200):
+        if pg.evaluate('()=>state.phase') != 'open':
+            break
+        pg.wait_for_timeout(300)
+    pg.wait_for_timeout(600)
+    check('練習5：閉店後に本日の結果を光らせる', pg.inner_text('#tutt') == '1日おつかれさま！' and pg.evaluate('()=>state.phase') == 'closed')
     check('最後は「はじめる！」', pg.inner_text('#tutgo') == 'はじめる！', pg.inner_text('#tutgo'))
-    r = pg.evaluate("()=>{const h=byId('tuth').getBoundingClientRect(), t=document.querySelector('#tabs [data-v=\"3\"]').getBoundingClientRect(); return [h.left<=t.left && h.right>=t.right && h.top<=t.top && h.bottom>=t.bottom, h.width]}")
-    check('光らせる枠が設定タブのボタンを囲む', r[0], r)
+    if OUT:
+        pg.screenshot(path=os.path.join(OUT, 'tut-end.png'))
     pg.click('#tutgo')
     pg.wait_for_timeout(300)
     check('最後まで見ると閉じる', not pg.evaluate(shown))
@@ -62,6 +91,7 @@ with sync_playwright() as p:
     pg.click('[data-a="tutorial"]')
     pg.wait_for_timeout(300)
     check('設定の「遊び方を見る」で出る', pg.evaluate(shown))
+    check('見直しは説明だけ（10場面）', pg.inner_text('#tutn') == '1 / 10', pg.inner_text('#tutn'))
     check('営業中は一時停止する', pg.evaluate('()=>state.paused') is True)
     pg.click('[data-a="tutskip"]')
     pg.wait_for_timeout(300)
