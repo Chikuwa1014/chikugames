@@ -38,6 +38,7 @@
 | `js/achv.js` | 実績（一覧 `ACH_GROUPS`・判定 `achCheck`・バッジ `syncAchBadge`・ポップアップ `syncAch`/`achShow`・リセット `achReset`）。`endDay`・`svMove` を包んで判定するだけ（ui.js の後、debuglog.js の前に読む） |
 | `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）と1日目の練習 `TUT_PRACTICE`（`kind`：`do`＝光っている所だけ押せる・`watch`＝暗くせず待つ。`done()` で次へ）・開けない日の `TUT_REST`、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す（debuglog.js の後、main.js の前に読む） |
 | `js/theme.js` | イメージカラー（v2.0.0〜）。色の一覧 `THEMES`（`m` 主な色・`c` 差し色・`dm`/`dc` 暗いモード・`h`/`s` 背景の色あい）、`themeApply`（`:root` の CSS 変数を上書き。`mint` は style.css のまま）、お店の絵の色 `PXT`（`r` 屋根など・`c` 看板など。pixel.js が読む）、設定タブの欄 `themeRender`（`#thc`） |
+| `v1/index.html` | ver.1（v1.5.4）の画面（v2.0.0〜）。v1.5.4 の `build.py` の出力を1ファイルで置いたもの。**直さない**（v2 で直した不具合も入っていない）。パスはフォルダが1段深い分だけ変えた（`CG.debug.init` の `url: '../debug'`・`../../hikkoshi/`）。セーブ（`KEY` など）は `/shop-sim/` と同じものを読み書きするので、v2 でセーブの形を変えるときは v1 で読めなくならないか気をつける。設定タブの `#v1c` からリンク |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動、設定タブの更新履歴 `#chg`（`CHANGES` から作る） |
 
