@@ -1,6 +1,6 @@
 # ちくわゲームズ
 
-ブラウザですぐ遊べる、ちいさなゲームのあつまりです。Cloudflare Workers（`chikuwa-games`）の静的配信で公開しています。静的ファイルは assets が返し、assets に無いパス（いまはマルチプレイの仲介 `/roulette/ws`・`/battle-othello/ws`・`/hayaoshi-chikupon/ws`・`/horimogu/ws` とデバッグログの受け口 `/shop-sim/debug`・`/battle-othello/debug`）を `worker/index.js` が受けます（Durable Objects `MultiRoom`）。`main` に push すると自動でデプロイされます。
+ブラウザですぐ遊べる、ちいさなゲームのあつまりです。Cloudflare Workers（`chikuwa-games`）の静的配信で公開しています。静的ファイルは assets が返し、assets に無いパス（いまはマルチプレイの仲介 `/roulette/ws`・`/battle-othello/ws`・`/hayaoshi-chikupon/ws`・`/horimogu/ws` とデバッグログの受け口 `/shop-sim/debug`・`/battle-othello/debug`・`/horimogu/debug`）を `worker/index.js` が受けます（Durable Objects `MultiRoom`）。`main` に push すると自動でデプロイされます。
 
 | パス | 内容 |
 |---|---|

@@ -508,6 +508,7 @@
 
   /* ---------- ポーズ ---------- */
   function openPause() {
+    CG.debug.add('pause');
     if (!G.running || G.over) return;
     $('#pause').hidden = false;
     $('#sens').value = sens;
@@ -515,7 +516,7 @@
     $('#pauseNote').textContent = G.mode === 'multi' ? 'みんなで遊んでいる間は止まりません。「やめる」と負けになります' : '';
     if (document.exitPointerLock) document.exitPointerLock();
   }
-  function closePause() { $('#pause').hidden = true; }
+  function closePause() { if (!$('#pause').hidden) CG.debug.add('resume'); $('#pause').hidden = true; }
 
   /* ---------- 結果 ---------- */
   function soloBest(left) {
@@ -524,6 +525,7 @@
     return false;
   }
   G.onEnd = function (ev) {
+    CG.debug.add('end', { win: ev.win, why: ev.why, left: ev.left, winner: ev.winner });
     if (document.exitPointerLock) document.exitPointerLock();
     const box = $('#result');
     let title, sub, share;
@@ -619,6 +621,7 @@
         catch (e) { G.toast('この端末では 3D の表示ができません（WebGL）'); return; }
       }
       if (startFn) startFn();
+      CG.debug.add('start', { N: G.world && G.world.N });
       // 最初はまわりのチャンクをまとめて作る
       G.meshBudget = 400;
       resize();
@@ -703,11 +706,38 @@
     $('#howBtn').onclick = () => { $('#how').hidden = !$('#how').hidden; };
     $('#histBtn').onclick = () => { $('#hist').hidden = !$('#hist').hidden; };
     // セーブの引っ越し（共通部品 common/v1/move.js）。自己ベストと設定を運ぶ
+    // 不具合の報告：ホームと一時停止から送れる。送るときは試合の要約も付ける（地形そのものは送らない）
+    const dbgExtra = () => ({
+      st: G.running ? {
+        mode: G.mode, size: G.sizeKey, N: G.world && G.world.N, t: G.t, over: G.over, host: !!G.isHost,
+        players: G.players ? [...G.players.values()].map(p => ({ n: p.name, hp: p.hp, alive: p.alive, why: p.why })) : [],
+        bots: G.bots ? G.bots.map(b => ({ k: b.key, hp: b.hp, alive: b.alive, aware: b.aware })) : [],
+        inv: G.me && G.me.inv
+      } : null,
+      cfg: { cam: G.camMode, sens: CG.ls.get(KEY_SENS, ''), gyro: gyro.on, gyroOk: gyro.ok, touch: touchMode }
+    });
+    CG.debug.mount($('#cgDebug'), { extra: dbgExtra });
+    CG.debug.mount($('#cgDebugPause'), { extra: dbgExtra });
     CG.move.mount($('#cgMove'), { keys: [KEY_BEST, KEY_COLOR, KEY_SENS, KEY_CAM, KEY_SIZE, KEY_GYRO, 'horimogu-name', 'horimogu-mute'] });
   }
 
   /* ---------- 起動 ---------- */
   CG.init({ game: HM.GAME, title: 'ほりほりもぐもぐ', version: HM.VERSION });
+  // デバッグ報告（共通部品 common/v1/debug.js）。操作・出来事・エラーを直近 300 件残し、送ると受付番号が出る。
+  // 1 件ごとに「いまの状態」の要約を付ける（worker/index.js の /horimogu/debug → D1 chikuwa-debug）
+  CG.debug.init({
+    snap: () => {
+      if (!G.running || !G.me) return { scr: [...document.querySelectorAll('.screen')].filter(e => !e.hidden).map(e => e.id).join(',') };
+      const rec = G.players && G.players.get(G.me.pid), p = G.me.p;
+      return {
+        md: G.mode, sz: G.sizeKey, gt: Math.round(G.t * 10) / 10, hp: rec ? Math.round(rec.hp) : null,
+        p: p ? p.map(v => Math.round(v * 10) / 10) : null, it: G.me.inv.map(s => s.type).join(','), cam: G.camMode,
+        gy: gyro.on ? 1 : 0, dig: G.inDig() ? 1 : 0, bt: G.bots ? G.bots.filter(b => b.alive).length : 0
+      };
+    }
+  });
+  // 画面に出た知らせ（拾った・たおした・落ちた など）も、そのまま記録に残す
+  { const t0 = G.toast; G.toast = t => { CG.debug.add('toast', { m: String(t).slice(0, 60) }); t0(t); }; }
   document.querySelectorAll('.ver').forEach(e => { e.textContent = HM.VERSION; });
   document.querySelectorAll('.colors').forEach(el => drawColorPicker(el, el.dataset.auto === '1'));
   buildHud(); wireButtons(); setupTouch(); setupMouse(); setCam(G.camMode);
