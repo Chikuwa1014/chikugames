@@ -43,7 +43,9 @@ function render() {
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
     byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
     byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
-    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + calOf(d) + '月' + ((d - 1) % MD + 1) + '日目（通算' + m + 'ヶ月' + state.day + '日）' + we.e + we.n;
+    // 難易度・季節・日付・天気はチップで並べる（v2.0.0〜。文言は v1.x と同じ）
+    const ch = (t, c) => '<span class="chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
+    byId('dt').innerHTML = state.day === 0 ? ch('開業前') : ch(sea.e + sea.n) + ch(calOf(d) + '月' + ((d - 1) % MD + 1) + '日目') + ch('通算' + m + 'ヶ月' + state.day + '日', 'dim') + ch(we.e + we.n);
     byId('sp').innerHTML = Object.keys(PHN).map(k => '<span class="' + (state.phase === k ? 'on' : '') + '">' + PHN[k] + '</span>').join('');
     byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
     byId('gb').style.width = state.gauge + '%';
@@ -63,7 +65,7 @@ function render() {
     if (state.over)
         a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '</div><button class="big" data-a="ovshow">📣 結果を見る・シェアする</button>';
     else if (state.phase === 'prep')
-        a = '<button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
+        a = '<button class="big ghost" data-a="fillall"' + (ill() ? ' disabled' : '') + '>一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
     else if (state.phase === 'open')
         a = state.kama ? '<div class="hint">⛄ かまくら作り中（12:00から甘酒ボーナス）</div>' : '';
     else
@@ -144,7 +146,7 @@ function render() {
             if (e && !v)
                 e.closest('.card').style.display = 'none';
         });
-        byId('dt').textContent = dd.n + ' / ' + byId('dt').textContent;
+        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>');
         byId('dfc').style.display = state.diff ? 'none' : 'block';
     }
     {
@@ -168,9 +170,9 @@ function render() {
         }
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
-        // タブの右端に一時停止と倍速（v1.4.0〜。倍速は押すたび×1→×2→×4→×8）
-        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('') +
-            '<span class="spd"><button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? '' : 'alt') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button></span>';
+        // 画面の下のタブバー（v2.0.0〜）。一時停止と倍速は店の絵の右下 #spd（倍速は押すたび×1→×2→×4→×8）
+        byId('tabs').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
+        byId('spd').innerHTML = '<button class="' + (state.paused ? 'on' : '') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? 'on' : '') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button>';
         [0, 1, 2, 3].forEach(i => {
             const e = byId('p' + i);
             if (e)
@@ -427,7 +429,7 @@ function initLayout() {
     const hr = document.createElement('div');
     // 1行目に所持金と実績のバッジ（v1.4.0〜）、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
     hr.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:0';
-    byId('dt').style.cssText = 'font-size:12px;text-align:right';
+    byId('dt').className = 'chips';
     const mr = document.createElement('div');
     mr.className = 'mrow';
     mr.append(byId('m'));
@@ -435,7 +437,6 @@ function initLayout() {
     hr.append(mr, byId('dt'));
     tp.append(hr);
     const dd = byId('px').closest('details');
-    dd.style.margin = '4px 0';
     // ドット絵の右上にセキュリティのストック残数（v1.4.2〜。0のときは出さない）
     const pw = document.createElement('div');
     pw.className = 'pxw';
@@ -443,11 +444,12 @@ function initLayout() {
     pw.append(byId('px'));
     pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="payf" id="payf" hidden></span><div class="bnote" id="bnote" hidden></div>');
     tp.append(dd);
+    // 一時停止・倍速（v2.0.0〜）。店の絵を開いているときは絵の右下に重ね、閉じているときはその下に出す（CSS）
+    tp.insertAdjacentHTML('beforeend', '<div class="spd" id="spd"></div>');
     byId('sd').remove();
     const tb = document.createElement('div');
     tb.id = 'tabs';
-    tb.className = 'sd';
-    tp.append(tb);
+    tb.setAttribute('role', 'tablist');
     const mk = i => {
         const d = document.createElement('div');
         d.id = 'p' + i;
@@ -464,4 +466,5 @@ function initLayout() {
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
     tp.after(sc);
+    sc.after(tb);
 }
