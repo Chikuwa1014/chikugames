@@ -20,6 +20,7 @@ def check(name, ok, info=''):
 
 def new_page(b, w=390, h=760):
     pg = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=2)
+    pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1')}catch(e){}")  # v2.0.0：遊び方（チュートリアル）を出さない
     errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL)

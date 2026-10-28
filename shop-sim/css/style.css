@@ -1788,3 +1788,106 @@ button.achr {
     font-size:30px;
   }
 }
+
+/* ---- 遊び方（チュートリアル。v2.0.0〜 js/tutorial.js）：画面を暗くして説明する場所だけ光らせ、ちくわくんの吹き出しで案内 ---- */
+#tut {
+  position:fixed;
+  inset:0;
+  z-index:60;
+}
+
+#tut[hidden] {
+  display:none;
+}
+
+/* 光らせる枠（まわりを大きな影で暗くする。枠がないときは全体を暗く） */
+.tuth {
+  position:fixed;
+  border-radius:16px;
+  box-shadow:0 0 0 3px var(--coral), 0 0 0 9999px rgba(10,24,20,.62);
+  transition:left .25s, top .25s, width .25s, height .25s;
+  pointer-events:none;
+}
+
+.tuth[hidden] {
+  display:block;
+  width:0;
+  height:0;
+  left:50%;
+  top:50%;
+  box-shadow:0 0 0 9999px rgba(10,24,20,.62);
+}
+
+.tutb {
+  position:fixed;
+  width:calc(100vw - 24px);
+  padding:12px 14px;
+  border-radius:20px;
+  background:var(--card);
+  color:var(--ink);
+  box-shadow:0 14px 40px rgba(0,0,0,.35);
+  border-top:5px solid var(--mint);
+  transition:left .25s, top .25s;
+  animation:ovpop .3s cubic-bezier(.2,1.4,.4,1);
+}
+
+.tutb.mid {
+  left:50% !important;
+  top:50% !important;
+  transform:translate(-50%,-50%);
+  animation:none;
+}
+
+.tuthd {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.tuthd canvas {
+  flex:none;
+  width:36px;
+  height:36px;
+  image-rendering:pixelated;
+  border-radius:12px;
+  background:var(--mintl);
+  padding:2px;
+}
+
+.tuthd b {
+  flex:1;
+  font-size:16px;
+  font-weight:900;
+}
+
+.tutn {
+  font-size:12px;
+  font-weight:700;
+  color:var(--sub);
+  font-variant-numeric:tabular-nums;
+}
+
+.tutm {
+  margin:8px 0 10px;
+  font-size:14px;
+  line-height:1.65;
+  white-space:pre-line;
+}
+
+.tutbt {
+  display:flex;
+  gap:8px;
+}
+
+.tutbt button.alt {
+  flex:0 0 96px;
+}
+
+.tutc button {
+  width:100%;
+  margin-top:10px;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .tuth, .tutb { transition:none; animation:none; }
+}

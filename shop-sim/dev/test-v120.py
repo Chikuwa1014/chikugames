@@ -12,6 +12,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 390, 'height': 844}, accept_downloads=True)
     ctx.grant_permissions(['clipboard-read', 'clipboard-write'], origin='http://localhost:8788')
     pg = ctx.new_page()
+    pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1')}catch(e){}")  # v2.0.0：遊び方（チュートリアル）を出さない
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(BASE)
     pg.evaluate("localStorage.clear()")

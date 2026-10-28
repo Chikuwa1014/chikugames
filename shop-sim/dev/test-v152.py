@@ -17,6 +17,7 @@ def check(name, ok, info=''):
 with sync_playwright() as p:
     b = p.chromium.launch()
     pg = b.new_page(viewport={'width': 390, 'height': 760}, device_scale_factor=2)
+    pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1')}catch(e){}")  # v2.0.0：遊び方（チュートリアル）を出さない
     errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL)
