@@ -235,7 +235,9 @@
       e.preventDefault();
       HM.sfx.unlock();
       const r = area.getBoundingClientRect();
-      if (stick.id === null && e.clientX < r.width * 0.45 && e.clientY > r.height * 0.35) {
+      // v1.1.1：スティックの位置を触ったら、前の指が離れた合図が届いていなくても（stick.id が残っていても）つかみ直す
+      if (e.clientX < r.width * 0.45 && e.clientY > r.height * 0.35) {
+        if (stick.id !== null && stick.id !== e.pointerId) { try { area.releasePointerCapture(stick.id); } catch (er) { } }
         // 画面の端やアイテム欄の近くで触っても、スティックがどの向きにも倒せる位置に中心を置く
         const R = STICK_R * 0.75, bar = $('#itembar').getBoundingClientRect();
         const maxY = Math.min(r.height - R, (bar.height ? bar.top : r.height) - R * 0.6);
@@ -266,9 +268,23 @@
     // 指が離れた合図が届かなかったときも、歩きっぱなしにしない
     window.addEventListener('blur', () => { resetStick(); looks.clear(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) { resetStick(); looks.clear(); } });
+    // v1.1.1：ポインターの「離れた」合図が届かない端末（アプリ内ブラウザで画面の端のスワイプなどが入ったとき）の保険。
+    // 指（touch）の本数と位置を見て、画面に残っていない指のスティック・見回しをやめる（デバッグ報告#11：歩きっぱなしで方向を変えられない）
+    const syncTouches = e => {
+      if (!e.touches || !e.touches.length) { resetStick(); looks.clear(); return; }
+      if (stick.id === null) return;
+      const r = area.getBoundingClientRect();
+      let near = false;
+      for (const t of e.touches) if (Math.hypot(t.clientX - r.left - stick.ox, t.clientY - r.top - stick.oy) <= STICK_R + 40) near = true;
+      if (!near) resetStick();
+    };
+    window.addEventListener('touchend', syncTouches, { passive: true });
+    window.addEventListener('touchcancel', syncTouches, { passive: true });
     // 観戦中はタップで見る人を変える
     area.addEventListener('click', () => { if (G.me && G.players.get(G.me.pid) && !G.players.get(G.me.pid).alive) nextSpectate(); });
   }
+  /** 触っている途中の操作をすべてやめる（一時停止の出入りで、前の指が残らないように） */
+  function resetTouch() { resetStick(); looks.clear(); held.main = held.item = held.jump = false; document.querySelectorAll('.act.down').forEach(b => b.classList.remove('down')); }
   const clampPitch = p => Math.max(-1.35, Math.min(1.25, p));
 
   // マウス（PC）：画面をクリックするとマウスで見回せる
@@ -510,13 +526,14 @@
   function openPause() {
     CG.debug.add('pause');
     if (!G.running || G.over) return;
+    resetTouch();
     $('#pause').hidden = false;
     $('#sens').value = sens;
     $('#muteBtn').textContent = HM.sfx.muted ? '🔇 音：オフ' : '🔊 音：オン';
     $('#pauseNote').textContent = G.mode === 'multi' ? 'みんなで遊んでいる間は止まりません。「やめる」と負けになります' : '';
     if (document.exitPointerLock) document.exitPointerLock();
   }
-  function closePause() { if (!$('#pause').hidden) CG.debug.add('resume'); $('#pause').hidden = true; }
+  function closePause() { if (!$('#pause').hidden) CG.debug.add('resume'); $('#pause').hidden = true; resetTouch(); }
 
   /* ---------- 結果 ---------- */
   function soloBest(left) {
