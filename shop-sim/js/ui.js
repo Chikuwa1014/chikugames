@@ -171,7 +171,7 @@ function render() {
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
         // 画面の下のタブバー（v2.0.0〜）。一時停止と倍速は店の絵の右下 #spd（倍速は押すたび×1→×2→×4→×8）
-        byId('tabs').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
+        byId('tabr').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
         byId('spd').innerHTML = '<button class="' + (state.paused ? 'on' : '') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? 'on' : '') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button>';
         [0, 1, 2, 3].forEach(i => {
             const e = byId('p' + i);
@@ -252,6 +252,12 @@ document.addEventListener('click', e => {
         buy(b.dataset.k, b.dataset.id === '' ? null : +b.dataset.id);
     if (a === 'diff')
         newGame(b.dataset.v);
+    if (a === 'tbar') {
+        const off = !byId('tabs').classList.contains('off');
+        tabBar(off);
+        CG.ls.set(TBAR_KEY, off ? '1' : '0');
+        return;
+    }
     if (a === 'tab') {
         state.tab = +b.dataset.v;
         render();
@@ -422,6 +428,27 @@ document.addEventListener('change', e => {
 });
 
 /** 画面の組み替え（固定の上部・タブ・スクロール領域）。起動時に1回だけ呼ぶ */
+/** タブバーを隠したかどうかの保存キー（端末ごと。ゲームのセーブには入れない。v2.0.0〜） */
+const TBAR_KEY = 'shop-sim-tabbar';
+
+/** タブバーを隠す（off=true）・出す。隠すときは取っ手だけ残して下へせり下げ、タブの中身を広げる */
+function tabBar(off, init) {
+    const tb = byId('tabs'), h = byId('tbh');
+    if (!tb)
+        return;
+    tb.classList.toggle('off', off);
+    if (init)
+        tb.classList.add('noanim');
+    // タブバーの高さ（＋PC の下の余白）だけ下へずらし、画面の外へ出す。取っ手はバーの上に付いているので残る
+    const pad = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    tb.style.marginBottom = off ? -((tb.offsetHeight || 64) + pad) + 'px' : '';
+    h.textContent = off ? '▲' : '▼';
+    h.setAttribute('aria-label', off ? 'タブを出す' : 'タブを隠す');
+    h.setAttribute('aria-expanded', String(!off));
+    if (init)
+        requestAnimationFrame(() => requestAnimationFrame(() => tb.classList.remove('noanim')));
+}
+
 function initLayout() {
     const tp = document.createElement('div');
     tp.id = 'top';
@@ -449,7 +476,8 @@ function initLayout() {
     byId('sd').remove();
     const tb = document.createElement('div');
     tb.id = 'tabs';
-    tb.setAttribute('role', 'tablist');
+    // タブの並び（#tabr。render が描き直す）と、タブバーを隠す・出す取っ手（#tbh。v2.0.0〜）
+    tb.innerHTML = '<button type="button" class="tbh" id="tbh" data-a="tbar"></button><div id="tabr" role="tablist"></div>';
     const mk = i => {
         const d = document.createElement('div');
         d.id = 'p' + i;
@@ -467,6 +495,10 @@ function initLayout() {
     sc.append(P0, P1, P2, P3);
     tp.after(sc);
     sc.after(tb);
+    // 前に隠していたら、隠したまま始める（DOM に入れてから高さを測る）
+    tabBar(CG.ls.get(TBAR_KEY) === '1', true);
+    // 画面の向きや大きさが変わったら、隠す量（タブバーの高さ）を測り直す
+    addEventListener('resize', () => byId('tabs').classList.contains('off') && tabBar(true, true));
     // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
     const wide = matchMedia('(orientation:landscape) and (max-height:560px), (min-width:900px)');
     const gc = byId('gl').closest('.card'), ck = byId('clk');
