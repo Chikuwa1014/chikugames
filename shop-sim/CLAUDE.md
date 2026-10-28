@@ -36,7 +36,7 @@
 | `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`）、セーブコード（`makeCode`・`readCode`）。作り方・読み方は `CG.save` |
 | `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`（所持金のカード `.mrow` と実績バッジ `#achb`、日付のチップ `#dt.chips`、下のタブバー `#tabs`（`#scr` の後ろ）、一時停止と倍速 `#spd`（店の絵の右下））、ログ欄 `syncLog`、ボタン処理 |
 | `js/achv.js` | 実績（一覧 `ACH_GROUPS`・判定 `achCheck`・バッジ `syncAchBadge`・ポップアップ `syncAch`/`achShow`・リセット `achReset`）。`endDay`・`svMove` を包んで判定するだけ（ui.js の後、debuglog.js の前に読む） |
-| `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す（debuglog.js の後、main.js の前に読む） |
+| `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）と1日目の練習 `TUT_PRACTICE`（`kind`：`do`＝光っている所だけ押せる・`watch`＝暗くせず待つ。`done()` で次へ）・開けない日の `TUT_REST`、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す（debuglog.js の後、main.js の前に読む） |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動、設定タブの更新履歴 `#chg`（`CHANGES` から作る） |
 
@@ -58,7 +58,7 @@
 
 - `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
-- `python3 shop-sim/dev/test-tutorial.py [出力先]`：v2.0.0 の遊び方（初回だけ出る・9場面・スキップ・次からは出ない・設定から見直す・営業中は一時停止・セーブがある人には出ない）。サーバー不要。ほかのテストは開く前に `shop-sim-tutorial` を入れて、遊び方を出さないようにしている。
+- `python3 shop-sim/dev/test-tutorial.py [出力先]`：v2.0.0 の遊び方（初回だけ出る・説明10場面＋1日目の練習5場面・光っていない所はふさぐ・スキップ・次からは出ない・設定から見直す・営業中は一時停止・セーブがある人には出ない）。サーバー不要。ほかのテストは開く前に `shop-sim-tutorial` を入れて、遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-v153.py [出力先]`：v1.5.3 の確認（月末の支払い予想・プルダウン・旧ラベル廃止）。サーバー不要。
 - `python3 shop-sim/dev/test-v152.py [出力先]`：v1.5.2 の確認（ログの折り返し・悪いイベントのお知らせ）。サーバー不要。
 - `python3 shop-sim/dev/test-v151.py [出力先]`：デバッグ報告#9（店員の解雇の表示）・#3（空が赤い理由）・#6（夜に窓の裏へ隠れる）・#10（営業ログが営業開始から読める）の確認。サーバー不要。

@@ -1891,3 +1891,49 @@ button.achr {
 @media (prefers-reduced-motion:reduce) {
   .tuth, .tutb { transition:none; animation:none; }
 }
+
+/* 1日目の練習（v2.0.0〜）：'do'＝光っている所だけ押せる（まわりは .tutk でふさぐ）／'watch'＝暗くせず、吹き出しだけ */
+#tut.do, #tut.watch {
+  pointer-events:none;
+}
+
+#tut.do .tutb, #tut.watch .tutb, #tut .tutk {
+  pointer-events:auto;
+}
+
+.tutk {
+  position:fixed;
+}
+
+.tutk[hidden], #tut.watch .tuth {
+  display:none;
+}
+
+#tut.watch .tutb {
+  border-top-color:var(--coral);
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+}
+
+#tut.watch .tutb {
+  padding:8px 12px;
+}
+
+#tut.watch .tutm {
+  font-size:12.5px;
+  line-height:1.5;
+  margin:4px 0 6px;
+}
+
+#tut.watch .tuthd canvas {
+  width:28px;
+  height:28px;
+}
+
+#tut.watch .tutbt button {
+  padding:5px 8px;
+  font-size:13px;
+}
+
+.tutbt button[hidden] {
+  display:none;
+}
