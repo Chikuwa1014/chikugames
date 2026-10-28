@@ -88,7 +88,8 @@ with sync_playwright() as p:
     LIT = (255, 243, 196)
 
     def px(x, y):
-        return pg.evaluate("([x,y])=>Array.from(cx.getImageData(x,y,1,1).data).slice(0,3)", [x, y])
+        # v2.0.0〜 canvas の実体は 768×368（実ピクセル 384×184 の2倍）
+        return pg.evaluate("([x,y])=>Array.from(cx.getImageData(x*2,y*2,1,1).data).slice(0,3)", [x, y])
 
     # 行列の2人目（論理 x=113、頭のかみの毛は実ピクセル (X+2..X+8, Y)）。窓の下端は論理 y=60 → 実 120
     head = px(113 * 2 + 4, 57 * 2 + 1)

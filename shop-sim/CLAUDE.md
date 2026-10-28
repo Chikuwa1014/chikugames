@@ -29,7 +29,7 @@
 | `js/events.js` | イベント（盗難・セキュリティ `guard`・商品イベント・日次抽選） |
 | `js/actions.js` | 操作（補充・投資・融資・預金・開店・新規ゲーム） |
 | `js/engine.js` | 時間の進行（`tick` 営業中1秒、`endDay` 閉店・月末、`nextDay` 翌日） |
-| `js/pixel.js` | ドット絵（384×184 の canvas。論理座標は従来の 192×92）。背景とお店の建物は `pxScene`（v2.0.0〜 ミント×コーラル。角を丸めた四角 `Rr`、丸い木 `pxTree`）。建物・窓・ドアの位置はイベントの絵と合わせてあるので動かさない |
+| `js/pixel.js` | ドット絵（canvas の実体は 768×368。全体を2倍に拡大して描くので、論理座標 192×92 の `Rc`・実ピクセル 384×184 の `Rp` はそのまま使える。細かい模様・人の顔は細ピクセル 768×368 の `Rq`。人物 `pp` の表情は `o.mood` の9種類。屋根などの色は theme.js の `PXT`）。背景とお店の建物は `pxScene`（v2.0.0〜 ミント×コーラル。角を丸めた四角 `Rr`、丸い木 `pxTree`）。建物・窓・ドアの位置はイベントの絵と合わせてあるので動かさない |
 | `js/pixelfx.js` | イベントの絵（`fxKind` 文面→種類・`markFx` その日の記録・`pxFxShop` 店に付くもの・`pxFxTop` 手前の人物や水や煙）。種類は `FXK`。pixel.js の `drawPx` から呼ぶ（pixel.js の後に読む） |
 | `js/share.js` | 倒産ポップアップ `syncOver`・SNS共有（リザルト画像・Xへの投稿・文面のコピー。文面と共有は `CG.share`） |
 | `js/amazake.js` | かまくらボーナスの日（`kamaTick`）と甘酒ミニゲーム（`amaStart`・`syncAma`・`amaClose`） |
@@ -37,6 +37,7 @@
 | `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`（所持金のカード `.mrow` と実績バッジ `#achb`、日付のチップ `#dt.chips`、下のタブバー `#tabs`（`#scr` の後ろ）、一時停止と倍速 `#spd`（店の絵の右下））、ログ欄 `syncLog`、ボタン処理 |
 | `js/achv.js` | 実績（一覧 `ACH_GROUPS`・判定 `achCheck`・バッジ `syncAchBadge`・ポップアップ `syncAch`/`achShow`・リセット `achReset`）。`endDay`・`svMove` を包んで判定するだけ（ui.js の後、debuglog.js の前に読む） |
 | `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）と1日目の練習 `TUT_PRACTICE`（`kind`：`do`＝光っている所だけ押せる・`watch`＝暗くせず待つ。`done()` で次へ）・開けない日の `TUT_REST`、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す（debuglog.js の後、main.js の前に読む） |
+| `js/theme.js` | イメージカラー（v2.0.0〜）。色の一覧 `THEMES`（`m` 主な色・`c` 差し色・`dm`/`dc` 暗いモード・`h`/`s` 背景の色あい）、`themeApply`（`:root` の CSS 変数を上書き。`mint` は style.css のまま）、お店の絵の色 `PXT`（`r` 屋根など・`c` 看板など。pixel.js が読む）、設定タブの欄 `themeRender`（`#thc`） |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動、設定タブの更新履歴 `#chg`（`CHANGES` から作る） |
 
@@ -47,6 +48,7 @@
 - セーブデータのファイル書き出し・読み込みは付録の「セーブデータ」。
 - 遊び方を見たか（v2.0.0〜）：localStorage `shop-sim-tutorial`（`'1'`＝見た・飛ばした）。ゲームのセーブ・引っ越しには入れない。`js/tutorial.js` の `TUT_KEY`。
 - タブバーを隠したか（v2.0.0〜）：localStorage `shop-sim-tabbar`（`'1'`＝隠す）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/ui.js` の `tabBar`・`TBAR_KEY`。
+- イメージカラー（v2.0.0〜）：localStorage `shop-sim-theme`（`THEMES` の `id`。無いときは `mint`）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/theme.js` の `THEME_KEY`
 - 実績：localStorage `shop-sim-achv`（`{ id: { at, diff } }`）。ゲームの保存とは別で、やり直し・倒産でも消えない。実績の `id`（`tot<金額>`・`day<日数>`・`sv<金額>`・`inf<日数>`）は公開後に変えない。
 
 ## 5. 調整用の数値
