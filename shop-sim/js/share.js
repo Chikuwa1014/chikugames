@@ -63,10 +63,11 @@ function resultImage() {
     g.fillStyle = '#ff6b76';
     g.font = '900 60px ' + F;
     g.fillText('倒産しました…', 48, 164);
-    // ドット絵（384×184 を1.5倍、ドットのまま拡大）
+    // ドット絵（v2.0.0〜 実体は 768×368。576×276 へ縮めるので、ドットがつぶれないようになめらかに縮める）
     g.fillStyle = '#27473e';
     g.fillRect(42, 194, 588, 288);
-    g.imageSmoothingEnabled = false;
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
     g.drawImage(byId('px'), 48, 200, 576, 276);
     // 成績
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1;

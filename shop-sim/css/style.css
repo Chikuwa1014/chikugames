@@ -24,6 +24,8 @@
   --shadow:0 2px 0 rgba(31,58,53,.06), 0 6px 18px rgba(31,58,53,.07);
   --shadow2:0 4px 0 rgba(31,58,53,.10), 0 10px 26px rgba(31,58,53,.12);
   --cg-accent:#2fbf97;
+  --mintg:#6fe0bf;
+  --coral3:#c9443a;
   color-scheme:light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -605,7 +607,7 @@ h2::before {
   display:block;
   height:100%;
   border-radius:999px;
-  background:linear-gradient(90deg,var(--mint),#6fe0bf);
+  background:linear-gradient(90deg,var(--mint),var(--mintg));
   transition:width .9s linear;
 }
 
@@ -729,12 +731,12 @@ button.big {
   background:linear-gradient(180deg,var(--coral),var(--coral2));
   color:#fff;
   margin-bottom:10px;
-  box-shadow:0 5px 0 #c9443a, 0 10px 20px -6px rgba(242,92,74,.55);
+  box-shadow:0 5px 0 var(--coral3), 0 10px 20px -6px color-mix(in srgb,var(--coral2) 55%,transparent);
 }
 
 button.big:active:not(:disabled) {
   transform:translateY(3px);
-  box-shadow:0 2px 0 #c9443a, 0 4px 10px -4px rgba(242,92,74,.5);
+  box-shadow:0 2px 0 var(--coral3), 0 4px 10px -4px color-mix(in srgb,var(--coral2) 50%,transparent);
 }
 
 button.big.ghost {
@@ -1334,7 +1336,7 @@ button.big.rstb.arm {
   font-weight:900;
   border-radius:22px;
   background:linear-gradient(180deg,var(--coral),var(--coral2));
-  box-shadow:0 6px 0 #c9443a;
+  box-shadow:0 6px 0 var(--coral3);
   touch-action:manipulation;
   user-select:none;
   -webkit-user-select:none;
@@ -1957,4 +1959,41 @@ button.achr {
   height:18px;
   margin:0;
   accent-color:var(--mint);
+}
+
+/* イメージカラーの欄（設定タブ。v2.0.0〜） */
+.thl {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+
+button.ths {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  padding:9px 4px 7px;
+  border:2px solid var(--line);
+  border-radius:14px;
+  background:var(--card);
+  color:var(--ink);
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+button.ths i {
+  display:block;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.55), 0 2px 4px rgba(0,0,0,.15);
+}
+
+button.ths.on {
+  border-color:var(--mint);
+  background:var(--mintl);
 }

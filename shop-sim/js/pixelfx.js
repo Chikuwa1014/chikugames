@@ -274,7 +274,7 @@ function pxFxTop() {
     // 強盗：黒ずくめが売上金の袋を持って走り去る／ふきだし
     if (has('robber')) {
         const x = ((fr * 1.8) % 230) - 20;
-        pp(x, 57, '#1a1a1a', { hair: '#111', shades: true, dir: false, walk: fr % 2, mood: 'happy' });
+        pp(x, 57, '#1a1a1a', { hair: '#111', shades: true, dir: false, walk: fr % 2, mood: 'smug' });
         Rc(x + 6, 62, 5, 5, '#c8b560');
         Rc(x + 7, 61, 3, 1, '#c8b560');
         Rc(x + 8, 63, 1, 2, '#6b5a20');
@@ -328,16 +328,16 @@ function pxFxTop() {
     // バナナの皮：女性客の行列
     if (has('banana'))
         for (let i = 0; i < 4; i++)
-            pp(104 + i * 9, 57, FP[i % 4], { g: true, hair: FH[i % 4], mood: 'happy', walk: 0 });
+            pp(104 + i * 9, 57, FP[i % 4], { g: true, hair: FH[i % 4], mood: i % 2 ? 'joy' : 'happy', walk: 0 });
     // おにぎりブーム：行列
     if (has('onigiri'))
         for (let i = 0; i < 4; i++) {
             const g = i % 2;
-            pp(18 + i * 9, 57, (g ? FP : MP)[i], { g: !!g, hair: (g ? FH : MH)[i], mood: 'happy', walk: 0 });
+            pp(18 + i * 9, 57, (g ? FP : MP)[i], { g: !!g, hair: (g ? FH : MH)[i], mood: i % 2 ? 'joy' : 'happy', walk: 0 });
         }
     // 教育ママ：怒りマークと破れた雑誌
     if (has('mama')) {
-        pp(93, 57, '#7a3b8a', { g: true, hair: '#6b4a2a', mood: 'sad' });
+        pp(93, 57, '#7a3b8a', { g: true, hair: '#6b4a2a', mood: 'angry' });
         Rc(97, 48, 1, 4, '#e63946');
         Rc(99, 48, 1, 4, '#e63946');
         Rc(96, 49, 5, 1, '#e63946');
@@ -348,14 +348,14 @@ function pxFxTop() {
     // 炎上：スマホをかざす野次馬
     if (has('flame'))
         for (let i = 0; i < 4; i++) {
-            pp(104 + i * 9, 57, '#6b6f78', { mood: 'sad', walk: 0 });
+            pp(104 + i * 9, 57, '#6b6f78', { mood: i % 2 ? 'wow' : 'smug', walk: 0 });
             Rc(108 + i * 9, 51 - (fr + i) % 2, 2, 3, '#cfe8ff');
         }
     // ブーム：行列と紙吹雪
     if (has('boom')) {
         for (let i = 0; i < 3; i++) {
             const g = i % 2;
-            pp(104 + i * 9, 57, (g ? FP : MP)[i], { g: !!g, hair: (g ? FH : MH)[i], mood: 'happy', walk: 0 });
+            pp(104 + i * 9, 57, (g ? FP : MP)[i], { g: !!g, hair: (g ? FH : MH)[i], mood: i % 2 ? 'joy' : 'happy', walk: 0 });
         }
         for (let i = 0; i < 24; i++)
             Rp((i * 47) % PXW, (i * 31 + fr * 4) % PXH, 2, 2, ['#e63946', '#ffd23f', '#2a9d8f', '#7b5ea7'][i % 4]);
