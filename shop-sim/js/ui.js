@@ -467,4 +467,19 @@ function initLayout() {
     sc.append(P0, P1, P2, P3);
     tp.after(sc);
     sc.after(tb);
+    // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
+    const wide = matchMedia('(orientation:landscape) and (max-height:560px), (min-width:900px)');
+    const gc = byId('gl').closest('.card'), ck = byId('clk');
+    const place = () => wide.matches ? tp.append(ck, gc) : P0.prepend(ck, gc);
+    place();
+    wide.addEventListener('change', place);
+    // タブの中身を下へスクロールすると、店の絵を細い帯に縮める（v2.0.0〜。縦画面のスマホだけ。戻すと元の大きさ）
+    sc.addEventListener('scroll', () => {
+        const b = document.body, y = sc.scrollTop;
+        // 中身が短いときは縮めない（縮めると中身が全部見えてスクロールが戻り、行ったり来たりするため）
+        if (wide.matches || y < 8)
+            b.classList.remove('mini');
+        else if (y > 60 && sc.scrollHeight - sc.clientHeight > 240)
+            b.classList.add('mini');
+    }, { passive: true });
 }
