@@ -738,6 +738,12 @@
     CG.move.mount($('#cgMove'), { keys: [KEY_BEST, KEY_COLOR, KEY_SENS, KEY_CAM, KEY_SIZE, KEY_GYRO, 'horimogu-name', 'horimogu-mute'] });
   }
 
+  /* ---------- 画面の拡大を止める ----------
+     iPhone の Safari は user-scalable=no を無視するので、2 本指のピンチ（gesture*・2 本以上の touchmove）を止める */
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
   /* ---------- 起動 ---------- */
   CG.init({ game: HM.GAME, title: 'ほりほりもぐもぐ', version: HM.VERSION });
   // デバッグ報告（共通部品 common/v1/debug.js）。操作・出来事・エラーを直近 300 件残し、送ると受付番号が出る。

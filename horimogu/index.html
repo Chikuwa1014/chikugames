@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <title>ほりほりもぐもぐ</title>
 <meta name="description" content="お豆腐の中を掘り進んで、鉢合わせた敵をたおす3Dバトル。ひとりではおでん横丁のボスを全滅、みんなではほかのちくわ君を全滅させよう！">
 <meta property="og:type" content="website">
@@ -30,7 +30,11 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+/* 画面の拡大を止める：ダブルタップ（manipulation）・文字の長押し選択・入力欄に触れたときの自動拡大（16px 未満で起きる） */
+body{-webkit-touch-callout:none}
+button,.modal,.hudtop,#itembar,.pad{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+input,textarea,select{font-size:16px!important}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55}
 body.playing{background:#120c08;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;position:fixed;inset:0}
@@ -231,6 +235,7 @@ body.touch .keys{display:none}
   <div class="card how" id="hist" hidden>
     <h2>更新履歴</h2>
     <ul>
+      <li><b>1.1.3</b>（2026-10-28）攻撃の当たり判定を見た目の形（縦長の円柱）に合わせ、頭のほうや体の角にも当たるようにした。スマホで画面がピンチやダブルタップ・文字の長押しで拡大されないようにした。</li>
       <li><b>1.1.2</b>（2026-10-28）ひとりプレイと、みんなでの部屋を作った人のおたまレーザーが、敵に当たらない（ほかの人にも見えない）のを直した。</li>
       <li><b>1.1.1</b>（2026-10-28）スマホで、歩く操作（スティック）の指が離れた合図が届かず、前に進み続けて方向を変えられなくなる不具合を直した（デバッグ報告から）。一時停止の出入りでも、押しっぱなしの操作を離す。</li>
       <li><b>1.1.0</b>（2026-10-28）不具合の報告を追加（ホームと一時停止の「🐞 デバッグログを送る」。送ると受付番号が出る）。</li>

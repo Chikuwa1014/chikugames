@@ -474,8 +474,8 @@
     const minDot = isBat ? Math.cos(T.items.gobou.arc / 2 * Math.PI / 180) : 0.2;
     let best = null, bd = 1e9;
     for (const t of hostTargets(pid)) {
-      const d = V.sub(t.c, c), l = V.len(d);
-      if (l > reach + t.r + 0.3) continue;
+      const d = V.sub(t.c, c), l = hitDist(t, c);
+      if (l > reach + 0.3) continue;
       if (V.dot(V.norm([d[0], 0, d[2]]), f) < minDot) continue;
       if (l < bd) { bd = l; best = t; }
     }
@@ -484,12 +484,29 @@
     hostDamage(best.id, isBat ? T.items.gobou.dmg : T.punch.dmg, pid, { knock: V.mul(f, isBat ? T.items.gobou.knock : 2) });
   }
 
-  /** 攻撃の相手になるもの（自分以外の生きている人と敵） */
+  /** 攻撃の相手になるもの（自分以外の生きている人と敵）。
+   *  当たり判定は見た目に合わせた縦の円柱（足もと p から高さ h、半径 rad）。c・r は向きと大まかな距離用 */
   function hostTargets(exceptPid) {
     const list = [];
-    for (const p of G.players.values()) if (p.alive && p.pid !== exceptPid) list.push({ id: p.pid, c: center(p.pid === G.me.pid ? G.me.p : p.p), r: 0.55, pl: p });
-    for (const b of G.bots) if (b.alive) list.push({ id: b.id, c: bossCenter(b.p), r: 0.8, bot: b });
+    const H = T.hit;
+    for (const p of G.players.values()) if (p.alive && p.pid !== exceptPid) {
+      const q = p.pid === G.me.pid ? G.me.p : p.p;
+      list.push({ id: p.pid, c: center(q), r: 0.55, p: q, h: H.player.h, rad: H.player.rad, pl: p });
+    }
+    for (const b of G.bots) if (b.alive) list.push({ id: b.id, c: bossCenter(b.p), r: 0.8, p: b.p, h: H.boss.h, rad: H.boss.rad, bot: b });
     return list;
+  }
+  /** 点 q から相手の円柱までの距離（中なら 0） */
+  function hitDist(t, q) {
+    const dy = Math.max(t.p[1] - q[1], 0, q[1] - (t.p[1] + t.h));
+    const dr = Math.max(0, Math.hypot(q[0] - t.p[0], q[2] - t.p[2]) - t.rad);
+    return Math.hypot(dr, dy);
+  }
+  /** 線（o から向き d に長さ len）が相手の円柱から margin 以内を通るか。0.2 マスずつ調べる */
+  function rayHits(t, o, d, len, margin) {
+    const s0 = Math.max(0, V.dot(V.sub(t.c, o), d) - 3), s1 = Math.min(len, s0 + 6);
+    for (let s = s0; s <= s1; s += 0.2) if (hitDist(t, V.add(o, V.mul(d, s))) < margin) return true;
+    return false;
   }
 
   /** ダメージ。id は人（pid）か敵（b0…） */
@@ -599,10 +616,7 @@
       const h = G.world.raycast(o, d, L.range);
       const len = h ? h.t + 0.6 : L.range;
       for (const t of hostTargets(pl.pid)) {
-        const rel = V.sub(t.c, o), s = V.dot(rel, d);
-        if (s < 0 || s > len) continue;
-        const perp = V.len(V.sub(rel, V.mul(d, s)));
-        if (perp < t.r + 0.3) hostDamage(t.id, L.dmg, pl.pid, { text: 'ジュッ' });
+        if (rayHits(t, o, d, len, 0.3)) hostDamage(t.id, L.dmg, pl.pid, { text: 'ジュッ' });
       }
     }
     // 敵（ひとりプレイ）
@@ -713,7 +727,7 @@
         }
         if (G.isHost) {
           for (const t of hostTargets(pr.owner)) {
-            if (V.dist(t.c, pr.p) < t.r + 0.25) { done = true; hostProjEnd(pr, t); break; }
+            if (hitDist(t, pr.p) < 0.25) { done = true; hostProjEnd(pr, t); break; }
           }
         }
       }
@@ -734,7 +748,7 @@
     if (t) hostDamage(t.id, I.direct, pr.owner, { knock: V.mul(V.norm(pr.v), 4) });
     for (const o of hostTargets(pr.owner)) {
       if (t && o.id === t.id) continue;
-      if (V.dist(o.c, pr.p) < I.splashR) hostDamage(o.id, I.splash, pr.owner, { knock: V.mul(V.norm(V.sub(o.c, pr.p)), 4) });
+      if (hitDist(o, pr.p) < I.splashR) hostDamage(o.id, I.splash, pr.owner, { knock: V.mul(V.norm(V.sub(o.c, pr.p)), 4) });
     }
   }
 
