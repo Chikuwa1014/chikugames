@@ -15,14 +15,14 @@ function endDay() {
         state.money -= L0;
         if (!ac)
             state.mSales = 0;
-        addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''), 1);
+        addEvent('🦹 強盗被害！本日の売上金' + yen(state.dRev) + 'を狙われ、被害' + yen(L0) + (!ac ? '。ノルマゲージも0に' : ''), 1);
     }
     if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev * locF('crime')) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         state.clerk--;
         state.happy = clamp100(state.happy - 4);
-        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれ、解雇しました', 1);
+        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（' + yen(a) + '）が盗まれ、解雇しました', 1);
     }
     state.happy = clamp100(state.happy + (state.dOpen ? hdl(1.5 - 0.5 * (state.closeH - state.openH - 6)) : (state.cleanDay ? 0 : rec(state.happy))));
     state.low = state.happy < 20 ? (state.low || 0) + 1 : 0;
@@ -39,7 +39,7 @@ function endDay() {
     if (state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
-        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''), 1);
+        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（' + yen(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''), 1);
         if (state.clerk > 0) {
             let f = 1;
             for (let i = 1; i < state.clerk; i++)
@@ -92,21 +92,21 @@ function endDay() {
         state.happy = clamp100(state.happy + (difficulty().sal ? (state.sal - 330000) / 330000 * 8 : 0) + (ok ? 3 : -3));
         state.loans.forEach(l => l.left--);
         state.loans = state.loans.filter(l => l.left > 0);
-        state.rep = '月末: テナント料¥' + fmt(f) + (cf ? '・決済手数料¥' + fmt(cf) : '') + (lp ? '・融資返済¥' + fmt(lp) : '') + (state.sal ? '・自分の給料¥' + fmt(state.sal) : '') + (wg ? '・店員の給料¥' + fmt(wg) : '') + (mp ? '・店長の給料¥' + fmt(mp) : '') + 'を支払い。売上¥' + fmt(state.mSales) + ' / ノルマ¥' + fmt(q) + ' → ' + (ok ? '達成' : '未達');
+        state.rep = '月末: テナント料' + yen(f) + (cf ? '・決済手数料' + yen(cf) : '') + (lp ? '・融資返済' + yen(lp) : '') + (state.sal ? '・自分の給料' + yen(state.sal) : '') + (wg ? '・店員の給料' + yen(wg) : '') + (mp ? '・店長の給料' + yen(mp) : '') + 'を支払い。売上' + yen(state.mSales) + ' / ノルマ' + yen(q) + ' → ' + (ok ? '達成' : '未達');
         addLog(state.rep);
         state.mSales = 0;
         if (state.money < 0 && (state.sv || 0) > 0) {
             const w = Math.min(state.sv, Math.ceil(-state.money));
             state.money += w;
             state.sv -= w;
-            addLog('🏦 預金から¥' + fmt(w) + 'を自動で引き出しました。');
+            addLog('🏦 預金から' + yen(w) + 'を自動で引き出しました。');
         }
         if (state.day % (MD * 3) === 0) {
             if (!state.slotQ && state.slots < MAX.slot) {
                 const c = cost.slot();
                 state.money -= c;
                 addSlot();
-                addEvent('🏗️ 3ヶ月ごとの投資チェック：棚を強制的に増設（¥' + fmt(c) + '）。テナント料は月¥' + fmt(tenantFee()) + 'に');
+                addEvent('🏗️ 3ヶ月ごとの投資チェック：棚を強制的に増設（' + yen(c) + '）。テナント料は月' + yen(tenantFee()) + 'に');
             }
             else if (state.slotQ)
                 addLog('投資チェック：期間中に棚を増やしたのでスキップ');
@@ -276,10 +276,10 @@ function tick() {
         if (state.boost === 0)
             state.gauge = Math.min(100, state.gauge + 2);
         if (q * pp >= 1000)
-            addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp), true);
+            addLog(p.e + ' ' + p.n + 'が売れました +' + yen(q * pp), true);
     }
     if (bc)
-        lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +¥' + fmt(sy);
+        lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +' + yen(sy);
     if (bc)
         pushHist('🛒 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + ' ' + lastSale, true);
     pxArrive(gs, bc);
@@ -311,7 +311,7 @@ function tick() {
         state.dWage += w;
     }
     if (state.t >= dayTicks()) {
-        addLog('閉店。本日の売上 ¥' + fmt(state.dRev) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : ''));
+        addLog('閉店。本日の売上 ' + yen(state.dRev) + (state.dWage ? ' / 給料 ' + yen(state.dWage) : ''));
         endDay();
     }
     render();

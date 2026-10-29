@@ -27,7 +27,7 @@ function openEv() {
             if (s.st > 0)
                 t += sellUnit(s, s.st, 1.15);
         });
-        addEvent('💎 超セレブが来店！全商品を+15%の価格で買い占め（+¥' + fmt(t) + '）');
+        addEvent('💎 超セレブが来店！全商品を+15%の価格で買い占め（+' + yen(t) + '）');
     }
     if (on(9) && Math.random() < 0.15) {
         const top = sh.filter(s => s.st > 0).sort((a, b) => PRODUCTS[b.id].c - PRODUCTS[a.id].c).slice(0, 3);
@@ -39,7 +39,7 @@ function openEv() {
             t += sellUnit(c[Math.floor(Math.random() * c.length)], 1, 1);
         }
         if (t)
-            addEvent('💸 パパ活カップルが来店。高額商品を3つ購入（+¥' + fmt(t) + '）');
+            addEvent('💸 パパ活カップルが来店。高額商品を3つ購入（+' + yen(t) + '）');
     }
 }
 
@@ -110,7 +110,7 @@ function guard(a) {
     }
     let r = L === 1 ? 5000 : L === 2 ? 10000 : L === 3 ? 100000 : L === 4 ? Math.max(a * 0.1, 100000) : L === 5 ? Math.max(a * 0.5, 100000) : L === 6 ? Math.max(a * 0.8, 100000) : a;
     r = Math.min(a, Math.round(r));
-    addEvent('🛡 ' + SECN[L - 1] + 'が盗難被害を¥' + fmt(r) + '軽減（残りストック' + state.ss + '）');
+    addEvent('🛡 ' + SECN[L - 1] + 'が盗難被害を' + yen(r) + '軽減（残りストック' + state.ss + '）');
     if (L === 10 && state.gm) {
         state.gm = 0;
         addEvent('🧹 侵入者が撃退されました。店の清掃のため、1ヶ月休業します');
@@ -197,7 +197,7 @@ function rollEvents() {
     if (state.day > 1 && state.day % MD === 1 && r() < 0.05) {
         const f = Math.round((0.9 + R() * 0.8) * 100) / 100;
         state.feeMul = Math.round(state.feeMul * f * 100) / 100;
-        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）', f > 1);
+        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月' + yen(tenantFee()) + 'に）', f > 1);
     }
     if (r() < 0.0001 * locF('dis')) {
         resetInv(2);

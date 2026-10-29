@@ -47,11 +47,15 @@ function render() {
         applyKind();
     }
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
-    byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
+    {
+        // 所持金（1,000万円以上は千円単位。v2.2.0〜）
+        const a = Math.abs(Math.round(state.money)), sg = state.money < 0 ? '-' : '';
+        byId('m').innerHTML = a >= 1e7 ? sg + fmt(Math.floor(a / 1000)) + '<small>千円</small>' : '<small>¥</small>' + sg + fmt(a);
+    }
     byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
     // 難易度・季節・日付・天気はチップで並べる（v2.0.0〜。文言は v1.x と同じ）
     const ch = (t, c) => '<span class="chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
-    byId('dt').innerHTML = state.day === 0 ? ch('開業前') : ch(sea.e + sea.n) + ch(calOf(d) + '月' + ((d - 1) % MD + 1) + '日目') + ch('通算' + m + 'ヶ月' + state.day + '日', 'dim') + ch(we.e + we.n);
+    byId('dt').innerHTML = state.day === 0 ? ch('開業前') : ch(sea.e + sea.n) + ch(calOf(d) + '月' + ((d - 1) % MD + 1) + '日目') + ch(m + 'ヶ月目（' + state.day + '日）', 'dim') + ch(we.e + we.n);
     byId('sp').innerHTML = Object.keys(PHN).map(k => '<span class="' + (state.phase === k ? 'on' : '') + '">' + PHN[k] + '</span>').join('');
     byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
     byId('gb').style.width = state.gauge + '%';
@@ -59,13 +63,13 @@ function render() {
     byId('pw').textContent = state.day === 0 ? '' : '購買力×' + (Math.round(pw * 1000) / 1000);
     byId('pw').title = '季節×' + sea.p + ' 天気×' + we.p;
     const q = quota();
-    byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
+    byId('ql').textContent = yen(state.mSales) + ' / ' + yen(q);
     const qp = quotaParts();
-    byId('qx').textContent = '内訳: 損益分岐点¥' + fmt(qp.b) + '（月収¥' + fmt(state.sal) + '込み）' + (state.prev == null ? '' : ' / 前月比¥' + fmt(qp.g)) + ' → 高い方がノルマ';
+    byId('qx').textContent = '内訳: 損益分岐点' + yen(qp.b) + '（月収' + yen(state.sal) + '込み）' + (state.prev == null ? '' : ' / 前月比' + yen(qp.g)) + ' → 高い方がノルマ';
     byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
     byId('qb').className = 'bar' + (state.mSales >= q ? '' : ' low');
     const left = state.day === 0 ? MD : MD - ((d - 1) % MD) - 1;
-    byId('fe').textContent = 'テナント料 月¥' + fmt(tenantFee()) + '（棚' + state.slots + '台）' + (loanPay() ? ' / 返済 月¥' + fmt(loanPay()) : '') + (state.mWage > 0 ? ' / 給料未払 ¥' + fmt(state.mWage) : '');
+    byId('fe').textContent = 'テナント料 月' + yen(tenantFee()) + '（棚' + state.slots + '台）' + (loanPay() ? ' / 返済 月' + yen(loanPay()) : '') + (state.mWage > 0 ? ' / 給料未払 ' + yen(state.mWage) : '');
     byId('qd').textContent = (left === 0 ? '本日が月末' : '月末まであと' + left + '日') + ' / 棚増設チェック' + (state.slotQ > 0 ? '済' : 'あと' + (3 - (Math.floor((d - 1) / MD) % 3)) + 'ヶ月');
     let a = '';
     if (state.over)
@@ -85,10 +89,20 @@ function render() {
     }
     // 月末の支払い予想（v1.5.3〜。ドット絵の左下に常に表示。旧「空が赤い理由」ラベルの位置）
     {
-        const e = byId('payf');
+        // v2.2.0〜 タップで💵だけに縮める。縮めた💵をタップすると吹き出しで正確な額（payMini・payOpen）
+        const e = byId('payf'), b = byId('payb'), v = payForecast();
         e.hidden = !!state.over;
-        e.innerHTML = '💴 月末の支払い予想 ¥' + fmt(payForecast()) + helpIcon('payf');
+        e.classList.toggle('mini', payMini);
+        const h = payMini ? '💵' : '💵 月末の支払い予想 ' + yen(v) + helpIcon('payf');
+        if (e.innerHTML !== h)
+            e.innerHTML = h;
+        b.hidden = !!state.over || !payMini || !payOpen;
+        const bh = '<b>月末の支払い予想</b><span class="payv">¥' + fmt(v) + '</span><button type="button" data-a="payopen">ひらく</button>';
+        if (b.innerHTML !== bh)
+            b.innerHTML = bh;
     }
+    // 設定タブの「🏢 会社の遊び方を見る」は、会社があるときだけ（v2.2.0〜）
+    byId('tutcob').hidden = !state.co;
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -108,14 +122,14 @@ function render() {
     if (state.phase === 'closed' && !state.over) {
         const nd = state.day + 1, nw = WE[state.next], ns = SEA[seaOf(nd)];
         if (state.day > 0)
-            pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ¥' + fmt(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : '') + '</div></div>';
-        pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料¥' + fmt(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
+            pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ' + yen(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ' + yen(state.dWage) : '') + '</div></div>';
+        pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料' + yen(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
         if (state.warn && (state.warn.typ || state.warn.snow)) {
             const k = state.warn.typ ? 'typ' : 'snow', on = state.prep && state.prep[k];
             pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
         }
         pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
-        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ¥' + fmt(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
+        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
     }
     byId('hp').textContent = Math.floor(state.happy) + '%';
     byId('hb').style.width = state.happy + '%';
@@ -138,13 +152,13 @@ function render() {
     if (!dragMg)
         byId('mnyA').innerHTML = '';
     if (!dragMg)
-        byId('mg').innerHTML = !state.over ? lockMoney('<div class="card"><div class="row"><b>粗利率の設定' + helpIcon('mg') + '</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"></div>' + '<div class="card"><div class="row"><b>自分の月収' + helpIcon('sal') + '</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"></div><div class="card"><b>営業時間</b>' + helpIcon('hours') + '<div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div></div>' + '<div class="card"><div class="row"><b>🏦 預金' + helpIcon('sv') + '</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div></div>') : '';
+        byId('mg').innerHTML = !state.over ? lockMoney('<div class="card"><div class="row"><b>粗利率の設定' + helpIcon('mg') + '</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"></div>' + '<div class="card"><div class="row"><b>自分の月収' + helpIcon('sal') + '</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"></div><div class="card"><b>営業時間</b>' + helpIcon('hours') + '<div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div></div>' + '<div class="card"><div class="row"><b>🏦 預金' + helpIcon('sv') + '</b><span>残高 ' + yen(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div></div>') : '';
     const mv = byId('mgv');
     if (mv)
         mv.textContent = state.margin + '%（来店数 ×' + Math.round(demandFactor() * 100) / 100 + '）';
     const sv = byId('slv');
     if (sv)
-        sv.textContent = '¥' + fmt(state.sal) + (state.sal >= 330000 ? '（中央値以上）' : '（中央値未満）');
+        sv.textContent = yen(state.sal) + (state.sal >= 330000 ? '（中央値以上）' : '（中央値未満）');
     {
         const dd = difficulty();
         [['[data-a="mg"]', dd.full], ['[data-a="sal"]', dd.sal], ['[data-a="la"]', dd.full]].forEach(([q, v]) => {
@@ -158,7 +172,7 @@ function render() {
     {
         const sw = byId('svv');
         if (sw)
-            sw.textContent = '金額 ¥' + fmt(state.svs || 0);
+            sw.textContent = '金額 ' + yen(state.svs || 0);
         const A = byId('mnyA'), B = byId('mnyB');
         B.innerHTML = '';
         const lc = document.querySelector('[data-a="la"]');
@@ -193,21 +207,21 @@ function render() {
         if (!s)
             return '<div class="shelf empty">空き棚<br>新商品を扱うと並びます</div>';
         const p = PRODUCTS[s.id], dis = (!can || state.money < p.c || s.st >= state.cap) ? ' disabled' : '';
-        return '<div class="shelf"><div class="top"><span class="emo">' + p.e + '</span><div><div class="nm">' + p.n + (state.up[s.id] ? ' <small>Lv' + state.up[s.id] + '</small>' : '') + '</div><span class="price">¥' + fmt(priceOf(p)) + '</span></div></div>' +
+        return '<div class="shelf"><div class="top"><span class="emo">' + p.e + '</span><div><div class="nm">' + p.n + (state.up[s.id] ? ' <small>Lv' + state.up[s.id] + '</small>' : '') + '</div><span class="price">' + yen(priceOf(p)) + '</span></div></div>' +
             '<div class="bar' + (s.st <= Math.ceil(state.cap * .2) ? ' low' : '') + '"><i style="width:' + (s.st / state.cap * 100) + '%"></i></div>' +
-            '<div class="cnt"><span>' + s.st + ' / ' + state.cap + '個</span><span>原価 ¥' + fmt(p.c) + '</span></div>' +
+            '<div class="cnt"><span>' + s.st + ' / ' + state.cap + '個</span><span>原価 ' + yen(p.c) + '</span></div>' +
             '<div class="btns"><button class="alt" data-a="r" data-i="' + i + '" data-n="' + step + '"' + dis + '>+' + step + '</button><button data-a="r" data-i="' + i + '" data-n="999"' + dis + '>満タン</button></div></div>';
     }).join('');
     const ok = state.phase === 'closed' && !state.over && !ill();
-    const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
+    const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : yen(price)) + '</button></div>';
     const R = [];
-    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < kindN() ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
+    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < kindN() ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月' + yen(tenantFee()) + ' → <b>月' + yen(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
     R.push(row('cap', '', '📦 棚の容量アップ（' + state.cap + '個）', '次の容量: ' + (CAPS[CAPS.indexOf(state.cap) + 1] || '最大') + '個', cost.cap(), state.cap >= MAX.cap));
     R.push(row('ad', '', '📣 広告（Lv.' + state.ad + '）', '来店数とまとめ買いが増える', cost.ad(), state.ad >= MAX.ad));
-    R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給¥' + fmt(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
+    R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給' + yen(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
     PRODUCTS.forEach((p, id) => {
         if (false)
-            R.push(row('new', id, p.e + ' ' + p.n + 'を扱う', '原価¥' + fmt(p.c) + ' → 売値¥' + fmt(priceOf(p)) + '（利益¥' + fmt(priceOf(p) - p.c) + '）', p.u, false));
+            R.push(row('new', id, p.e + ' ' + p.n + 'を扱う', '原価' + yen(p.c) + ' → 売値' + yen(priceOf(p)) + '（利益' + yen(priceOf(p) - p.c) + '）', p.u, false));
     });
     const SECR = [];
     SECR.push(row('seclv', '', '🛡 セキュリティ Lv.' + (state.sl || 0) + '/10' + (state.sl ? ' ' + SECN[state.sl - 1] : ''), (state.sl >= 10 ? '最大レベル' : '次: ' + SECN[state.sl || 0] + '（' + SECX[state.sl || 0] + '）'), cost.seclv(), (state.sl || 0) >= 10));
@@ -216,7 +230,7 @@ function render() {
     R.push(...SECR);
     // 店長を雇う（v2.1.0〜）。条件（天井・店員・お金）を満たすまでは出さない
     if (mgrShow())
-        R.unshift('<div class="card up mgr"><div class="tx"><div class="nm">👔 店長を雇う</div><div class="d">店長を雇ってオーナーになる。「会社」タブが出て、会社を設立し、新しいお店を出せるようになります。採用費¥' + fmt(MGR_HIRE) + '・月給¥' + fmt(MGR_SAL) + '（月末払い）</div></div><button data-a="hiremgr"' + (!ok || state.money < MGR_HIRE ? ' disabled' : '') + '>¥' + fmt(MGR_HIRE) + '</button></div>');
+        R.unshift('<div class="card up mgr"><div class="tx"><div class="nm">👔 店長を雇う</div><div class="d">店長を雇ってオーナーになる。「会社」タブが出て、会社を設立し、新しいお店を出せるようになります。採用費' + yen(MGR_HIRE) + '・月給' + yen(MGR_SAL) + '（月末払い）</div></div><button data-a="hiremgr"' + (!ok || state.money < MGR_HIRE ? ' disabled' : '') + '>' + yen(MGR_HIRE) + '</button></div>');
     PRODUCTS.forEach((p, i) => {
         if (!state.own.includes(i))
             return;
@@ -446,6 +460,36 @@ document.addEventListener('change', e => {
 /** タブバーを隠したかどうかの保存キー（端末ごと。ゲームのセーブには入れない。v2.0.0〜） */
 const TBAR_KEY = 'shop-sim-tabbar';
 
+/**
+ * 月末の支払い予想の縮小（v2.2.0〜）。タップで💵だけの丸に縮め、縮めた💵をタップすると吹き出しで正確な額を出す。
+ * 吹き出しの「ひらく」で元に戻す。縮めたかどうかは端末が覚える（localStorage shop-sim-payf。見た目の好みだけなのでセーブには入れない）
+ */
+const PAYF_KEY = 'shop-sim-payf';
+let payMini = CG.ls.get(PAYF_KEY) === '1', payOpen = false;
+const paySet = mini => {
+    payMini = mini;
+    payOpen = false;
+    CG.ls.set(PAYF_KEY, mini ? '1' : '0');
+    render();
+};
+document.addEventListener('click', e => {
+    const t = e.target;
+    if (t.closest('#payf') && !t.closest('.hp')) {
+        if (!payMini)
+            paySet(true);
+        else {
+            payOpen = !payOpen;
+            render();
+        }
+    }
+    else if (t.closest('[data-a="payopen"]'))
+        paySet(false);
+    else if (payOpen && !t.closest('#payb')) {
+        payOpen = false;
+        render();
+    }
+});
+
 /** タブバーを隠す（off=true）・出す。隠すときは取っ手だけ残して下へせり下げ、タブの中身を広げる */
 function tabBar(off, init) {
     const tb = byId('tabs'), h = byId('tbh');
@@ -484,7 +528,7 @@ function initLayout() {
     pw.className = 'pxw';
     byId('px').before(pw);
     pw.append(byId('px'));
-    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="payf" id="payf" hidden></span><div class="bnote" id="bnote" hidden></div>');
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span><span class="payf" id="payf" role="button" hidden></span><div class="payb" id="payb" hidden></div><div class="bnote" id="bnote" hidden></div>');
     tp.append(dd);
     // 一時停止・倍速（v2.0.0〜）。店の絵を開いているときは絵の右下に重ね、閉じているときはその下に出す（CSS）
     tp.insertAdjacentHTML('beforeend', '<div class="spd" id="spd"></div>');

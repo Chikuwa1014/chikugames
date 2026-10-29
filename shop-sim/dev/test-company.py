@@ -37,7 +37,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     for W, H, tag in [(390, 820, 'sp'), (1280, 860, 'pc')]:
         pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2 if W < 600 else 1)
-        pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1')}catch(e){}")
+        pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1');localStorage.setItem('shop-sim-tutorial-co','1')}catch(e){}")
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(URL)

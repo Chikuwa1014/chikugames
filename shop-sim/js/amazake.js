@@ -99,7 +99,7 @@ function amaTap() {
         ama.fx.push({ x: c.x, g: c, t: 0 });
     ama.q.push(amaGuest(Math.max(96, (ama.q.length ? ama.q[ama.q.length - 1].x : 56) + 12)));
     byId('aman').textContent = ama.n;
-    byId('amay').textContent = '+¥' + fmt(ama.n * ama.per);
+    byId('amay').textContent = '+' + yen(ama.n * ama.per);
 }
 
 /** 1コマ進める（残り時間・アニメ） */
@@ -124,10 +124,10 @@ function amaFinish() {
     state.mSales += y;
     state.tot = (state.tot || 0) + y;
     state.dRev += y;
-    addEvent('🍵 甘酒を' + ama.n + '杯ふるまいました（' + m + '）+¥' + fmt(y));
+    addEvent('🍵 甘酒を' + ama.n + '杯ふるまいました（' + m + '）+' + yen(y));
     state.kama = 3;
     save();
-    byId('amabot').innerHTML = '<div class="amares"><b>' + m + '</b><div class="meta">' + ama.n + '杯 × ¥' + fmt(ama.per) + ' ＝ +¥' + fmt(y) + '（今月の売上に加算）</div>' +
+    byId('amabot').innerHTML = '<div class="amares"><b>' + m + '</b><div class="meta">' + ama.n + '杯 × ' + yen(ama.per) + ' ＝ +' + yen(y) + '（今月の売上に加算）</div>' +
         '<button class="big" data-a="amaclose">閉店する</button></div>';
 }
 
@@ -140,7 +140,7 @@ function amaClose() {
     byId('ama').hidden = true;
     state.kama = 0;
     state.paused = false;
-    addLog('閉店。本日の売上 ¥' + fmt(state.dRev) + '（甘酒）');
+    addLog('閉店。本日の売上 ' + yen(state.dRev) + '（甘酒）');
     endDay();
     render();
     save();

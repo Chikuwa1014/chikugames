@@ -4,6 +4,7 @@
  * ・最初に難易度を選んだ直後に1回だけ出す（`newGame` を包む）。今遊んでいる人（セーブがある人）には自動では出さない
  * ・どの場面でも「すべてスキップ」で、そこから先の説明と練習をまとめて飛ばせる。難易度えらびの画面のチェック（#tutoff）で、最初から出さないこともできる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
  * ・設定タブの「📖 遊び方を見る」（data-a="tutorial"）でいつでも見直せる。営業中に開いたら、その間は一時停止する
+ * ・会社の遊び方（v2.2.0〜 `TUT_CO`）：「店長を雇う」の直後か、会社タブを初めて開いたときに1回だけ。見たかは `TUT_CO_KEY`。設定タブの「🏢 会社の遊び方を見る」（data-a="tutco"。会社があるときだけ出す）で見直せる
  * ・初めての人（難易度えらびの直後）だけ、説明のあとに1日目を実際にいっしょに進める（`TUT_PRACTICE`。開業→補充→開店→営業→閉店後）。
  *   見直しのときは説明だけ（実際のお金と日付が進むため）
  * 場面の種類（kind）：なし＝説明（全体を止めて、次へで進む）／'do'＝光っている所だけ押せる（done() を満たすと次へ）／
@@ -28,6 +29,28 @@ const TUT_STEPS = [
     { q: () => document.querySelector('#tabs [data-v="2"]'), tab: 2, t: 'お金タブ', m: () => difficulty().full ? '融資（お金を借りる）・預金・粗利率・自分の月収を決めるよ。借りたお金は毎月返していくよ。' : '預金や自分の月収を決めるよ。\n融資と粗利率の調整は、ハード・インフェルノで使えるよ。' },
     { q: () => document.querySelector('#tabs [data-v="3"]'), tab: 3, t: '設定タブ', m: 'セーブの書き出し・読み込みや、最初からやり直すのはここ。\n分からないところは小さな「？」を押すと説明が出るよ。遊び方は設定の「📖 遊び方を見る」から見直せるよ。' },
     { q: () => document.querySelector('[data-a="oh"]').closest('.card'), tab: 3, t: '営業時間', m: '開店と閉店の時間を決めるよ。長く開けるほどたくさん売れるけど、幸福度が下がりやすいよ（9時間なら増えも減りもしない）。\n7時前と22時以降は、店員さんの時給が125%になるよ。', end: 'それじゃあ、がんばってね！' }
+];
+
+/** 会社の遊び方を見終わった（飛ばした）かの保存キー（v2.2.0〜。'1'＝見た） */
+const TUT_CO_KEY = 'shop-sim-tutorial-co';
+
+/** 会社タブのカード（見出しの文字で探す。会社を設立する前は無いものもあり、そのときは画面の真ん中に吹き出しだけ） */
+const tutCoCard = t => [...document.querySelectorAll('#co .card')].find(e => (e.querySelector('b') || {}).textContent?.includes(t)) || null;
+
+/** 会社を設立する前は、まだ出ていない欄の説明に一言足す */
+const tutCoPre = t => () => state.co && state.co.est ? t : t + '\n（この欄は、会社を設立すると出てくるよ）';
+
+/**
+ * 会社の遊び方（v2.2.0〜）。「店長を雇う」で会社タブが出た直後に1回だけ（v2.1.0 から会社を持っている人は、会社タブを初めて開いたとき）。
+ * 設定タブの「🏢 会社の遊び方を見る」で見直せる。説明だけ（操作を待つ場面はない）
+ */
+const TUT_CO = [
+    { q: () => document.querySelector('#tabs [data-v="4"]'), tab: 4, t: '会社タブ', m: '店長を雇って、きみはオーナーになったよ！\nこれからは、この「会社」タブで会社とお店たちを動かしていくよ。' },
+    { q: () => document.querySelector('#co .co1'), tab: 4, t: '会社の設立', m: () => state.co && state.co.est ? 'ここが会社の基本の情報。資本金・景気・お店の数・取引先がわかるよ。\n会社を設立すると、景気の波が来るようになって、取引先からの収入と新しいお店が出せるようになったよ。' : 'まずは屋号（会社の名前）と資本金を決めて、会社を設立しよう。\n設立すると、景気の波が来るようになって、取引先からの収入と新しいお店が出せるようになるよ。' },
+    { q: () => tutCoCard('資本金'), tab: 4, t: '資本金と会社方針', m: tutCoPre('資本金を増やす（増資）と、取引先の業種が上がって取引の収入が増えるよ。\n「会社方針」で、取引先と収入の入り方（毎月少しずつ・ときどき大きく など）が変わるよ。') },
+    { q: () => tutCoCard('店舗管理'), tab: 4, t: '店舗管理', m: tutCoPre('ほかのお店は店長が営業してくれるよ。在庫も自動で補充されるけど、投資はそのお店へ行ってからだよ。\nお店へ行けるのは閉店後。「この店へ行く」を押そう。') },
+    { q: () => tutCoCard('新しいお店'), tab: 4, t: '新しいお店を出す', m: tutCoPre('どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えるよ。\n出店場所によって、お客さんの数・治安・テナント料・災害の被害が違うよ。') },
+    { q: () => document.querySelector('#co [data-a="codash"]'), tab: 4, t: 'お店のダッシュボード', m: tutCoPre('「🏪 お店のダッシュボード」で、全部のお店の今日・今月の売上と在庫をまとめて見られるよ。カードを押すと、そのお店へ行けるよ。\n右上の「📊 会社のステータス」では、売上の推移や景気の動きが見られるよ。'), end: 'それじゃあ、会社を大きくしていこう！' }
 ];
 
 /** 今日の「本日の結果」のカード（閉店後に出る） */
@@ -81,7 +104,23 @@ function tutStart(practice) {
         return;
     // 練習は、開業前（0日目の閉店後）で倒産していないときだけ。最後の説明の「がんばってね」は練習の最後に回す
     practice = practice === true && state.day === 0 && state.phase === 'closed' && !state.over;
-    tutList = practice ? TUT_STEPS.map((s, i) => i === TUT_STEPS.length - 1 ? Object.assign({}, s, { end: 'じゃあ次は、実際にお店を開けてみよう！' }) : s).concat(TUT_PRACTICE) : TUT_STEPS;
+    tutOpen(practice ? TUT_STEPS.map((s, i) => i === TUT_STEPS.length - 1 ? Object.assign({}, s, { end: 'じゃあ次は、実際にお店を開けてみよう！' }) : s).concat(TUT_PRACTICE) : TUT_STEPS, TUT_KEY);
+}
+
+/** 会社の遊び方を始める（v2.2.0〜。会社が無いときは出さない） */
+function tutCoStart() {
+    if (tutI >= 0 || !state.co || state.over)
+        return;
+    tutOpen(TUT_CO, TUT_CO_KEY);
+}
+
+/** 見終わったときに保存するキー（ふつうの遊び方は TUT_KEY、会社は TUT_CO_KEY） */
+let tutKey = TUT_KEY;
+
+/** 場面の一覧 list で始める */
+function tutOpen(list, key) {
+    tutList = list;
+    tutKey = key;
     hideHelp();
     tutPrev = { paused: state.paused, tab: state.tab || 0, bar: byId('tabs').classList.contains('off') };
     if (state.phase === 'open')
@@ -206,7 +245,7 @@ function tutEnd() {
     tutI = -1;
     clearInterval(tutTimer);
     byId('tut').hidden = true;
-    CG.ls.set(TUT_KEY, '1');
+    CG.ls.set(tutKey, '1');
     tutSyncOff();
     state.tab = tutPrev.tab;
     if (state.phase === 'open')
@@ -225,6 +264,11 @@ document.addEventListener('click', e => {
     const a = b.dataset.a;
     if (a === 'tutorial')
         tutStart();
+    if (a === 'tutco')
+        tutCoStart();
+    // v2.1.0 から会社を持っている人は、会社タブを初めて開いたときに1回だけ
+    if (a === 'tab' && b.dataset.v === '4' && CG.ls.get(TUT_CO_KEY) !== '1')
+        setTimeout(tutCoStart, 150);
     if (a === 'tutskip')
         tutEnd();
     if (a === 'tutnext')
@@ -255,5 +299,15 @@ document.addEventListener('keydown', e => {
         ng(v);
         if (state.diff && CG.ls.get(TUT_KEY) !== '1')
             setTimeout(() => tutStart(true), 250);
+    };
+}
+
+// 「店長を雇う」で会社タブが出た直後に1回だけ（まだ見ていない端末だけ。v2.2.0〜）
+{
+    const hm = hireMgr;
+    hireMgr = function () {
+        hm();
+        if (state.co && CG.ls.get(TUT_CO_KEY) !== '1')
+            setTimeout(tutCoStart, 250);
     };
 }
