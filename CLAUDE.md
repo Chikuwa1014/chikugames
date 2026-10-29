@@ -11,6 +11,7 @@
 - 返答・コードのコメント・ゲーム内の文言・コミットメッセージは、すべて日本語。
 - ブラウザだけで動く静的ゲーム（HTML / CSS / JavaScript）。インストールやログインは不要。
 - スマホ優先（幅 360〜400px で遊びやすいこと）。PC でも遊べること。
+  - ピンチやダブルタップで画面が拡大・縮小されないようにする（やり方は 19 章）。
 - 開発が長くなって重くなりかけたら知らせる。新しいセッションへの切りかえを提案し、引き継ぎメモをまとめる。
   - **切りかえを提案するときは、毎回、次のセッションにそのままコピペできる依頼文（プロンプト）をコードブロックで出す。**（2026-10-25 開発者が指示）中身はその時点の状態に合わせて書く：最初にやること（リポジトリの追加と clone、号口の `CLAUDE.md` とそのゲームの `CLAUDE.md` を読む）、いまの状態（置き場所・公開の状態・開発に公開の URL・版数・入っている機能）、注意（共通部品の未反映の変更・push の決まり・テストの動かし方・コミット名義）、最後に空欄の「今回お願いしたいこと」。保留中のタスクがあれば番号つきで添える。
 
@@ -240,6 +241,33 @@ claude.ai の作業環境（クラウドの Linux）で分かっていること�
 - セッションの最初に、号口の `CLAUDE.md` と、作業するゲームの `CLAUDE.md` を読む。記憶と `.md` の内容がちがうときは、`.md` を正とする。
 - **`claude/未実装タスク.md` は、セッションの最初には読まない**（トークンを節約するため）。いちばん優先の項目は各ゲームの `CLAUDE.md` の「8. 残りのタスク」にある。タスクを追記・完了にするとき、残りのタスクを聞かれたとき、次にやることを決めるときに開く。（2026-10-25 開発者が確認）
 - 作業を引き継ぐときは、その時点の状態（何を公開したか・何が保留か）を `.md` に書いてから終える。
+
+## 19. スマホで画面の拡大・縮小を止める（2026-10-29、ほりほりもぐもぐ 1.1.3〜1.1.4 で分かったこと）
+
+iPhone の Safari は `user-scalable=no` を無視するので、viewport だけでは止まらない。次の 4 つをそろえる（手本は `horimogu/index.html` の CSS と `horimogu/js/ui.js` の「画面の拡大を止める」）。
+
+1. **viewport**：`<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">`
+2. **CSS の `touch-action`**：
+   ```css
+   html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
+   body{-webkit-touch-callout:none}
+   button,.modal{-webkit-user-select:none;user-select:none;touch-action:pan-x pan-y}
+   .mbox,.mbox *{touch-action:pan-y}            /* スクロールする箱（overflow:auto）の中身 */
+   input,textarea,select{font-size:16px!important} /* 16px 未満だと、入力欄に触れたときに自動で拡大する */
+   ```
+   - **`touch-action:manipulation` は使わない。** ダブルタップの拡大は止まるが、**ピンチは許してしまう**（1.1.3 でこれを使い、一時停止の画面でピンチすると拡大する不具合が出た）。
+   - **スクロールする箱（`overflow:auto`・`scroll`）の中には、外側の `touch-action` が届かない。** 箱と、その中身にも付け直す。
+   - ゲームの操作面（仮想スティック・ボタン）は `touch-action:none` のままでよい。
+3. **JavaScript（iOS 用）**：
+   ```js
+   ['gesturestart','gesturechange','gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+   document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+   document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+   // スライダーなどを 1 本指で動かし始めたあとは touchmove を止められないので、画面（.modal）の中では 2 本目の指が触れた時点で止める
+   document.addEventListener('touchstart', e => { if (e.touches.length > 1 && e.target.closest && e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
+   ```
+   - `touchstart` を止める範囲は、メニューなどの画面（`.modal`）に限る。ゲームの操作面で止めると、2 本指の操作（スティック＋視点）の邪魔になることがある。
+4. **確かめ方**：手元では `getComputedStyle(el).touchAction` で、スライダー・ボタン・箱が `pan-y` か `pan-x pan-y` になっていることを確かめる。ピンチそのものはヘッドレスのブラウザでは再現できないので、最後は試作環境（11 章）か開発に公開の URL で、iPhone で確かめてもらう。スライダーを横に動かせることも確かめる。
 
 ## ゲーム一覧（フォルダ・保存キー）
 
