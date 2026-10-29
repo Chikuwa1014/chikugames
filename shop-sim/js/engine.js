@@ -9,7 +9,7 @@ let lastSale = '';
 function endDay() {
     LIMIT = -Math.floor(quota() * difficulty().bank / 1000) * 1000;
     state.gu = false;
-    if (state.dSold > 0 && Math.random() < 0.01 * difficulty().ev) {
+    if (state.dSold > 0 && Math.random() < 0.01 * difficulty().ev * locF('crime')) {
         state.happy = clamp100(state.happy - 5);
         const s0 = state.ss || 0, L0 = guard(state.dRev), ac = (state.ss || 0) < s0;
         state.money -= L0;
@@ -17,7 +17,7 @@ function endDay() {
             state.mSales = 0;
         addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''), 1);
     }
-    if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev) {
+    if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev * locF('crime')) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         state.clerk--;
@@ -67,7 +67,7 @@ function endDay() {
         state.dn--;
     state.next = roll(state.day + 1);
     {
-        const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev), fa = p => Math.random() < 0.25 * p / (1 - p);
+        const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev * locF('dis')), fa = p => Math.random() < 0.25 * p / (1 - p);
         state.pre = { snow: false, typ: false };
         state.warn = { snow: false, typ: false };
         state.prep = { typ: false, snow: false };
@@ -84,15 +84,15 @@ function endDay() {
     }
     if (state.day > 0 && state.day % MD === 0) {
         const f = tenantFee(), q = quota(), ok = state.mSales >= q, cf = Math.round(state.mSales * 0.0375 * state.pays.length), lp = loanPay();
-        const wg = Math.round(state.mWage || 0);
-        state.money -= f + cf + lp + state.sal + wg;
+        const wg = Math.round(state.mWage || 0), mp = mgrPay();
+        state.money -= f + cf + lp + state.sal + wg + mp;
         state.mWage = 0;
         state.prev = state.mSales;
         (state.msl = state.msl || []).push(state.mSales);
         state.happy = clamp100(state.happy + (difficulty().sal ? (state.sal - 330000) / 330000 * 8 : 0) + (ok ? 3 : -3));
         state.loans.forEach(l => l.left--);
         state.loans = state.loans.filter(l => l.left > 0);
-        state.rep = '月末: テナント料¥' + fmt(f) + (cf ? '・決済手数料¥' + fmt(cf) : '') + (lp ? '・融資返済¥' + fmt(lp) : '') + (state.sal ? '・自分の給料¥' + fmt(state.sal) : '') + (wg ? '・店員の給料¥' + fmt(wg) : '') + 'を支払い。売上¥' + fmt(state.mSales) + ' / ノルマ¥' + fmt(q) + ' → ' + (ok ? '達成' : '未達');
+        state.rep = '月末: テナント料¥' + fmt(f) + (cf ? '・決済手数料¥' + fmt(cf) : '') + (lp ? '・融資返済¥' + fmt(lp) : '') + (state.sal ? '・自分の給料¥' + fmt(state.sal) : '') + (wg ? '・店員の給料¥' + fmt(wg) : '') + (mp ? '・店長の給料¥' + fmt(mp) : '') + 'を支払い。売上¥' + fmt(state.mSales) + ' / ノルマ¥' + fmt(q) + ' → ' + (ok ? '達成' : '未達');
         addLog(state.rep);
         state.mSales = 0;
         if (state.money < 0 && (state.sv || 0) > 0) {
@@ -118,6 +118,7 @@ function endDay() {
         }
     }
     state.phase = 'closed';
+    coDaily();
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */
@@ -232,7 +233,7 @@ function tick() {
     }
     else
         state.gauge = Math.max(0, state.gauge + (pw - 1) * 4 - 0.6);
-    const rate = (0.35 + 0.18 * state.ad + 0.08 * sh.length) * pw * (0.8 + state.gauge / 250) * (state.boost > 0 ? 2 : 1) * demandFactor() * Math.pow(1.2, state.pays.length) * difficulty().cust;
+    const rate = (0.35 + 0.18 * state.ad + 0.08 * sh.length) * pw * (0.8 + state.gauge / 250) * (state.boost > 0 ? 2 : 1) * demandFactor() * Math.pow(1.2, state.pays.length) * difficulty().cust * coCust();
     const cnt = x => Math.floor(x) + (Math.random() < x % 1 ? 1 : 0), gs = [];
     for (let i = cnt(rate / 2); i > 0; i--)
         gs.push(0);
@@ -245,7 +246,7 @@ function tick() {
             state.dF = (state.dF || 0) + 1;
         else
             state.dM = (state.dM || 0) + 1;
-        const wt = sh.map(t => Math.pow(80 / PRODUCTS[t.id].c, 0.6) * gf(t.id, g) * (state.rb > 0 && t.id === 0 ? 1.8 : 1));
+        const wt = sh.map(t => Math.pow(80 / PRODUCTS[t.id].c, 0.6) * gf(t.id, g) * locPref(t.id) * (state.rb > 0 && t.id === 0 ? 1.8 : 1));
         let x = Math.random() * wt.reduce((a, b) => a + b, 0), s = sh[sh.length - 1];
         for (let i = 0; i < sh.length; i++) {
             if ((x -= wt[i]) < 0) {
