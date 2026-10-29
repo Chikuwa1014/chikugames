@@ -6,7 +6,7 @@
 const pwr = d => SEA[seaOf(d)].p * WE[d === state.day ? state.weather : state.next].p * (state.flame > 0 ? difficulty().fl : 1);
 
 /** 月のテナント料（棚数で指数的に増加） */
-const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee);
+const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee * locF('fee'));
 
 /** 現在の売値（原価÷(1-粗利率)） */
 const priceOf = p => Math.max(p.c + 1, Math.round(p.c / (1 - state.margin / 100)));
@@ -18,7 +18,7 @@ const demandFactor = () => Math.min(1.6, Math.max(0.5, 1 - (state.margin - 40) *
 const loanPay = () => state.loans.reduce((a, l) => a + l.pay, 0);
 
 /** 月末の支払い予想（v1.5.3〜）：月末の閉店処理（engine.js）と同じ式。テナント料＋決済手数料（今月の売上×3.75%×決済数）＋融資返済＋自分の月収＋店員の給料（ここまでの未払い分） */
-const payForecast = () => tenantFee() + Math.round(state.mSales * 0.0375 * state.pays.length) + loanPay() + (state.sal || 0) + Math.round(state.mWage || 0);
+const payForecast = () => tenantFee() + Math.round(state.mSales * 0.0375 * state.pays.length) + loanPay() + (state.sal || 0) + Math.round(state.mWage || 0) + mgrPay();
 
 /** 1日の営業ティック数 */
 const dayTicks = () => (state.closeH - state.openH) * 5;
@@ -33,14 +33,14 @@ const wageDay = () => {
 
 /** 今月のノルマの内訳（b：損益分岐点、g：前月比、q：ノルマ＝高い方） */
 function quotaParts() {
-    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD + mgrPay()) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
     const g = state.prev == null ? 0 : state.prev * difficulty().gr;
     return { b: r100(b), g: r100(g), q: r100(state.prev == null ? b : Math.max(b, g)) };
 }
 
 /** 今月の売上ノルマ（損益分岐点＋前月比） */
 function quota() {
-    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD + mgrPay()) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
     return r100(state.prev == null ? b : Math.max(b, state.prev * difficulty().gr));
 }
 
@@ -76,14 +76,14 @@ const sickP = h => h >= 80 ? 0 : h >= 50 ? 0.05 : h >= 35 ? 0.1 : h >= 15 ? 0.15
 const upCost = (id, L) => r100(PRODUCTS[id].b * 15 * Math.pow(1.8, L));
 
 /** 客の性別による商品の買いやすさ */
-const gf = (id, g) => (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
+const gf = (id, g) => isShisha() ? 1 : (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
 
 /** アップグレードと原価変動を商品へ反映 */
 function applyUp() {
     PRODUCTS.forEach((p, i) => {
         const L = state.up[i] || 0;
         p.c = Math.round(p.b * (1 + 0.4 * L) * (state.cm ? state.cm[i] : 1));
-        p.n = L > 0 ? NM[i][L - 1] : p.n0;
+        p.n = L > 0 ? upName(i, L) : p.n0;
     });
 }
 

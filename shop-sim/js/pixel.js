@@ -521,6 +521,11 @@ function pxTree(x, se) {
 
 /** 背景（空・雲・街並み・地面・道路・車・木・街灯・お店の建物）を描く（v2.0.0〜 ミント×コーラルの色で描き直し。位置は v1.x と同じ） */
 function pxScene(W, se, wt, night, bad) {
+    // 出店場所ごとの背景（v2.1.0〜）。デパート・駅ナカは屋内（空・道路・車・木なし）
+    const lk = state.loc || 'suburb';
+    if (locF('indoor'))
+        pxIndoor(W, night, bad, lk === 'station');
+    else {
     // 空：なめらかなグラデーション（マイナスのイベントの日は閉店まで赤い空。v1.4.1〜）
     const sk = bad ? ['#8e1b2c', '#d8463e', '#f7a072'] : [['#4fb3f0', '#8fd3f7', '#e3f6ff'], ['#9fb4c4', '#c6d4de', '#eef2f5'], ['#6c7a88', '#8d9aa6', '#b9c2ca'], ['#b8c7d4', '#d6e0e8', '#f5f8fb']][wt];
     const g = cx.createLinearGradient(0, 0, 0, 124);
@@ -568,6 +573,10 @@ function pxScene(W, se, wt, night, bad) {
             for (let i = 2; i < w - 2; i += 4)
                 Rc(x + i, 62 - h + 3 + j, 2, 2, night ? '#ffe9a8' : shade(c, .45));
     });
+    if (lk === 'downtown')
+        pxDowntown(night, bad);
+    if (lk === 'uptown')
+        pxUptown(se, night, bad);
     // 植え込み・歩道・道路
     const gr = [['#8fde8a', '#6cc56c'], ['#4fc46e', '#38a656'], ['#d6b25a', '#bf9646'], ['#f4f8fb', '#dde7ee']][se];
     Rr(0, 54, 48, 9, gr[0], 2);
@@ -598,8 +607,10 @@ function pxScene(W, se, wt, night, bad) {
         Rc(cxp + 4.5, 80, 1, 1, '#9aa4ae');
         Rc(cxp + 15.5, 80, 1, 1, '#9aa4ae');
     }
-    pxTree(4, se);
-    pxTree(172, se);
+    if (lk !== 'downtown') {
+        pxTree(4, se);
+        pxTree(172, se);
+    }
     if (se === 0 || se === 2)
         for (let i = 0; i < 8; i++)
             Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#ffa25c' : '#ffc4da');
@@ -611,6 +622,7 @@ function pxScene(W, se, wt, night, bad) {
     Rq(158, 240, 12, 8, lp);
     Rq(158, 240, 12, 1, shade(lp, .4));
     Rr(35, 37, 4, 3, night ? '#fff1b0' : '#e8f7f1', 1);
+    }
     // お店の建物：ミントの屋根・クリームの壁・腰板
     const rf = shade(PXT.r, -.25);
     Rr(45, 19, 102, 7, rf, 1);
@@ -623,15 +635,16 @@ function pxScene(W, se, wt, night, bad) {
     pxFine(rf);
     Rc(140, 26, 4, 36, 'rgba(31,58,53,.08)');
     // 看板：コーラルの丸い看板に白い文字
-    Rr(75, 9, 42, 13, shade(PXT.c, -.25), 2);
-    Rr(76, 9, 40, 12, PXT.c, 2);
-    Rc(78, 10, 36, 1, shade(PXT.c, .35));
-    Rq(310, 78, 148, 1, shade(PXT.c, -.12));
+    const SC = signC();
+    Rr(75, 9, 42, 13, shade(SC, -.25), 2);
+    Rr(76, 9, 40, 12, SC, 2);
+    Rc(78, 10, 36, 1, shade(SC, .35));
+    Rq(310, 78, 148, 1, shade(SC, -.12));
     [[310, 44], [454, 44], [310, 72], [454, 72]].forEach(([x, y]) => {
-        Rq(x, y, 3, 3, shade(PXT.c, -.3));
-        Rq(x, y, 2, 2, shade(PXT.c, .5));
+        Rq(x, y, 3, 3, shade(SC, -.3));
+        Rq(x, y, 2, 2, shade(SC, .5));
     });
-    pxText(88.5, 13.5, 'SHOP', shade(PXT.c, -.35));
+    pxText(88.5, 13.5, 'SHOP', shade(SC, -.35));
     pxText(88, 13, 'SHOP', '#ffffff');
     // 日よけ：コーラルと白のしましま、すそは波形
     for (let i = 0; i < 16; i++) {
@@ -664,6 +677,134 @@ function pxScene(W, se, wt, night, bad) {
             });
         }
     });
+}
+
+/** 看板の色（シーシャ屋はむらさき。v2.1.0〜） */
+const signC = () => isShisha() ? '#9a6ad6' : PXT.c;
+
+/** 繁華街：背の高いビルとネオンの看板（遠くの丘の代わり。v2.1.0〜） */
+function pxDowntown(night, bad) {
+    const neon = ['#ff4fa3', '#3ee0ff', '#ffd23f', '#9b6bff'];
+    [[0, 52, 16, '#5a5f8a'], [14, 40, 14, '#6e6a9a'], [28, 46, 18, '#4f5a7e'], [146, 44, 16, '#4f5a7e'], [160, 54, 14, '#6e6a9a'], [173, 38, 19, '#5a5f8a']].forEach(([x, h, w, c], k) => {
+        c = bad ? shade(c, -.2) : c;
+        Rc(x, 62 - h, w, h, c);
+        Rc(x, 62 - h, w, 1, shade(c, .25));
+        for (let j = 0; j < h - 6; j += 4)
+            for (let i = 2; i < w - 2; i += 3)
+                Rc(x + i, 62 - h + 3 + j, 1.5, 2, night ? ((i * 7 + j * 3 + k) % 5 ? '#ffe9a8' : '#3a3f5c') : shade(c, .4));
+        // ネオンの縦看板（夜は点滅）
+        const nc = neon[k % 4], on = !night || ((fr >> 2) + k) % 6;
+        Rr(x + (k % 2 ? 1 : w - 4), 62 - h + 5, 3, 12, on ? nc : shade(nc, -.5), 1);
+        if (night && on) {
+            cx.globalAlpha = .25;
+            Rr(x + (k % 2 ? 0 : w - 5), 62 - h + 4, 5, 14, nc, 2);
+            cx.globalAlpha = 1;
+        }
+    });
+}
+
+/** 高級住宅街：三角屋根のお屋敷と生け垣（遠くの丘の代わり。v2.1.0〜） */
+function pxUptown(se, night, bad) {
+    [[2, 40, '#f6efe4', '#7a5c8e'], [150, 40, '#eef3f7', '#3f6e8c']].forEach(([x, w, wc, rc]) => {
+        wc = bad ? shade(wc, -.15) : wc;
+        Rc(x, 40, w, 22, wc);
+        for (let r = 0; r < 10; r++)
+            Rc(x - 2 + r * 1.2, 40 - r, w + 4 - r * 2.4, 1, r ? rc : shade(rc, -.2));
+        Rc(x + w - 10, 26, 4, 8, shade(wc, -.25));
+        for (let i = 0; i < 3; i++) {
+            Rc(x + 4 + i * 12, 45, 7, 7, night ? '#ffe9a8' : '#bfe3f5');
+            Rc(x + 7 + i * 12, 45, 1, 7, wc);
+            Rc(x + 4 + i * 12, 48, 7, 1, wc);
+        }
+        Rc(x + w / 2 - 3, 54, 6, 8, '#8a5a3c');
+        Rc(x + w / 2 + 1.5, 58, 1, 1, '#ffd23f');
+    });
+    // 生け垣（ふちを丸く）
+    Rr(0, 56, 46, 6, se === 3 ? '#e8eef2' : '#3f9a5c', 3);
+    Rr(146, 56, 46, 6, se === 3 ? '#e8eef2' : '#3f9a5c', 3);
+}
+
+/** 屋内（デパート・駅ナカ）：壁・天井の明かり・床。駅ナカは改札口と、窓の向こうを電車が走る（v2.1.0〜） */
+function pxIndoor(W, night, bad, st) {
+    const g = cx.createLinearGradient(0, 0, 0, 124);
+    g.addColorStop(0, st ? '#d9dde2' : '#f6efe3');
+    g.addColorStop(1, st ? '#eef0f2' : '#fbf6ee');
+    cx.fillStyle = g;
+    cx.fillRect(0, 0, PXW, 124);
+    // 天井と明かり
+    Rc(0, 0, W, 5, st ? '#9aa3ad' : '#e8dcc8');
+    for (let x = 8; x < W; x += 24)
+        Rr(x, 4, 10, 2, '#fffbe6', 1);
+    if (st) {
+        // ホームが見える窓と、走る電車
+        Rc(0, 9, W, 24, '#2e3a48');
+        Rc(0, 9, W, 1, '#56677a');
+        const tx = ((fr * 3) % (W + 260)) - 130;
+        for (let k = 0; k < 3; k++) {
+            const x = tx + k * 44;
+            Rr(x, 14, 42, 16, '#e7ecf0', 2);
+            Rc(x + 1, 24, 40, 2, PXT.r);
+            for (let i = 0; i < 4; i++)
+                Rc(x + 3 + i * 10, 16, 7, 6, night ? '#ffe9a8' : '#9fd3f2');
+        }
+        Rc(0, 32, W, 2, '#56677a');
+        // 発車の案内板
+        Rr(84, 2, 24, 6, '#1d2733', 1);
+        Rc(86, 4, 9, 1, '#ffb43a');
+        Rc(97, 4, 8, 1, '#5ee38a');
+        Rc(86, 6, 14, 1, '#ffb43a');
+        // 改札口（左右）
+        [[2, 1], [150, -1]].forEach(([x0]) => {
+            for (let i = 0; i < 3; i++) {
+                const x = x0 + i * 14;
+                Rr(x, 46, 4, 16, '#b9c2cc', 1);
+                Rc(x, 46, 4, 1, '#e3e8ee');
+                Rc(x + 1, 48, 2, 2, (fr >> 3) % 3 === i ? '#5ee38a' : '#3ea3ff');
+                Rc(x + 4, 52, 6, 1.5, (fr >> 2) % 4 < 2 ? '#ffd23f' : '#f0a53a');
+            }
+            Rr(x0 + 2, 38, 36, 5, '#2a6fd6', 1);
+            Rc(x0 + 5, 40, 30, 1, '#ffffff');
+        });
+    }
+    else {
+        // デパート：柱・つり下げの飾り・エスカレーター
+        [[8, '#e9dcc6'], [176, '#e9dcc6']].forEach(([x, c]) => {
+            Rc(x, 5, 8, 57, c);
+            Rc(x, 5, 1, 57, '#fffaf0');
+            Rc(x + 7, 5, 1, 57, shade(c, -.12));
+        });
+        for (let i = 0; i < 6; i++)
+            Rr(22 + i * 26, 6, 8, 10, [PXT.c, '#ffd23f', PXT.r][i % 3], 1);
+        for (let r = 0; r < 14; r++)
+            Rc(150 + r * 1.6, 44 - r * 2, 6, 2, r % 2 ? '#c9ced6' : '#aab1bb');
+        Rc(148, 44, 10, 18, '#d8dde3');
+    }
+    if (bad) {
+        cx.fillStyle = 'rgba(200,40,40,.22)';
+        cx.fillRect(0, 0, PXW, 124);
+    }
+    // 床（タイル）
+    Rc(0, 62, W, 30, st ? '#c9ccd0' : '#efe6d6');
+    Rc(0, 62, W, 1, '#ffffff');
+    for (let x = 0; x < W; x += 12)
+        Rc(x, 62, 0.5, 30, st ? '#b4b8bd' : '#e0d4be');
+    for (let y = 70; y < 92; y += 8)
+        Rc(0, y, W, 0.5, st ? '#b4b8bd' : '#e0d4be');
+    if (st)
+        Rc(0, 66, W, 2, '#ffd23f');
+}
+
+/** シーシャ屋：店の中がうっすら煙っぽい（むらさきの明かりと、ただようもや。喫煙の様子は描かない。v2.1.0〜） */
+function pxHaze() {
+    cx.fillStyle = 'rgba(150,90,200,.16)';
+    cx.fillRect(106, 84, 60, 34);
+    cx.fillRect(218, 84, 60, 34);
+    cx.globalAlpha = .3;
+    for (let i = 0; i < 8; i++) {
+        const fx = i % 2 ? 109 : 53, x = fx + ((i * 9 + fr * 0.3) % 22), y = 43 + (i * 5) % 11 + Math.sin((fr + i * 11) / 14) * 1.5;
+        Rr(x, y, 8, 3, '#f2e8ff', 1.5);
+    }
+    cx.globalAlpha = 1;
 }
 
 /** お店と道の細かい模様（細ピクセル。v2.0.0〜）：屋根がわら・壁の板・腰板のれんが・歩道・道路 */
@@ -743,10 +884,11 @@ function drawPx() {
     pxPeople(op);
     pxFxTop();
     cv.classList.toggle('quake', fxList().includes('quake'));
-    if (wt === 2)
+    const ind = locF('indoor');
+    if (wt === 2 && !ind)
         for (let i = 0; i < 70; i++)
             Rp((i * 37 + fr * 2) % W * 2, (i * 23 + fr * 6) % H * 2, 1, 5, '#7ab8ea');
-    if (wt === 3) {
+    if (wt === 3 && !ind) {
         for (let i = 0; i < 70; i++)
             Rp((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W * 2, (i * 17 + fr) % H * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(0, 62, W, 2, '#f4f8fb');
@@ -756,17 +898,20 @@ function drawPx() {
         Rr(76, 8, 40, 2, '#fff', 1);
     }
     if (night) {
-        cx.fillStyle = 'rgba(18,20,70,0.48)';
+        // 屋内（デパート・駅ナカ）は照明があるので、暗くするのは少しだけ。星と街灯の明かりもなし
+        cx.fillStyle = ind ? 'rgba(18,20,70,0.2)' : 'rgba(18,20,70,0.48)';
         cx.fillRect(0, 0, PXW, PXH);
-        if (wt === 0)
+        if (wt === 0 && !ind)
             for (let i = 0; i < 14; i++)
                 Rp((i * 47) % W * 2, (i * 13) % 24 * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
-        Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
-        Rc(37, 37, 8, 2, '#ffe9a8');
+        if (!ind) {
+            Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
+            Rc(37, 37, 8, 2, '#ffe9a8');
+        }
         pxLights(op, true);
         // 夜は看板に明かりをともす（v2.0.0〜）
         cx.globalAlpha = .55;
-        Rr(76, 9, 40, 12, PXT.c, 2);
+        Rr(76, 9, 40, 12, signC(), 2);
         cx.globalAlpha = 1;
         pxText(88, 13, 'SHOP', '#fff6e0');
         pxDk = true;
@@ -778,6 +923,8 @@ function drawPx() {
         pxDk = false;
         pxFxPay();
     }
+    if (isShisha())
+        pxHaze();
 }
 
 /** かまくらボーナスの日：店の前のかまくらと甘酒の鍋 */

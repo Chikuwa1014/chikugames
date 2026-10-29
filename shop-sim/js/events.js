@@ -18,6 +18,8 @@ function sellUnit(s, q, m) {
 
 /** 開店時のイベント（超セレブ・パパ活） */
 function openEv() {
+    if (isShisha())
+        return;
     const on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id), sh = state.shelf.filter(Boolean);
     if (on(5) && Math.random() < 0.05) {
         let t = 0;
@@ -43,6 +45,8 @@ function openEv() {
 
 /** 最終段階の商品によるイベント抽選 */
 function rollProd() {
+    if (isShisha())
+        return;
     const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
     if (on(0) && R() < 0.02) {
         resetInv(1);
@@ -195,12 +199,12 @@ function rollEvents() {
         state.feeMul = Math.round(state.feeMul * f * 100) / 100;
         addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）', f > 1);
     }
-    if (r() < 0.0001) {
+    if (r() < 0.0001 * locF('dis')) {
         resetInv(2);
         state.happy = clamp100(state.happy - 20);
         addEvent('🌋 大地震！投資がすべてリセットされました', 1);
     }
-    if (r() < 0.01) {
+    if (r() < 0.01 * locF('dis') && !locF('indoor')) {
         const lost = lose();
         state.money -= 10000;
         state.happy = clamp100(state.happy - 5);
@@ -209,7 +213,7 @@ function rollEvents() {
     const pr = state.prep || {}, ok = () => Math.random() < 0.55;
     let typ = false, sn = false;
     state.prep = { typ: false, snow: false };
-    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05) && (typ = true) && pr.typ && ok()) {
+    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05 * locF('dis')) && (typ = true) && pr.typ && ok()) {
         state.happy = clamp100(state.happy + 25);
         state.mbDay = state.day + 1;
         addEvent('🧱 土嚢で台風に耐えました！被害なし（幸福度+25、明日は店員の士気アップ）');
@@ -225,7 +229,7 @@ function rollEvents() {
         });
         addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に', 1);
     }
-    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
+    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1 * locF('dis')) && (sn = true) && pr.snow && ok()) {
         state.kama = 1;
         state.hol = false;
         state.weather = 3;

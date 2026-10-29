@@ -96,7 +96,7 @@ function buy(k, id) {
 function addSlot() {
     state.slots++;
     state.shelf.push(null);
-    if (state.own.length < state.slots && state.own.length < PRODUCTS.length) {
+    if (state.own.length < state.slots && state.own.length < kindN()) {
         state.own.push(state.own.length);
         const q = PRODUCTS[state.own.length - 1];
         addLog(q.e + ' ' + q.n + 'が解放されました。');

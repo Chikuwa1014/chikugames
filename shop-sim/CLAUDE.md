@@ -6,7 +6,7 @@
 ## 1. 概要
 
 季節や天気、お客さんの動きを読んで商品を仕入れて売る経営シミュレーション。稼いだお金で商品を増やし、棚を広げてお店を育てる。
-ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.0.0・2026-10-28。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
+ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.1.0・2026-10-29。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
 仕様の詳しい中身は末尾の「付録：ゲームの仕様」。
 
 ## 2. URL
@@ -41,6 +41,7 @@
 | `v1/index.html` | ver.1（v1.5.4）の画面（v2.0.0〜）。v1.5.4 の `build.py` の出力を1ファイルで置いたもの。**直さない**（v2 で直した不具合も入っていない）。パスはフォルダが1段深い分だけ変えた（`CG.debug.init` の `url: '../debug'`・`../../hikkoshi/`）。セーブ（`KEY` など）は `/shop-sim/` と同じものを読み書きするので、v2 でセーブの形を変えるときは v1 で読めなくならないか気をつける。設定タブの `#v1c` からリンク。ver.1 の設定タブにも v2 へ戻るリンク（`#v2c`、`../`）を足した |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動、設定タブの更新履歴 `#chg`（`CHANGES` から作る） |
+| `js/company.js` | 店長・会社・複数のお店（v2.1.0〜。events.js の後、actions.js の前に読む）。店ごとの項目 `STK`（切り替えで出し入れ。所持金・日付・天気・幸福度・融資などは会社でひとつ）、店長 `MGR_HIRE`・`MGR_SAL`・`mgrShow`・`mgrNeed`・`hireMgr`、出店場所 `LOCS`（`cust`・`crime`・`fee`・`dis`・`cost`・`pref`・`indoor`・`kind`）と `locF`・`coCust`・`locPref`、シーシャ屋 `FLAV`・`FLUP`・`isShisha`・`kindN`・`upName`・`applyKind`（PRODUCTS をフレーバーと入れ替える。render が店の変化を見て呼ぶ）、会社 `coFound`・資本金 `CAPT`・`capNext`・`capUp`・取引先 `PARTNERS`・`partner`・方針 `POLS`、景気 `NK`・`nkAt`・`econ`、出店 `storeSlots`・`coOpen`・`newStore`・切り替え `coSwitch`、店主がいない店の1日 `coBgDay`・月末 `coBgMonth`、閉店ごとの処理 `coDaily`（engine.js の `endDay` の最後）、会社タブ `coRender`（`#co`）・ステータス `coStat`（`#costm`） |
 
 ## 4. 保存キー
 
@@ -50,17 +51,20 @@
 - 遊び方を見たか（v2.0.0〜）：localStorage `shop-sim-tutorial`（`'1'`＝見た・飛ばした）。ゲームのセーブ・引っ越しには入れない。`js/tutorial.js` の `TUT_KEY`。
 - タブバーを隠したか（v2.0.0〜）：localStorage `shop-sim-tabbar`（`'1'`＝隠す）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/ui.js` の `tabBar`・`TBAR_KEY`。
 - イメージカラー（v2.0.0〜）：localStorage `shop-sim-theme`（`THEMES` の `id`。無いときは `mint`）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/theme.js` の `THEME_KEY`
+- 会社と複数のお店（v2.1.0〜）：`state.co`（`est` 設立済み・`name` 屋号・`cap` 資本金・`pol` 方針・`ek` 景気の位置・`hist` 月ごとの記録〈最大60〉・`tr`/`trTot` 取引収入・`since` 設立日・`seen` 出したことのある場所・`lsel`/`draft` 入力中の値）、`state.stores`（お店の一覧。`STK` の項目。いまいる店の分は古いので `allStores()` で読む）、`state.cur`（いまいる店の番号）、店ごとの `sname`・`loc`・`mgr`・`qual`（天井に来たことがある＝出店枠のもと）。項目を足しただけなので `KEY`・`SAVE_VER` はそのまま。ver.1 の画面はこれらを知らない（読み書きはするが使わない）
 - 実績：localStorage `shop-sim-achv`（`{ id: { at, diff } }`）。ゲームの保存とは別で、やり直し・倒産でも消えない。実績の `id`（`tot<金額>`・`day<日数>`・`sv<金額>`・`inf<日数>`）は公開後に変えない。
 
 ## 5. 調整用の数値
 
 - 数値表はすべて `js/data.js`（商品・季節・天気・難易度・セキュリティ・アップグレード名）。数値の調整はここから探す。
 - 計算式は `js/rules.js`（購買力・費用・ノルマ・難易度・店員レベル）。
+- 店長・会社・出店場所・景気の数値は `js/company.js` の先頭（`MGR_HIRE`・`MGR_SAL`・`CO_FEE`・`MAX_STORES`・`LOCS`・`FLAV`・`POLS`・`PARTNERS`・`CAPT`・`NK`）。
 
 ## 6. テスト
 
 - `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
+- `python3 shop-sim/dev/test-company.py [出力先]`：v2.1.0 の店長・会社・出店（条件を満たすまで出ない・雇う・設立・出店・店長の店の売上と月末・切り替え・6か所の絵・シーシャ屋のフレーバー・方針・ステータス画面・読み直し）。スマホ幅と PC 幅。リポジトリ直下で `python3 -m http.server 8090` を先に起動（file:// だと読み直しで localStorage が消えることがある）。
 - `python3 shop-sim/dev/test-tutorial.py [出力先]`：v2.0.0 の遊び方（初回だけ出る・説明10場面＋1日目の練習5場面・光っていない所はふさぐ・スキップ・次からは出ない・設定から見直す・営業中は一時停止・セーブがある人には出ない）。サーバー不要。ほかのテストは開く前に `shop-sim-tutorial` を入れて、遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-v153.py [出力先]`：v1.5.3 の確認（月末の支払い予想・プルダウン・旧ラベル廃止）。サーバー不要。
 - `python3 shop-sim/dev/test-v152.py [出力先]`：v1.5.2 の確認（ログの折り返し・悪いイベントのお知らせ）。サーバー不要。
@@ -80,7 +84,7 @@
 
 ## 8. 残りのタスク
 
-`claude/未実装タスク.md` で管理（issue と機能）。いま残っているのは【保留】2件：
+`claude/未実装タスク.md` で管理（issue と機能）。いま残っているのは【許可済み】1件（店長・会社・複数のお店。v2.1.0 で実装し、試作環境で確認中）と【保留】2件：
 - 夜に、車・爆発・6台の事故で割れた窓・煤けた窓が窓の描き直しで消える（v1.5.1の#6の続き。同じ原因）
 - 倒産しても広告（AD）を見ると続けられる「大企業に買い取られた！」（広告の仕組みがまだ無いため保留）
 

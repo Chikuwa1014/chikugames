@@ -40,6 +40,12 @@ function syncLog() {
 const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g, 'class="card off"').replace(/<(input|select)/g, '<$1 disabled').replace(/<button data-a="sv/g, '<button disabled data-a="sv').replace(/<button class="alt" data-a="sv/g, '<button class="alt" disabled data-a="sv');
 
 function render() {
+    // 店を切り替えた・読み込んだときは、扱う品（シーシャ屋はフレーバー）を入れ替える（v2.1.0〜）
+    if (kindOf !== state || kindLoc !== state.loc) {
+        kindOf = state;
+        kindLoc = state.loc;
+        applyKind();
+    }
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
     byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
     byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
@@ -146,7 +152,7 @@ function render() {
             if (e && !v)
                 e.closest('.card').style.display = 'none';
         });
-        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>');
+        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>' + (state.co ? '<span class="chip sto">' + locOf().e + ' ' + esc(state.sname || '1号店') + '</span>' : ''));
         byId('dfc').style.display = state.diff ? 'none' : 'block';
     }
     {
@@ -171,9 +177,11 @@ function render() {
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
         // 画面の下のタブバー（v2.0.0〜）。一時停止と倍速は店の絵の右下 #spd（倍速は押すたび×1→×2→×4→×8）
-        byId('tabr').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
+        byId('tabr').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定'], ['🏢', '会社']].slice(0, state.co ? 5 : 4).map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
         byId('spd').innerHTML = '<button class="' + (state.paused ? 'on' : '') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? 'on' : '') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button>';
-        [0, 1, 2, 3].forEach(i => {
+        if (!state.co && state.tab === 4)
+            state.tab = 0;
+        [0, 1, 2, 3, 4].forEach(i => {
             const e = byId('p' + i);
             if (e)
                 e.style.display = (state.tab || 0) === i ? '' : 'none';
@@ -193,7 +201,7 @@ function render() {
     const ok = state.phase === 'closed' && !state.over && !ill();
     const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
     const R = [];
-    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < PRODUCTS.length ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
+    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < kindN() ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
     R.push(row('cap', '', '📦 棚の容量アップ（' + state.cap + '個）', '次の容量: ' + (CAPS[CAPS.indexOf(state.cap) + 1] || '最大') + '個', cost.cap(), state.cap >= MAX.cap));
     R.push(row('ad', '', '📣 広告（Lv.' + state.ad + '）', '来店数とまとめ買いが増える', cost.ad(), state.ad >= MAX.ad));
     R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給¥' + fmt(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
@@ -206,6 +214,9 @@ function render() {
     SECR.push(row('secbuy', '', '🛡 ストックを買う（' + (state.ss || 0) + '/5）', (state.sl > 0 ? SECN[state.sl - 1] + '：' + SECX[state.sl - 1] + '。破損まで' + ((state.ss || 0) > 0 ? Math.max(0, (state.sb || 0) - state.day) + '日' : (SECD[state.sl - 1] / 7) + 'ヶ月') + '（盗難1回ごとに1つ消費）' : 'まずレベルを上げてください'), cost.secbuy(), !(state.sl > 0) ? 1 : (state.ss || 0) >= 5));
     R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）' + ((state.dn || 0) > 0 ? '<div class="meta">本来Lv.' + (state.sk || 0) + '・士気低下-' + state.dn + '（休業で回復）</div>' : ''), '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
     R.push(...SECR);
+    // 店長を雇う（v2.1.0〜）。条件（天井・店員・お金）を満たすまでは出さない
+    if (mgrShow())
+        R.unshift('<div class="card up mgr"><div class="tx"><div class="nm">👔 店長を雇う</div><div class="d">店長を雇ってオーナーになる。「会社」タブが出て、会社を設立し、新しいお店を出せるようになります。採用費¥' + fmt(MGR_HIRE) + '・月給¥' + fmt(MGR_SAL) + '（月末払い）</div></div><button data-a="hiremgr"' + (!ok || state.money < MGR_HIRE ? ' disabled' : '') + '>¥' + fmt(MGR_HIRE) + '</button></div>');
     PRODUCTS.forEach((p, i) => {
         if (!state.own.includes(i))
             return;
@@ -216,18 +227,22 @@ function render() {
             dn = true;
         }
         else if (state.sd[i] < TH[L]) {
-            d = '解放まであと' + (TH[L] - state.sd[i]) + '個販売 → ' + NM[i][L];
+            d = '解放まであと' + (TH[L] - state.sd[i]) + '個販売 → ' + upName(i, L + 1);
             dn = 1;
         }
         else {
             pc = upCost(i, L);
-            d = '→ ' + NM[i][L] + '（原価・売価アップ）';
+            d = '→ ' + upName(i, L + 1) + '（原価・売価アップ）';
         }
         R.push(row('upg', i, '⬆ ' + p.e + ' ' + p.n + ' Lv.' + L + '/7', d, pc, dn));
     });
     const ib = investBlock();
     byId('up').innerHTML = (ib ? '<div class="meta svwarn ivb">⚠ ' + ib + '</div>' : '') + R.join('');
+    coRender();
 }
+
+/** いまの扱う品がどの店のものか（render が見て、変わったら applyKind する） */
+let kindOf = null, kindLoc = null;
 
 document.addEventListener('click', e => {
     if (!e.target.closest('[data-a="help"]'))
@@ -482,7 +497,7 @@ function initLayout() {
         const d = document.createElement('div');
         d.id = 'p' + i;
         return d;
-    }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3);
+    }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3), P4 = mk(4);
     P0.insertAdjacentHTML('afterbegin', '<div class="clk" id="clk" hidden></div>');
     [byId('gl').closest('.card'), byId('act'), byId('lg'), byId('pn'), byId('sh').previousElementSibling, byId('sh')].forEach(e => P0.append(e));
     P1.append(byId('up').previousElementSibling, byId('up'));
@@ -492,7 +507,8 @@ function initLayout() {
     P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('v1c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
-    sc.append(P0, P1, P2, P3);
+    P4.append(byId('co'));
+    sc.append(P0, P1, P2, P3, P4);
     tp.after(sc);
     sc.after(tb);
     // 前に隠していたら、隠したまま始める（DOM に入れてから高さを測る）

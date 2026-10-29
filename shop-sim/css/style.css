@@ -1188,7 +1188,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm {
+#ovm, #ama, #achm, #costm {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1206,7 +1206,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden] {
   display:none;
 }
 
@@ -2013,4 +2013,233 @@ a.v1l {
 
 a.v1l:active {
   background:var(--mintl);
+}
+
+/* ---- 店長・会社・複数のお店（v2.1.0〜） ---- */
+.card.up.mgr {
+  border:2px solid var(--coral);
+  background:var(--corall);
+}
+
+.chip.sto {
+  background:var(--mint);
+  color:#fff;
+  font-weight:800;
+}
+
+.co1 .row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.co1 .row button {
+  flex:none;
+  width:auto;
+  padding:8px 12px;
+  font-size:13px;
+}
+
+.cokv {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:4px 12px;
+  margin-top:8px;
+  font-size:13px;
+}
+
+.cokv span {
+  color:var(--sub);
+}
+
+.cokv b {
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+.cof {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin:10px 0 4px;
+  font-size:13px;
+  font-weight:700;
+}
+
+.cof input, .cof select, select.cosel {
+  width:100%;
+  padding:10px 12px;
+  border:2px solid var(--line);
+  border-radius:12px;
+  background:var(--card);
+  color:var(--ink);
+  font:inherit;
+  font-size:15px;
+}
+
+select.cosel {
+  margin:8px 0 4px;
+  font-size:13px;
+}
+
+.stl {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:8px;
+}
+
+.sti {
+  padding:10px;
+  border:2px solid var(--line);
+  border-radius:14px;
+}
+
+.sti.here {
+  border-color:var(--mint);
+  background:var(--mintl);
+}
+
+.stn {
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.ste {
+  font-size:26px;
+  line-height:1;
+}
+
+.sti .btns {
+  margin-top:8px;
+}
+
+.locl {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:6px;
+  margin:8px 0 10px;
+}
+
+@media (min-width:600px) {
+  .locl {
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+label.loc {
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  padding:9px 10px;
+  border:2px solid var(--line);
+  border-radius:14px;
+  cursor:pointer;
+}
+
+label.loc:has(input:checked) {
+  border-color:var(--coral);
+  background:var(--corall);
+}
+
+label.loc input {
+  margin-top:4px;
+  accent-color:var(--coral);
+}
+
+.le {
+  font-size:24px;
+  line-height:1.1;
+}
+
+.lt {
+  display:flex;
+  flex-direction:column;
+  font-size:12px;
+  color:var(--sub);
+}
+
+.lt b {
+  font-size:14px;
+  color:var(--ink);
+}
+
+.ovbox.cobox {
+  display:flex;
+  flex-direction:column;
+  height:min(680px, 100%);
+  padding:14px 16px;
+  border-top-color:var(--mint);
+  overflow:hidden;
+}
+
+.cobox h3 {
+  margin:14px 0 6px;
+  font-size:14px;
+}
+
+.cobars {
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  height:110px;
+  padding:4px 0 16px;
+  border-bottom:1px solid var(--line);
+}
+
+.cob {
+  position:relative;
+  flex:1;
+  max-width:48px;
+  height:100%;
+  display:flex;
+  align-items:flex-end;
+}
+
+.cob i {
+  display:block;
+  width:100%;
+  border-radius:4px 4px 0 0;
+  background:var(--mint);
+}
+
+.cob span {
+  position:absolute;
+  bottom:-16px;
+  left:0;
+  right:0;
+  font-size:10px;
+  text-align:center;
+  color:var(--sub);
+}
+
+svg.coeco {
+  display:block;
+  width:100%;
+  height:64px;
+  background:var(--bg2);
+  border-radius:10px;
+}
+
+table.cotb {
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+
+table.cotb th, table.cotb td {
+  padding:5px 4px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+}
+
+table.cotb td:nth-child(3), table.cotb th:nth-child(3) {
+  text-align:right;
+}
+
+.cobox .achx {
+  margin-left:auto;
 }
