@@ -6,7 +6,7 @@
 ## 1. 概要
 
 季節や天気、お客さんの動きを読んで商品を仕入れて売る経営シミュレーション。稼いだお金で商品を増やし、棚を広げてお店を育てる。
-ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.1.0・2026-10-29。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
+ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.2.0・2026-10-29。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
 仕様の詳しい中身は末尾の「付録：ゲームの仕様」。
 
 ## 2. URL
@@ -23,8 +23,8 @@
 | `index.html` | 骨組み。css/js を読み込む（順番を変えない。共通部品 `../common/v1/`（core・share・save・debug）が最初、`main.js` が最後） |
 | `css/style.css` | 見た目（v2.0.0〜 ミント×コーラル。色は `:root` の変数 `--mint`・`--coral` など、ダークモードは変数の上書き。文字は先頭の `@import` で Google Fonts の M PLUS Rounded 1c） |
 | `js/data.js` | 数値表（商品・季節・天気・難易度・セキュリティ・アップグレード名）、ヘルプ文 `HELP`、共通部品への `CG.init` |
-| `js/util.js` | 共通関数（`byId`, `fmt`, `r100`, `clamp100`, `monOf`・`calOf`・`seaOf`（通算の月・暦の月・季節）, `roll`）、ヘルプの？ `helpIcon`・`showHelp`・`hideHelp` |
-| `js/state.js` | 状態 `state` の初期化・読み込み・保存（localStorage）、ログ（`addLog`。営業タブのログ欄の履歴 `logHist`・`pushHist`・`logList` は直近 `LOGN`＝200件でセーブに入れない。営業開始から終了（最長 5:00〜23:00＝90ティック）まで収まる数） |
+| `js/util.js` | 共通関数（`byId`, `fmt`, `yen`（金額。1,000万円以上は千円単位「13,964千円」。v2.2.0〜。お金の表示は `'¥' + fmt(…)` ではなくこれを使う）, `r100`, `clamp100`, `monOf`・`calOf`・`seaOf`（通算の月・暦の月・季節）, `roll`）、ヘルプの？ `helpIcon`・`showHelp`・`hideHelp` |
+| `js/state.js` | 状態 `state` の初期化・読み込み・保存（localStorage）、ログ（`addLog`。営業タブのログ欄の履歴 `logHist`・`pushHist`・`logList` は直近 `LOGN`＝200件でセーブに入れない。v2.2.0〜 お店ごと：`state.log` は `STK` に入り、履歴は `logStash` に店の番号ごと。営業開始から終了（最長 5:00〜23:00＝90ティック）まで収まる数） |
 | `js/rules.js` | 計算（購買力・費用・ノルマ・難易度・店員レベル） |
 | `js/events.js` | イベント（盗難・セキュリティ `guard`・商品イベント・日次抽選） |
 | `js/actions.js` | 操作（補充・投資・融資・預金・開店・新規ゲーム） |
@@ -34,14 +34,14 @@
 | `js/share.js` | 倒産ポップアップ `syncOver`・SNS共有（リザルト画像・Xへの投稿・文面のコピー。文面と共有は `CG.share`） |
 | `js/amazake.js` | かまくらボーナスの日（`kamaTick`）と甘酒ミニゲーム（`amaStart`・`syncAma`・`amaClose`） |
 | `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`）、セーブコード（`makeCode`・`readCode`）。作り方・読み方は `CG.save` |
-| `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`（所持金のカード `.mrow` と実績バッジ `#achb`、日付のチップ `#dt.chips`、下のタブバー `#tabs`（`#scr` の後ろ）、一時停止と倍速 `#spd`（店の絵の右下））、ログ欄 `syncLog`、ボタン処理 |
+| `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`（所持金のカード `.mrow` と実績バッジ `#achb`、日付のチップ `#dt.chips`、下のタブバー `#tabs`（`#scr` の後ろ）、一時停止と倍速 `#spd`（店の絵の右下））、ログ欄 `syncLog`、月末の支払い予想の縮小 `payMini`・`paySet`（v2.2.0〜）、ボタン処理 |
 | `js/achv.js` | 実績（一覧 `ACH_GROUPS`・判定 `achCheck`・バッジ `syncAchBadge`・ポップアップ `syncAch`/`achShow`・リセット `achReset`）。`endDay`・`svMove` を包んで判定するだけ（ui.js の後、debuglog.js の前に読む） |
-| `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）と1日目の練習 `TUT_PRACTICE`（`kind`：`do`＝光っている所だけ押せる・`watch`＝暗くせず待つ。`done()` で次へ）・開けない日の `TUT_REST`、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す（debuglog.js の後、main.js の前に読む） |
+| `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）と1日目の練習 `TUT_PRACTICE`（`kind`：`do`＝光っている所だけ押せる・`watch`＝暗くせず待つ。`done()` で次へ）・開けない日の `TUT_REST`、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す。会社の遊び方 `TUT_CO`・`tutCoStart`（v2.2.0〜。`hireMgr` を包む・会社タブを初めて開いたとき） （debuglog.js の後、main.js の前に読む） |
 | `js/theme.js` | イメージカラー（v2.0.0〜）。色の一覧 `THEMES`（`m` 主な色・`c` 差し色・`dm`/`dc` 暗いモード・`h`/`s` 背景の色あい）、`themeApply`（`:root` の CSS 変数を上書き。`mint` は style.css のまま）、お店の絵の色 `PXT`（`r` 屋根など・`c` 看板など。pixel.js が読む）、設定タブの欄 `themeRender`（`#thc`） |
 | `v1/index.html` | ver.1（v1.5.4）の画面（v2.0.0〜）。v1.5.4 の `build.py` の出力を1ファイルで置いたもの。**直さない**（v2 で直した不具合も入っていない）。パスはフォルダが1段深い分だけ変えた（`CG.debug.init` の `url: '../debug'`・`../../hikkoshi/`）。セーブ（`KEY` など）は `/shop-sim/` と同じものを読み書きするので、v2 でセーブの形を変えるときは v1 で読めなくならないか気をつける。設定タブの `#v1c` からリンク。ver.1 の設定タブにも v2 へ戻るリンク（`#v2c`、`../`）を足した |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動、設定タブの更新履歴 `#chg`（`CHANGES` から作る） |
-| `js/company.js` | 店長・会社・複数のお店（v2.1.0〜。events.js の後、actions.js の前に読む）。店ごとの項目 `STK`（切り替えで出し入れ。所持金・日付・天気・幸福度・融資などは会社でひとつ）、店長 `MGR_HIRE`・`MGR_SAL`・`mgrShow`・`mgrNeed`・`hireMgr`、出店場所 `LOCS`（`cust`・`crime`・`fee`・`dis`・`cost`・`pref`・`indoor`・`kind`）と `locF`・`coCust`・`locPref`、シーシャ屋 `FLAV`・`FLUP`・`isShisha`・`kindN`・`upName`・`applyKind`（PRODUCTS をフレーバーと入れ替える。render が店の変化を見て呼ぶ）、会社 `coFound`・資本金 `CAPT`・`capNext`・`capUp`・取引先 `PARTNERS`・`partner`・方針 `POLS`、景気 `NK`・`nkAt`・`econ`、出店 `storeSlots`・`coOpen`・`newStore`・切り替え `coSwitch`、店主がいない店の1日 `coBgDay`・月末 `coBgMonth`、閉店ごとの処理 `coDaily`（engine.js の `endDay` の最後）、会社タブ `coRender`（`#co`）・ステータス `coStat`（`#costm`） |
+| `js/company.js` | 店長・会社・複数のお店（v2.1.0〜。events.js の後、actions.js の前に読む）。店ごとの項目 `STK`（切り替えで出し入れ。所持金・日付・天気・幸福度・融資などは会社でひとつ）、店長 `MGR_HIRE`・`MGR_SAL`・`mgrShow`・`mgrNeed`・`hireMgr`、出店場所 `LOCS`（`cust`・`crime`・`fee`・`dis`・`cost`・`pref`・`indoor`・`kind`）と `locF`・`coCust`・`locPref`、シーシャ屋 `FLAV`・`FLUP`・`isShisha`・`kindN`・`upName`・`applyKind`（PRODUCTS をフレーバーと入れ替える。render が店の変化を見て呼ぶ）、会社 `coFound`・資本金 `CAPT`・`capNext`・`capUp`・取引先 `PARTNERS`・`partner`・方針 `POLS`、景気 `NK`・`nkAt`・`econ`、出店 `storeSlots`・`coOpen`・`newStore`・切り替え `coSwitch`、店主がいない店の1日 `coBgDay`・月末 `coBgMonth`、閉店ごとの処理 `coDaily`（engine.js の `endDay` の最後）、会社タブ `coRender`（`#co`）・ステータス `coStat`（`#costm`）・お店のダッシュボード `coDash`（`#codash`。v2.2.0〜） |
 
 ## 4. 保存キー
 
@@ -50,6 +50,8 @@
 - セーブデータのファイル書き出し・読み込みは付録の「セーブデータ」。
 - 遊び方を見たか（v2.0.0〜）：localStorage `shop-sim-tutorial`（`'1'`＝見た・飛ばした）。ゲームのセーブ・引っ越しには入れない。`js/tutorial.js` の `TUT_KEY`。
 - タブバーを隠したか（v2.0.0〜）：localStorage `shop-sim-tabbar`（`'1'`＝隠す）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/ui.js` の `tabBar`・`TBAR_KEY`。
+- 会社の遊び方を見たか（v2.2.0〜）：localStorage `shop-sim-tutorial-co`（`'1'`＝見た）。`js/tutorial.js` の `TUT_CO_KEY`。
+- 月末の支払い予想を縮めたか（v2.2.0〜）：localStorage `shop-sim-payf`（`'1'`＝縮める）。`js/ui.js` の `PAYF_KEY`。
 - イメージカラー（v2.0.0〜）：localStorage `shop-sim-theme`（`THEMES` の `id`。無いときは `mint`）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/theme.js` の `THEME_KEY`
 - 会社と複数のお店（v2.1.0〜）：`state.co`（`est` 設立済み・`name` 屋号・`cap` 資本金・`pol` 方針・`ek` 景気の位置・`hist` 月ごとの記録〈最大60〉・`tr`/`trTot` 取引収入・`since` 設立日・`seen` 出したことのある場所・`lsel`/`draft` 入力中の値）、`state.stores`（お店の一覧。`STK` の項目。いまいる店の分は古いので `allStores()` で読む）、`state.cur`（いまいる店の番号）、店ごとの `sname`・`loc`・`mgr`・`qual`（天井に来たことがある＝出店枠のもと）。項目を足しただけなので `KEY`・`SAVE_VER` はそのまま。ver.1 の画面はこれらを知らない（読み書きはするが使わない）
 - 実績：localStorage `shop-sim-achv`（`{ id: { at, diff } }`）。ゲームの保存とは別で、やり直し・倒産でも消えない。実績の `id`（`tot<金額>`・`day<日数>`・`sv<金額>`・`inf<日数>`）は公開後に変えない。
@@ -64,6 +66,7 @@
 
 - `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
+- `python3 shop-sim/dev/test-v220.py [出力先]`：v2.2.0 の確認（デバッグ報告#13 ログが店ごと・通算の表示・千円単位・月末の支払い予想の縮小・お店のダッシュボード・会社の遊び方・預金のスライダー・拡大縮小を止める指定）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。ほかのテストは開く前に `shop-sim-tutorial-co` も入れて、会社の遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-company.py [出力先]`：v2.1.0 の店長・会社・出店（条件を満たすまで出ない・雇う・設立・出店・店長の店の売上と月末・切り替え・6か所の絵・シーシャ屋のフレーバー・方針・ステータス画面・読み直し）。スマホ幅と PC 幅。リポジトリ直下で `python3 -m http.server 8090` を先に起動（file:// だと読み直しで localStorage が消えることがある）。
 - `python3 shop-sim/dev/test-tutorial.py [出力先]`：v2.0.0 の遊び方（初回だけ出る・説明10場面＋1日目の練習5場面・光っていない所はふさぐ・スキップ・次からは出ない・設定から見直す・営業中は一時停止・セーブがある人には出ない）。サーバー不要。ほかのテストは開く前に `shop-sim-tutorial` を入れて、遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-v153.py [出力先]`：v1.5.3 の確認（月末の支払い予想・プルダウン・旧ラベル廃止）。サーバー不要。

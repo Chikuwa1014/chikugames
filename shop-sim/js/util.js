@@ -7,6 +7,11 @@ const byId = id => document.getElementById(id);
 
 /** 金額などを桁区切りで整形 */
 const fmt = n => Math.round(n).toLocaleString();
+/** 金額の表示（v2.2.0〜）。1,000万円以上は千円単位（千円未満は切り捨て）で「13,964千円」、それ未満は「¥1,244,620」。マイナスは先頭に「-」 */
+const yen = n => {
+    const a = Math.abs(Math.round(n || 0));
+    return (n < 0 && a ? '-' : '') + (a >= 1e7 ? fmt(Math.floor(a / 1000)) + '千円' : '¥' + fmt(a));
+};
 
 /** 100円単位に丸める（最低100） */
 const r100 = x => Math.max(100, Math.round(x / 100) * 100);

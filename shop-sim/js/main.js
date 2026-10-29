@@ -32,3 +32,11 @@ render();
     tick();
     setTimeout(loop, 1000 / (state.spd || 1));
 })();
+
+/* ---------- 画面の拡大を止める（v2.2.0〜。号口 CLAUDE.md 19 章）----------
+   iPhone の Safari は user-scalable=no を無視するので、2 本指のピンチ（gesture*・2 本以上の touchmove）とダブルタップを止める */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+// スライダーなどを 1 本指で動かし始めたあとは touchmove を止められないので、ポップアップ（.ovbox）の中では 2 本目の指が触れた時点で止める
+document.addEventListener('touchstart', e => { if (e.touches.length > 1 && e.target.closest && e.target.closest('.ovbox')) e.preventDefault(); }, { passive: false });

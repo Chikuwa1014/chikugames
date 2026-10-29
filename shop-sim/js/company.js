@@ -10,7 +10,7 @@
  */
 
 /** 店ごとに持つ状態のキー（切り替えのとき、出し入れする） */
-const STK = ['sname', 'loc', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay'];
+const STK = ['sname', 'loc', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
 
 /** 店長の採用費と月給 */
 const MGR_HIRE = 500000, MGR_SAL = 300000;
@@ -192,6 +192,7 @@ const pickStore = s => JSON.parse(JSON.stringify(STK.reduce((o, k) => (o[k] = s[
 /** 新しいお店（ちいさなお店の初期状態。店長つき） */
 function newStore(name, loc) {
     const f = fresh(), s = pickStore(f);
+    s.log = [];
     Object.assign(s, { sname: name, loc, mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
     return s;
 }
@@ -226,7 +227,7 @@ function coFound(name, cap) {
         return CG.toast('お金が足りません', 2000);
     state.money -= cap + CO_FEE;
     Object.assign(c, { est: true, name, cap, since: state.day, ek: 24 + Math.floor(Math.random() * ((NK.length - 1) * 12 - 24)) });
-    addEvent('🏢 「' + name + '」を設立しました（資本金¥' + fmt(cap) + '）。景気の波が来るようになります');
+    addEvent('🏢 「' + name + '」を設立しました（資本金' + yen(cap) + '）。景気の波が来るようになります');
     render();
     save();
 }
@@ -240,9 +241,9 @@ function capNext() {
     if (n < t.st)
         why.push('お店' + t.st + '店舗以上（いま' + n + '店舗）');
     if (coAvg() < t.s)
-        why.push('全店の月の売上（3ヶ月平均）¥' + fmt(t.s) + '以上（いま¥' + fmt(Math.round(coAvg())) + '）');
+        why.push('全店の月の売上（3ヶ月平均）' + yen(t.s) + '以上（いま' + yen(Math.round(coAvg())) + '）');
     if (state.money < t.v - c.cap)
-        why.push('払い込むお金¥' + fmt(t.v - c.cap));
+        why.push('払い込むお金' + yen(t.v - c.cap));
     return { t, why };
 }
 
@@ -253,7 +254,7 @@ function capUp() {
         return;
     state.money -= N.t.v - state.co.cap;
     state.co.cap = N.t.v;
-    addEvent('🏦 増資しました。資本金¥' + fmt(N.t.v) + '（取引先：' + partner().n + '）');
+    addEvent('🏦 増資しました。資本金' + yen(N.t.v) + '（取引先：' + partner().n + '）');
     render();
     save();
 }
@@ -276,7 +277,7 @@ function coOpen(name, loc) {
     state.stores.push(newStore(name, loc));
     if (!c.seen.includes(loc))
         c.seen.push(loc);
-    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（出店費¥' + fmt(L.cost) + '）。店舗管理から行けます');
+    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（出店費' + yen(L.cost) + '）。店舗管理から行けます');
     render();
     save();
 }
@@ -287,7 +288,8 @@ function coSwitch(i) {
     if (!S || i === state.cur || !S[i] || state.phase !== 'closed' || state.over)
         return;
     S[state.cur] = pickStore(state);
-    Object.assign(state, JSON.parse(JSON.stringify(S[i])));
+    // 営業タブのログもお店ごと（v2.2.0〜。v2.1.0 のセーブの店には無いので空から）
+    Object.assign(state, { log: [] }, JSON.parse(JSON.stringify(S[i])));
     state.cur = i;
     applyKind();
     fill();
@@ -360,13 +362,13 @@ function coBgDay(s) {
     };
     if (R() < 0.01 * ev * L.crime) {
         state.money -= rev;
-        bgEv(tag + 'で強盗被害！本日の売上金¥' + fmt(rev) + 'を奪われました');
+        bgEv(tag + 'で強盗被害！本日の売上金' + yen(rev) + 'を奪われました');
     }
     if (s.clerk > 0 && R() < 0.03 * ev * L.crime) {
         const a = Math.round(rev * (0.05 + R() * 0.2));
         state.money -= a;
         s.clerk--;
-        bgEv(tag + 'で従業員の窃盗！¥' + fmt(a) + 'が盗まれ、解雇しました');
+        bgEv(tag + 'で従業員の窃盗！' + yen(a) + 'が盗まれ、解雇しました');
     }
     if (R() < 0.01 * ev * L.dis && !L.indoor && s.slots > 1) {
         s.shelf.splice(Math.floor(R() * s.shelf.length), 1);
@@ -416,7 +418,7 @@ function coDaily() {
         state.money += a;
         c.tr = (c.tr || 0) + a;
         c.trTot = (c.trTot || 0) + a;
-        addLog('🤝 ' + pt.n + 'との' + P.t + ' +¥' + fmt(a));
+        addLog('🤝 ' + pt.n + 'との' + P.t + ' +' + yen(a));
     };
     if (P.p > 0 && Math.random() < P.p)
         pay();
@@ -431,7 +433,7 @@ function coDaily() {
         c.tr = 0;
         c.ek++;
         if (bgCost)
-            addLog('🏢 ほかのお店の月末の支払い ¥' + fmt(bgCost));
+            addLog('🏢 ほかのお店の月末の支払い ' + yen(bgCost));
     }
 }
 
@@ -448,39 +450,41 @@ function coRender() {
     const ok = state.phase === 'closed' && !state.over;
     const dis = b => (b && ok) ? '' : ' disabled';
     if (!c.est) {
-        const f = '<div class="card co1"><b>🏢 会社を設立する</b><div class="meta">屋号（会社の名前）と資本金を決めます。設立費用¥' + fmt(CO_FEE) + 'と資本金を払い込みます。設立すると景気の波が来るようになり、取引先からの収入と、新しいお店を出せるようになります。</div>'
+        const f = '<div class="card co1"><b>🏢 会社を設立する</b><div class="meta">屋号（会社の名前）と資本金を決めます。設立費用' + yen(CO_FEE) + 'と資本金を払い込みます。設立すると景気の波が来るようになり、取引先からの収入と、新しいお店を出せるようになります。</div>'
             + '<label class="cof">屋号<input id="coname" maxlength="16" placeholder="例：ちくわ商店" value="' + esc(c.draft || '') + '"></label>'
-            + '<label class="cof">資本金<select id="cocap">' + CAPT.slice(0, 3).map(t => '<option value="' + t.v + '"' + (state.money < t.v + CO_FEE ? ' disabled' : '') + '>¥' + fmt(t.v) + '</option>').join('') + '</select></label>'
+            + '<label class="cof">資本金<select id="cocap">' + CAPT.slice(0, 3).map(t => '<option value="' + t.v + '"' + (state.money < t.v + CO_FEE ? ' disabled' : '') + '>' + yen(t.v) + '</option>').join('') + '</select></label>'
             + '<button class="big" data-a="cofound"' + dis(state.money >= CAPT[0].v + CO_FEE) + '>会社を設立する</button>' + (ok ? '' : '<div class="meta svwarn">閉店後に設立できます。</div>') + '</div>';
         if (f !== coHtml)
             el.innerHTML = coHtml = f;
         return;
     }
     const e = econ(), A = allStores(), n = A.length, P = POLS.find(p => p.k === c.pol) || POLS[0], pt = partner(), N = capNext(), sl = storeSlots();
-    let h = '<div class="card co1"><div class="row"><b>🏢 ' + esc(c.name) + '</b><button class="alt cost" data-a="costat">📊 会社のステータス</button></div>'
-        + '<div class="cokv"><span>資本金</span><b>¥' + fmt(c.cap) + '</b><span>景気</span><b>' + econName(e) + '（×' + e.toFixed(2) + '）</b><span>店舗</span><b>' + n + ' / ' + MAX_STORES + '</b><span>取引先</span><b>' + pt.n + '</b></div></div>';
+    let h = '<div class="card co1"><div class="row"><b>🏢 ' + esc(c.name) + '</b><button class="alt cost" data-a="costat">📊 会社のステータス</button></div><button class="big codb" data-a="codash">🏪 お店のダッシュボード</button>'
+        + '<div class="cokv"><span>資本金</span><b>' + yen(c.cap) + '</b><span>景気</span><b>' + econName(e) + '（×' + e.toFixed(2) + '）</b><span>店舗</span><b>' + n + ' / ' + MAX_STORES + '</b><span>取引先</span><b>' + pt.n + '</b></div></div>';
     // 資本金（増資）
     h += '<div class="card"><b>🏦 資本金</b><div class="meta">資本金が大きいほど、取引先の業種が上がり、取引の額が増えます（飲食店：¥1,000万・3店舗／小売店：¥5,000万・5店舗／製造業：¥8,000万・8店舗／金融業：¥1億・10店舗）。</div>'
-        + (N ? '<div class="meta">次：¥' + fmt(N.t.v) + (N.why.length ? '（足りない条件：' + N.why.join('・') + '）' : '（払い込み¥' + fmt(N.t.v - c.cap) + '）') + '</div><button data-a="capup"' + dis(!N.why.length) + '>¥' + fmt(N.t.v) + 'に増資する</button>' : '<div class="meta">資本金は最大です。</div>') + '</div>';
+        + (N ? '<div class="meta">次：' + yen(N.t.v) + (N.why.length ? '（足りない条件：' + N.why.join('・') + '）' : '（払い込み' + yen(N.t.v - c.cap) + '）') + '</div><button data-a="capup"' + dis(!N.why.length) + '>' + yen(N.t.v) + 'に増資する</button>' : '<div class="meta">資本金は最大です。</div>') + '</div>';
     // 会社方針
-    h += '<div class="card"><b>🧭 会社方針</b><div class="meta">方針によって取引先と、収入の入り方が変わります。</div><select data-a="copol" class="cosel"' + (ok ? '' : ' disabled') + '>' + POLS.map(p => '<option value="' + p.k + '"' + (p.k === c.pol ? ' selected' : '') + '>' + p.n + '：' + p.d + '</option>').join('') + '</select><div class="meta">今月の取引収入 ¥' + fmt(c.tr || 0) + '（累計¥' + fmt(c.trTot || 0) + '）</div></div>';
+    h += '<div class="card"><b>🧭 会社方針</b><div class="meta">方針によって取引先と、収入の入り方が変わります。</div><select data-a="copol" class="cosel"' + (ok ? '' : ' disabled') + '>' + POLS.map(p => '<option value="' + p.k + '"' + (p.k === c.pol ? ' selected' : '') + '>' + p.n + '：' + p.d + '</option>').join('') + '</select><div class="meta">今月の取引収入 ' + yen(c.tr || 0) + '（累計' + yen(c.trTot || 0) + '）</div></div>';
     // 店舗管理
     h += '<div class="card"><b>🏪 店舗管理</b><div class="meta">店主（あなた）がいる店は、今までどおり遊べます。ほかの店は店長が営業します（店員の補充・投資は、その店へ行って行います）。店へ行けるのは閉店後です。</div><div class="stl">'
         + A.map((s, i) => {
             const L = locOf(s), here = i === (state.cur || 0), st = here ? '🙋 ここにいます' : (s.mgr || s.clerk > 0) ? '👔 店長が営業中' : '💤 休業中（店員なし）';
-            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月¥' + fmt(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
+            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月' + yen(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
         }).join('') + '</div></div>';
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
-    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は¥' + fmt(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
+    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
         + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店"></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
-            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ¥' + fmt(L.cost) + '</span></span></label>';
+            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
         }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>'
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>';
     if (h !== coHtml)
         el.innerHTML = coHtml = h;
+    if (coDashOpen)
+        coDash(true);
 }
 
 /** 前に描いた会社タブ（同じなら描き直さない。入力中の文字や選択を消さないため） */
@@ -510,7 +514,7 @@ function coStat(on) {
     const now = A.reduce((a, s) => a + (s.mSales || 0), 0), debt = (state.loans || []).reduce((a, l) => a + l.pay * l.left, 0);
     const fixedAll = A.reduce((a, s) => a + r100(4000 * Math.pow(1.6, s.slots - 2) * (s.feeMul || 1) * difficulty().fee * locOf(s).fee) + (s.mgr ? MGR_SAL : 0), 0);
     const mx = Math.max(1, ...H.map(x => x.s));
-    const bars = H.length ? '<div class="cobars">' + H.map(x => '<div class="cob" title="' + x.m + 'ヶ月目 ¥' + fmt(x.s) + '"><i style="height:' + Math.max(2, x.s / mx * 100) + '%"></i><span>' + x.m + '</span></div>').join('') + '</div>' : '<div class="meta">月末が来ると、ここに売上の推移が出ます。</div>';
+    const bars = H.length ? '<div class="cobars">' + H.map(x => '<div class="cob" title="' + x.m + 'ヶ月目 ' + yen(x.s) + '"><i style="height:' + Math.max(2, x.s / mx * 100) + '%"></i><span>' + x.m + '</span></div>').join('') + '</div>' : '<div class="meta">月末が来ると、ここに売上の推移が出ます。</div>';
     // 景気の推移（株価の過去24ヶ月と今後は見せない）
     const pts = [];
     for (let i = 23; i >= 0; i--)
@@ -518,11 +522,64 @@ function coStat(on) {
     const pm = Math.min(...pts), pM = Math.max(...pts), poly = pts.map((v, i) => (i * 300 / 23).toFixed(1) + ',' + (56 - (v - pm) / Math.max(1, pM - pm) * 50).toFixed(1)).join(' ');
     const kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
     el.innerHTML = '<div class="ovbox cobox"><div class="achtop"><b>📊 ' + esc(c.name) + '</b><button class="alt achx" data-a="costclose" aria-label="閉じる">✕</button></div><div class="achbody">'
-        + '<div class="cokv">' + kv('今月の全店売上（途中）', '¥' + fmt(now)) + kv('先月の全店売上', '¥' + fmt(last.s)) + kv('先月の取引収入', '¥' + fmt(last.tr)) + kv('取引収入の累計', '¥' + fmt(c.trTot || 0)) + kv('所持金', '¥' + fmt(Math.round(state.money))) + kv('資本金', '¥' + fmt(c.cap)) + kv('借入の残り', '¥' + fmt(debt)) + kv('純資産（所持金＋預金＋資本金−借入）', '¥' + fmt(Math.round(state.money + (state.sv || 0) + c.cap - debt))) + kv('全店の固定費（テナント料＋店長）', '月¥' + fmt(fixedAll)) + kv('店舗数', A.length + '店舗') + kv('設立した月', '通算' + (c.since ? Math.floor((c.since - 1) / MD) + 1 : 1) + 'ヶ月目') + '</div>'
+        + '<div class="cokv">' + kv('今月の全店売上（途中）', yen(now)) + kv('先月の全店売上', yen(last.s)) + kv('先月の取引収入', yen(last.tr)) + kv('取引収入の累計', yen(c.trTot || 0)) + kv('所持金', yen(Math.round(state.money))) + kv('資本金', yen(c.cap)) + kv('借入の残り', yen(debt)) + kv('純資産（所持金＋預金＋資本金−借入）', yen(Math.round(state.money + (state.sv || 0) + c.cap - debt))) + kv('全店の固定費（テナント料＋店長）', '月' + yen(fixedAll)) + kv('店舗数', A.length + '店舗') + kv('設立した月', '通算' + (c.since ? Math.floor((c.since - 1) / MD) + 1 : 1) + 'ヶ月目') + '</div>'
         + '<h3>全店の月の売上（直近12ヶ月）</h3>' + bars
         + '<h3>景気（株価の動き・直近24ヶ月）　' + econName(econ()) + '</h3><svg class="coeco" viewBox="0 0 300 60" preserveAspectRatio="none"><polyline points="' + poly + '" fill="none" stroke="var(--mint)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
-        + '<h3>店舗ごと（先月）</h3><table class="cotb"><tr><th>店</th><th>場所</th><th>売上</th><th>棚</th><th>店員</th></tr>' + A.map(s => '<tr><td>' + esc(s.sname || '') + '</td><td>' + locOf(s).e + locOf(s).n + '</td><td>¥' + fmt(s.prev || 0) + '</td><td>' + s.slots + '</td><td>' + s.clerk + '</td></tr>').join('') + '</table>'
+        + '<h3>店舗ごと（先月）</h3><table class="cotb"><tr><th>店</th><th>場所</th><th>売上</th><th>棚</th><th>店員</th></tr>' + A.map(s => '<tr><td>' + esc(s.sname || '') + '</td><td>' + locOf(s).e + locOf(s).n + '</td><td>' + yen(s.prev || 0) + '</td><td>' + s.slots + '</td><td>' + s.clerk + '</td></tr>').join('') + '</table>'
         + '</div></div>';
+}
+
+/**
+ * お店のダッシュボード（v2.2.0〜）。会社タブのボタンで開き、全店の状況を1枚ずつのカードで並べる。
+ * カードを押すとその店へ行く（閉店後だけ）。開いている間は render のたびに描き直す（同じなら描き直さない）
+ */
+let coDashOpen = false, coDashHtml = '';
+function coDash(on) {
+    coDashOpen = on;
+    let el = byId('codash');
+    if (!on) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!state.co) {
+        coDashOpen = false;
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'codash';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                coDash(false);
+        });
+        document.body.appendChild(el);
+        coDashHtml = '';
+    }
+    el.hidden = false;
+    const A = allStores(), cur = state.cur || 0, ok = state.phase === 'closed' && !state.over, d = Math.max(state.day, 1), dm = (d - 1) % MD + 1;
+    const sum = k => A.reduce((a, s) => a + (s[k] || 0), 0);
+    const cards = A.map((s, i) => {
+        const L = locOf(s), here = i === cur, sh = (s.shelf || []).filter(Boolean);
+        const st = sh.reduce((a, x) => a + x.st, 0), full = sh.length * (s.cap || 1), pct = full ? Math.round(st / full * 100) : 0;
+        const fee = r100(4000 * Math.pow(1.6, s.slots - 2) * (s.feeMul || 1) * difficulty().fee * L.fee) + (s.mgr ? MGR_SAL : 0);
+        const open = here || s.mgr || s.clerk > 0;
+        const tag = here ? '<span class="dbt here">🙋 ここ</span>' : !open ? '<span class="dbt off">💤 休業</span>' : (s.clean || 0) > 0 ? '<span class="dbt warn">🧹 清掃中</span>' : pct < 15 ? '<span class="dbt warn">⚠️ 在庫少</span>' : '<span class="dbt">👔 営業中</span>';
+        // 今月の売上は、先月の売上に対してどこまで来たか（先月が無い店は棒を出さない）
+        const pv = s.prev || 0, bar = pv > 0 ? Math.min(100, Math.round((s.mSales || 0) / pv * 100)) : 0;
+        const kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
+        return '<button type="button" class="dbc' + (here ? ' here' : '') + '" data-a="dbgo" data-i="' + i + '"' + (here || !ok ? ' disabled' : '') + '>'
+            + '<div class="dbh"><span class="dbe">' + L.e + '</span><span class="dbn"><b>' + esc(s.sname || (i + 1) + '号店') + '</b><small>' + L.n + '・棚' + s.slots + '・店員' + s.clerk + '人</small></span>' + tag + '</div>'
+            + '<div class="dbk">' + kv('今日の売上', yen(s.dRev || 0)) + kv('今月の売上', yen(s.mSales || 0)) + kv('先月の売上', pv ? yen(pv) : '―') + kv('月の固定費', yen(fee)) + '</div>'
+            + (pv > 0 ? '<div class="dbbar"><i style="width:' + bar + '%"></i><span>先月の' + Math.round((s.mSales || 0) / pv * 100) + '%</span></div>' : '')
+            + '<div class="dbbar stock"><i style="width:' + pct + '%"></i><span>在庫 ' + pct + '%</span></div>'
+            + '</button>';
+    }).join('');
+    const h = '<div class="ovbox cobox"><div class="achtop"><b>🏪 お店のダッシュボード</b><button class="alt achx" data-a="codashclose" aria-label="閉じる">✕</button></div><div class="achbody">'
+        + '<div class="cokv">' + '<span>全店の今日の売上</span><b>' + yen(sum('dRev')) + '</b><span>全店の今月の売上（' + dm + '/' + MD + '日）</span><b>' + yen(sum('mSales')) + '</b><span>全店の先月の売上</span><b>' + yen(sum('prev')) + '</b></div>'
+        + '<div class="meta dbm">' + (ok ? 'カードを押すと、そのお店へ行けます。' : '閉店後にお店へ行けます。') + '</div><div class="dbl">' + cards + '</div></div></div>';
+    if (h !== coDashHtml)
+        el.innerHTML = coDashHtml = h;
 }
 
 /** HTML に入れる文字を逃がす */
@@ -556,6 +613,14 @@ document.addEventListener('click', e => {
         coStat(true);
     if (a === 'costclose')
         coStat(false);
+    if (a === 'codash')
+        coDash(true);
+    if (a === 'codashclose')
+        coDash(false);
+    if (a === 'dbgo') {
+        coDash(false);
+        coSwitch(+b.dataset.i);
+    }
 });
 document.addEventListener('change', e => {
     const t = e.target;

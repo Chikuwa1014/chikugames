@@ -10,7 +10,7 @@ errs = []
 with sync_playwright() as p:
     b = p.chromium.launch()
     pg = b.new_page(viewport={'width': 390, 'height': 844})
-    pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1')}catch(e){}")  # v2.0.0：遊び方（チュートリアル）を出さない
+    pg.add_init_script("try{localStorage.setItem('shop-sim-tutorial','1');localStorage.setItem('shop-sim-tutorial-co','1')}catch(e){}")  # v2.0.0：遊び方（チュートリアル）を出さない
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL)
     pg.evaluate("localStorage.clear()")

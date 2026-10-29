@@ -20,7 +20,6 @@ const p2 = CG.p2;
 /** データの概要（難易度・時期・所持金） */
 function saveSummary(s, at) {
     const d = Math.max(s.day || 0, 1), m = Math.floor((d - 1) / MD) + 1, df = DF[s.diff];
-    const yen = v => (v < 0 ? '-' : '') + '¥' + fmt(Math.abs(Math.round(v || 0)));
     let t = (df ? df.n : '?') + ' / ' + (s.day ? m + 'ヶ月目・通算' + s.day + '日' : '開業前') + ' / 所持金 ' + yen(s.money);
     if (s.over)
         t += '（倒産済み）';

@@ -59,7 +59,7 @@ function buy(k, id) {
         if (k === 'slot') {
             state.slotQ = (state.slotQ || 0) + 1;
             addSlot();
-            addLog('棚が' + state.slots + '台に。テナント料は月¥' + fmt(tenantFee()) + 'になります。');
+            addLog('棚が' + state.slots + '台に。テナント料は月' + yen(tenantFee()) + 'になります。');
         }
         if (k === 'cap') {
             state.cap = CAPS[CAPS.indexOf(state.cap) + 1] || state.cap;
@@ -169,7 +169,9 @@ function svMove(dir) {
         state.money += a;
         state.sv -= a;
     }
-    addLog('🏦 預金' + (dir > 0 ? 'に¥' + fmt(a) + 'を預けました' : 'から¥' + fmt(a) + 'を引き出しました'));
+    // 預けた・引き出したら、スライダーは最初の位置（0）に戻す（v2.2.0〜）
+    state.svs = 0;
+    addLog('🏦 預金' + (dir > 0 ? 'に' + yen(a) + 'を預けました' : 'から' + yen(a) + 'を引き出しました'));
     render();
     save();
 }
@@ -186,7 +188,7 @@ function takeLoan() {
     const p = Math.round(a * (1 + intr(m)) / m);
     state.money += a;
     state.loans.push({ left: m, pay: p });
-    addLog('🏦 ¥' + fmt(a) + 'を借りました。月¥' + fmt(p) + '×' + m + 'ヶ月');
+    addLog('🏦 ' + yen(a) + 'を借りました。月' + yen(p) + '×' + m + 'ヶ月');
     render();
     save();
 }

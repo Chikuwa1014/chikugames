@@ -71,7 +71,6 @@ function resultImage() {
     g.drawImage(byId('px'), 48, 200, 576, 276);
     // 成績
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1;
-    const yen = v => (v < 0 ? '-' : '') + '¥' + fmt(Math.abs(Math.round(v)));
     const rows = [
         ['難易度', difficulty().n],
         ['営業日数', m + 'ヶ月目・通算' + state.day + '日'],
