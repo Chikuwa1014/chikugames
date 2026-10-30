@@ -2489,4 +2489,31 @@ button.dbc.here {
 .clrst small { display:block; font-weight:500; color:var(--sub); }
 .clrbox .row { margin-bottom:8px; }
 .clrbox .row button { flex:1; }
-@media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs { animation:none; } .clrbox { transition:none; } }
+/* お店紹介とおしまい（v2.3.1〜） */
+#clrm.s3 .clrbox, #clrm.s3 .clrband { display:none; }
+.clrtour { position:relative; z-index:3; width:100%; max-width:400px; max-height:100%; overflow:auto; padding:12px; box-sizing:border-box; cursor:pointer; touch-action:pan-y; }
+.clrsl { background:var(--card); color:var(--ink); border-radius:20px; border-top:5px solid var(--gold); padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); animation:clrin .45s cubic-bezier(.2,.9,.3,1.1) both; }
+@keyframes clrin { from { transform:translateX(60px) rotate(2deg); opacity:0; } to { transform:none; opacity:1; } }
+.clrno { font-size:13px; font-weight:900; color:var(--coral2); display:flex; justify-content:space-between; }
+.clrno small { color:var(--sub); font-weight:700; }
+.clrpx { position:relative; margin:8px 0 10px; border-radius:12px; overflow:hidden; }
+.clrpx canvas { display:block; width:100%; height:auto; image-rendering:pixelated; animation:clrzoom 4.5s ease-out both; }
+@keyframes clrzoom { from { transform:scale(1.12); } to { transform:scale(1); } }
+.clrpx span { position:absolute; left:50%; top:11.5%; transform:translateX(-50%); font-size:clamp(16px, 5vw, 24px); line-height:1; animation:clrpop .6s .3s cubic-bezier(.2,1.6,.4,1) both; }
+.clrnm { font-size:22px; font-weight:900; text-align:center; margin-bottom:4px; }
+.clrsay { display:flex; gap:10px; align-items:center; background:var(--bg); border-radius:14px; padding:8px 10px; margin-top:8px; animation:clrup .5s .6s ease-out both; }
+.clrsay p { margin:0; font-size:13px; font-weight:700; }
+.clrsay .clrface { width:40px; height:40px; }
+.clrnav { display:flex; justify-content:space-between; align-items:center; margin-top:10px; color:#fff; font-size:12px; opacity:.85; }
+.clrtour .clrnav button { flex:none; width:auto; min-width:0; margin:0; padding:6px 14px; font-size:13px; }
+.clrend { text-align:center; }
+.clrend .clrface.big { width:72px; height:72px; margin:4px auto 6px; display:block; }
+.clrfin { font-size:16px; font-weight:800; color:var(--sub); line-height:1.3; }
+.clrfin b { display:block; font-size:clamp(36px, 11vw, 52px); font-weight:900; color:var(--coral2); letter-spacing:.08em; animation:clrpop .7s .2s cubic-bezier(.2,1.6,.4,1) both; }
+.clrmsg { margin:10px 0 14px; }
+.clrmsg p { font-size:14px; font-weight:700; margin:0 0 8px; line-height:1.6; animation:clrup .6s ease-out both; }
+.clrmsg p:last-child { margin:12px 0 0; }
+.clrmsg b { font-size:17px; font-weight:900; color:var(--coral2); }
+.clrend .row { margin-bottom:8px; }
+.clrend .row button { flex:1; }
+@media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs, .clrsl, .clrpx canvas, .clrpx span, .clrsay, .clrfin b, .clrmsg p { animation:none; } .clrbox { transition:none; } }

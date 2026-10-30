@@ -10,7 +10,7 @@
  */
 
 /** 店ごとに持つ状態のキー（切り替えのとき、出し入れする） */
-const STK = ['sname', 'loc', 'sty', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
+const STK = ['sname', 'loc', 'sty', 'od', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
 
 /** 店長の採用費と月給 */
 const MGR_HIRE = 500000, MGR_SAL = 300000;
@@ -198,7 +198,7 @@ const pickStore = s => JSON.parse(JSON.stringify(STK.reduce((o, k) => (o[k] = s[
 function newStore(name, loc, sty) {
     const f = fresh(), s = pickStore(f);
     s.log = [];
-    Object.assign(s, { sname: name, loc, sty: loc === 'shisha' ? 'normal' : sty || 'normal', mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
+    Object.assign(s, { sname: name, loc, sty: loc === 'shisha' ? 'normal' : sty || 'normal', od: state.day + 1, mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
     return s;
 }
 
@@ -297,7 +297,7 @@ function coSwitch(i) {
         return;
     S[state.cur] = pickStore(state);
     // 営業タブのログもお店ごと（v2.2.0〜。v2.1.0 のセーブの店には無いので空から）
-    Object.assign(state, { log: [], sty: 'normal' }, JSON.parse(JSON.stringify(S[i])));
+    Object.assign(state, { log: [], sty: 'normal', od: 0 }, JSON.parse(JSON.stringify(S[i])));
     state.cur = i;
     applyKind();
     fill();
