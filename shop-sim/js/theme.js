@@ -26,6 +26,9 @@ let themeId = 'mint';
 /** お店の絵の色（pixel.js が読む）。r＝屋根・腰板・窓わく、c＝看板・日よけ */
 const PXT = { r: '#2fbf97', c: '#ff7a68' };
 
+/** イメージカラーのお店の色（スタイルの店は drawPx がスタイルの色に入れ替え、いつものに戻すときはこれを使う。v2.3.0〜） */
+const PXB = { r: '#2fbf97', c: '#ff7a68' };
+
 /** HSL を #rrggbb にする */
 function hslHex(h, s, l) {
     s /= 100;
@@ -51,8 +54,8 @@ const themeDark = () => {
 function themeApply(id) {
     const T = THEMES.find(t => t.id === id) || THEMES[0], st = document.documentElement.style;
     themeId = T.id;
-    PXT.r = T.m;
-    PXT.c = T.id === 'mono' ? '#4a525c' : T.c;
+    PXT.r = PXB.r = T.m;
+    PXT.c = PXB.c = T.id === 'mono' ? '#4a525c' : T.c;
     const names = ['--bg', '--bg2', '--card', '--ink', '--sub', '--line', '--mint', '--mint2', '--mintl', '--mintg', '--coral', '--coral2', '--coral3', '--corall', '--tag', '--tagink', '--ok', '--bar', '--cg-accent'];
     names.forEach(n => st.removeProperty(n));
     if (T.id === 'mint')

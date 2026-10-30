@@ -76,7 +76,8 @@ const sickP = h => h >= 80 ? 0 : h >= 50 ? 0.05 : h >= 35 ? 0.1 : h >= 15 ? 0.15
 const upCost = (id, L) => r100(PRODUCTS[id].b * 15 * Math.pow(1.8, L));
 
 /** 客の性別による商品の買いやすさ */
-const gf = (id, g) => isShisha() ? 1 : (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
+// スタイルの店は、スタイルの「よく買う人」（m 男性・f 女性が2.5倍、もう片方は0.5倍。v2.3.0〜）
+const gf = (id, g) => isShisha() ? 1 : styAlt() ? ({ m: g ? 0.5 : 2.5, f: g ? 2.5 : 0.5 }[styAlt().items[id].g] || 1) : (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
 
 /** アップグレードと原価変動を商品へ反映 */
 function applyUp() {

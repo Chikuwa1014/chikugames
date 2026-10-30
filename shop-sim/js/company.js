@@ -10,7 +10,7 @@
  */
 
 /** 店ごとに持つ状態のキー（切り替えのとき、出し入れする） */
-const STK = ['sname', 'loc', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
+const STK = ['sname', 'loc', 'sty', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
 
 /** 店長の採用費と月給 */
 const MGR_HIRE = 500000, MGR_SAL = 300000;
@@ -113,12 +113,15 @@ const locOf = (s = state) => LOCS[s.loc] || LOCS.suburb;
 
 /** 出店場所の倍率（来店数には景気もかける） */
 const locF = k => locOf()[k];
-const coCust = () => locF('cust') * econ();
+const coCust = () => locF('cust') * econ() * styCust();
 
 /** 商品の売れやすさ（出店場所） */
 const locPref = id => {
-    const f = locOf().pref;
-    return f ? f(id) : 1;
+    const f = locOf().pref, t = styOf();
+    // 駅ナカの「飲食物と雑誌」は、いつもの・しょくりょうひん店だけ（番号で決まっているため。v2.3.0〜）
+    if (!f || (state.loc === 'station' && !(t && (t.id === 'normal' || t.id === 'food'))))
+        return 1;
+    return f(id);
 };
 
 /** シーシャ屋か */
@@ -128,17 +131,19 @@ const isShisha = (s = state) => locOf(s).kind === 'shisha';
 const kindN = () => isShisha() ? FLAV.length : PRODUCTS.length;
 
 /** アップグレード後の名前（L＝1〜7） */
-const upName = (i, L) => isShisha() && i < FLAV.length ? FLAV[i].n + '・' + FLUP[L - 1] : NM[i][L - 1];
+const upName = (i, L) => isShisha() && i < FLAV.length ? FLAV[i].n + '・' + FLUP[L - 1] : styAlt() ? styAlt().items[i].up[L - 1] : NM[i][L - 1];
 
 /** 元の商品の定義（シーシャ屋から戻すときに使う） */
 let PDEF = null;
 
-/** いまの店の扱う品を PRODUCTS に反映する（シーシャ屋はフレーバー） */
+/** いまの店の扱う品を PRODUCTS に反映する（シーシャ屋はフレーバー、スタイルの店はスタイルの商品。styles.js） */
 function applyKind() {
     if (!PDEF)
         PDEF = PRODUCTS.map(p => ({ n0: p.n0 || p.n, e: p.e, b: p.b || p.c, p: p.p, u: p.u }));
     PRODUCTS.forEach((p, i) => {
-        const d = isShisha() && i < FLAV.length ? { n0: FLAV[i].n, e: FLAV[i].e, b: FLAV[i].c, p: Math.round(FLAV[i].c * 1.7), u: FLAV[i].u } : PDEF[i];
+        const t = styAlt(), q = t && t.items[i];
+        const d = isShisha() && i < FLAV.length ? { n0: FLAV[i].n, e: FLAV[i].e, b: FLAV[i].c, p: Math.round(FLAV[i].c * 1.7), u: FLAV[i].u }
+            : q ? { n0: q.n, e: q.e, b: q.c, p: Math.round(q.c * 1.7), u: PDEF[i].u } : PDEF[i];
         Object.assign(p, d);
     });
     applyUp();
@@ -190,10 +195,10 @@ const partner = () => {
 const pickStore = s => JSON.parse(JSON.stringify(STK.reduce((o, k) => (o[k] = s[k], o), {})));
 
 /** 新しいお店（ちいさなお店の初期状態。店長つき） */
-function newStore(name, loc) {
+function newStore(name, loc, sty) {
     const f = fresh(), s = pickStore(f);
     s.log = [];
-    Object.assign(s, { sname: name, loc, mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
+    Object.assign(s, { sname: name, loc, sty: loc === 'shisha' ? 'normal' : sty || 'normal', mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
     return s;
 }
 
@@ -263,21 +268,24 @@ function capUp() {
 const shishaOpen = () => ['suburb', 'downtown', 'uptown', 'dept', 'station'].every(k => (state.co.seen || []).includes(k));
 
 /** 新しいお店を出す */
-function coOpen(name, loc) {
+function coOpen(name, loc, sty) {
     const c = state.co, L = LOCS[loc];
     if (!c || !c.est || !L || state.phase !== 'closed' || state.over || storeSlots() < 1)
         return;
     if (loc === 'shisha' && !shishaOpen())
+        return;
+    if (loc !== 'shisha' && !styOpen().includes(sty || 'normal'))
         return;
     name = String(name || '').trim().slice(0, 16) || (allStores().length + 1) + '号店';
     if (state.money < L.cost)
         return CG.toast('出店費が足りません', 2000);
     state.money -= L.cost;
     state.stores[state.cur] = pickStore(state);
-    state.stores.push(newStore(name, loc));
+    state.stores.push(newStore(name, loc, sty));
     if (!c.seen.includes(loc))
         c.seen.push(loc);
-    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（出店費' + yen(L.cost) + '）。店舗管理から行けます');
+    c.sdraft = '';
+    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（' + (loc === 'shisha' ? '' : styName(state.stores.at(-1)) + '・') + '出店費' + yen(L.cost) + '）。店舗管理から行けます');
     render();
     save();
 }
@@ -289,7 +297,7 @@ function coSwitch(i) {
         return;
     S[state.cur] = pickStore(state);
     // 営業タブのログもお店ごと（v2.2.0〜。v2.1.0 のセーブの店には無いので空から）
-    Object.assign(state, { log: [] }, JSON.parse(JSON.stringify(S[i])));
+    Object.assign(state, { log: [], sty: 'normal' }, JSON.parse(JSON.stringify(S[i])));
     state.cur = i;
     applyKind();
     fill();
@@ -322,17 +330,13 @@ function coBgDay(s) {
         return;
     }
     // 商品の原価と売値（シーシャ屋はフレーバー。アップグレードも反映）
-    const shi = isShisha(s);
-    const pc = id => {
-        const b = shi && id < FLAV.length ? FLAV[id].c : (PDEF ? PDEF[id].b : PRODUCTS[id].b);
-        return Math.round(b * (1 + 0.4 * (s.up[id] || 0)) * (s.cm ? s.cm[id] : 1));
-    };
+    const pc = id => Math.round(baseCost(s, id) * (1 + 0.4 * (s.up[id] || 0)) * (s.cm ? s.cm[id] : 1));
     const pp = id => Math.max(pc(id) + 1, Math.round(pc(id) / (1 - s.margin / 100)));
     const tk = (s.closeH - s.openH) * 5;
     const df = Math.min(1.6, Math.max(0.5, 1 - (s.margin - 40) * 0.015));
-    const rate = (0.35 + 0.18 * s.ad + 0.08 * sh.length) * pwr(state.day) * econ() * L.cust * df * Math.pow(1.2, (s.pays || []).length) * difficulty().cust;
+    const rate = (0.35 + 0.18 * s.ad + 0.08 * sh.length) * pwr(state.day) * econ() * L.cust * styCust(s) * df * Math.pow(1.2, (s.pays || []).length) * difficulty().cust;
     const cust = rate * tk * (0.85 + 0.3 * R());
-    const wt = sh.map(t => Math.pow(80 / pc(t.id), 0.6) * (L.pref ? L.pref(t.id) : 1)), W = wt.reduce((a, b) => a + b, 0);
+    const st = styOf(s), wt = sh.map(t => Math.pow(80 / pc(t.id), 0.6) * (L.pref && !(s.loc === 'station' && !(st && (st.id === 'normal' || st.id === 'food'))) ? L.pref(t.id) : 1)), W = wt.reduce((a, b) => a + b, 0);
     const e = Math.max(0, (s.sk || 0) - (s.dn || 0)), amt = e >= 10 ? 1e9 : 5 * Math.pow(2, e);
     const sold = Math.round(Math.min(cust * (1.25 + 0.05 * s.ad), sh.length * s.cap + Math.max(1, s.clerk) * amt * tk * 0.3));
     let rev = 0, cg = 0;
@@ -470,16 +474,16 @@ function coRender() {
     h += '<div class="card"><b>🏪 店舗管理</b><div class="meta">店主（あなた）がいる店は、今までどおり遊べます。ほかの店は店長が営業します（店員の補充・投資は、その店へ行って行います）。店へ行けるのは閉店後です。</div><div class="stl">'
         + A.map((s, i) => {
             const L = locOf(s), here = i === (state.cur || 0), st = here ? '🙋 ここにいます' : (s.mgr || s.clerk > 0) ? '👔 店長が営業中' : '💤 休業中（店員なし）';
-            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月' + yen(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
+            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・' + styName(s) + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月' + yen(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (isShisha(s) ? '' : '<button class="alt" data-a="costy" data-i="' + i + '">🎨 スタイル</button>') + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
         }).join('') + '</div></div>';
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
     h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
-        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店"></label>'
+        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
             return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
-        }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>'
+        }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>';
     if (h !== coHtml)
         el.innerHTML = coHtml = h;
@@ -607,7 +611,8 @@ document.addEventListener('click', e => {
     }
     if (a === 'coopen') {
         const r = document.querySelector('input[name="loc"]:checked');
-        coOpen(byId('sname').value, r ? r.value : 'suburb');
+        const y = byId('ssty');
+        coOpen(byId('sname').value, r ? r.value : 'suburb', y ? y.value : 'normal');
     }
     if (a === 'costat')
         coStat(true);
@@ -629,10 +634,14 @@ document.addEventListener('change', e => {
         addLog('🧭 会社方針を「' + (POLS.find(p => p.k === t.value) || POLS[0]).n + '」にしました。');
         save();
     }
-    if (t.name === 'loc' && state.co)
+    if (t.name === 'loc' && state.co) {
         state.co.lsel = t.value;
+        render();
+    }
 });
 document.addEventListener('input', e => {
     if (e.target.id === 'coname' && state.co)
         state.co.draft = e.target.value;
+    if (e.target.id === 'sname' && state.co)
+        state.co.sdraft = e.target.value;
 });

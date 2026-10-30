@@ -41,9 +41,10 @@ const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g,
 
 function render() {
     // 店を切り替えた・読み込んだときは、扱う品（シーシャ屋はフレーバー）を入れ替える（v2.1.0〜）
-    if (kindOf !== state || kindLoc !== state.loc) {
+    if (kindOf !== state || kindLoc !== state.loc || kindSty !== state.sty) {
         kindOf = state;
         kindLoc = state.loc;
+        kindSty = state.sty;
         applyKind();
     }
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
@@ -103,6 +104,7 @@ function render() {
     }
     // 設定タブの「🏢 会社の遊び方を見る」は、会社があるときだけ（v2.2.0〜）
     byId('tutcob').hidden = !state.co;
+    byId('clrc').hidden = !(state.co && state.co.clr);
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -129,7 +131,7 @@ function render() {
             pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
         }
         pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
-        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
+        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>' + adLoanCard();
     }
     byId('hp').textContent = Math.floor(state.happy) + '%';
     byId('hb').style.width = state.happy + '%';
@@ -256,7 +258,7 @@ function render() {
 }
 
 /** いまの扱う品がどの店のものか（render が見て、変わったら applyKind する） */
-let kindOf = null, kindLoc = null;
+let kindOf = null, kindLoc = null, kindSty = null;
 
 document.addEventListener('click', e => {
     if (!e.target.closest('[data-a="help"]'))
@@ -548,7 +550,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('v1c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('clrc'), byId('v1c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     P4.append(byId('co'));
