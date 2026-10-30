@@ -6,7 +6,7 @@
 ## 1. 概要
 
 季節や天気、お客さんの動きを読んで商品を仕入れて売る経営シミュレーション。稼いだお金で商品を増やし、棚を広げてお店を育てる。
-ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.3.2・2026-10-30。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
+ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.3.3・2026-10-30。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
 仕様の詳しい中身は末尾の「付録：ゲームの仕様」。
 
 ## 2. URL
@@ -34,7 +34,7 @@
 | `js/share.js` | 倒産ポップアップ `syncOver`・SNS共有（リザルト画像・Xへの投稿・文面のコピー。文面と共有は `CG.share`） |
 | `js/amazake.js` | かまくらボーナスの日（`kamaTick`）と甘酒ミニゲーム（`amaStart`・`syncAma`・`amaClose`） |
 | `js/save.js` | セーブデータのファイル書き出し・読み込み（`exportSave`・`importFile`・`applyLoad`・`syncSave`）、セーブコード（`makeCode`・`readCode`）。作り方・読み方は `CG.save` |
-| `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`（所持金のカード `.mrow` と実績バッジ `#achb`、日付のチップ `#dt.chips`、下のタブバー `#tabs`（`#scr` の後ろ）、一時停止と倍速 `#spd`（店の絵の右下））、ログ欄 `syncLog`、月末の支払い予想の縮小 `payMini`・`paySet`（v2.2.0〜）、ボタン処理 |
+| `js/ui.js` | 画面描画 `render`、タブ構成 `initLayout`（所持金のカード `.mrow` と実績バッジ `#achb`、日付のチップ `#dt.chips`、下のタブバー `#tabs`（`#scr` の後ろ）、一時停止と倍速 `#spd`（店の絵の右下））、ログ欄 `syncLog`、文字の入力中に上の部分とタブバーをたたむ `kbSet`（`html.kb`。v2.3.3〜）と2列の条件 `WIDE_Q`、月末の支払い予想の縮小 `payMini`・`paySet`（v2.2.0〜）、ボタン処理 |
 | `js/achv.js` | 実績（一覧 `ACH_GROUPS`・判定 `achCheck`・バッジ `syncAchBadge`・ポップアップ `syncAch`/`achShow`・リセット `achReset`）。`endDay`・`svMove` を包んで判定するだけ（ui.js の後、debuglog.js の前に読む） |
 | `js/tutorial.js` | 遊び方（チュートリアル。v2.0.0〜）。場面の一覧 `TUT_STEPS`（光らせる場所・開くタブ・文言）と1日目の練習 `TUT_PRACTICE`（`kind`：`do`＝光っている所だけ押せる・`watch`＝暗くせず待つ。`done()` で次へ）・開けない日の `TUT_REST`、開始 `tutStart`・表示 `tutShow`・位置合わせ `tutPlace`・終了 `tutEnd`。`newGame` を包んで、初回だけ出す。会社の遊び方 `TUT_CO`・`tutCoStart`（v2.2.0〜。`hireMgr` を包む・会社タブを初めて開いたとき） （debuglog.js の後、main.js の前に読む） |
 | `js/theme.js` | イメージカラー（v2.0.0〜）。色の一覧 `THEMES`（`m` 主な色・`c` 差し色・`dm`/`dc` 暗いモード・`h`/`s` 背景の色あい）、`themeApply`（`:root` の CSS 変数を上書き。`mint` は style.css のまま）、お店の絵の色 `PXT`（`r` 屋根など・`c` 看板など。pixel.js が読む。v2.3.0〜 `drawPx` がスタイルの店はスタイルの色に入れ替え、イメージカラーの色は `PXB` に置く）、設定タブの欄 `themeRender`（`#thc`） |
@@ -70,6 +70,7 @@
 - `node shop-sim/dev/server.mjs` で本物の `worker/index.js` を手元で動かす（http://localhost:8788/shop-sim/、D1 はメモリのまね、受け取ったログは `/__debug`）。
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
 - `python3 shop-sim/dev/test-v230.py [出力先]`：v2.3.0 の確認（スタイルの選択・出店・営業・店へ行ったときの商品と色・改装・シーシャ屋・読み直し・クリア演出・広告がふだん出ないこと・`?ad=test` での融資・スタイル解放・復活）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。この作業環境では Python の Playwright の版が中の Chromium と合わないことがあるので、そのときは `PW_CHROME=/opt/pw-browsers/chromium` を付ける。
+- `python3 shop-sim/dev/test-v233.py`：v2.3.3 の確認（文字の入力中は上の部分とタブバーをたたみ、やめると戻る。PC 幅ではたたまない）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。
 - `python3 shop-sim/dev/test-v220.py [出力先]`：v2.2.0 の確認（デバッグ報告#13 ログが店ごと・通算の表示・千円単位・月末の支払い予想の縮小・お店のダッシュボード・会社の遊び方・預金のスライダー・拡大縮小を止める指定）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。ほかのテストは開く前に `shop-sim-tutorial-co` も入れて、会社の遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-company.py [出力先]`：v2.1.0 の店長・会社・出店（条件を満たすまで出ない・雇う・設立・出店・店長の店の売上と月末・切り替え・6か所の絵・シーシャ屋のフレーバー・方針・ステータス画面・読み直し）。スマホ幅と PC 幅。リポジトリ直下で `python3 -m http.server 8090` を先に起動（file:// だと読み直しで localStorage が消えることがある）。
 - `python3 shop-sim/dev/test-tutorial.py [出力先]`：v2.0.0 の遊び方（初回だけ出る・説明10場面＋1日目の練習5場面・光っていない所はふさぐ・スキップ・次からは出ない・設定から見直す・営業中は一時停止・セーブがある人には出ない）。サーバー不要。ほかのテストは開く前に `shop-sim-tutorial` を入れて、遊び方を出さないようにしている。

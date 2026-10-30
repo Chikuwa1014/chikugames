@@ -463,6 +463,29 @@ document.addEventListener('change', e => {
 const TBAR_KEY = 'shop-sim-tabbar';
 
 /**
+ * 文字を入力している間は、上の部分（屋根・店の絵・日付のチップ・倍速）とタブバーをたたむ（v2.3.3〜）。
+ * iOS の Chrome などはキーボードが出ると画面の高さが縮み、上の固定部分だけで画面が埋まって入力欄の周りが狭くなるため。
+ * ブラウザの種類では分けず、文字の入力欄（text・textarea など）に触れたら付け、離れたら外す。2列（横画面・PC）のときは付けない。
+ * 自分で店の絵を閉じていたかどうかは変えない（CSS で見えなくするだけ）
+ */
+/** 2列（横画面・PC）になる条件。css/style.css の @media と同じ */
+const WIDE_Q = '(orientation:landscape) and (max-height:560px) and (min-width:560px), (min-width:900px)';
+const kbIn = el => el && el.matches && el.matches('input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="password"], textarea');
+const kbSet = on => {
+    on = on && !matchMedia(WIDE_Q).matches;
+    if (document.documentElement.classList.contains('kb') === on)
+        return;
+    document.documentElement.classList.toggle('kb', on);
+    const el = document.activeElement;
+    // たたんだあとで、入力欄が見える位置へ動かす
+    if (on && kbIn(el))
+        requestAnimationFrame(() => el.scrollIntoView({ block: 'center' }));
+};
+document.addEventListener('focusin', e => kbIn(e.target) && kbSet(true));
+// 別の入力欄へ移るときは focusout のあとに focusin が来るので、少し待ってから外す
+document.addEventListener('focusout', () => setTimeout(() => kbSet(kbIn(document.activeElement)), 120));
+
+/**
  * 月末の支払い予想の縮小（v2.2.0〜）。タップで💵だけの丸に縮め、縮めた💵をタップすると吹き出しで正確な額を出す。
  * 吹き出しの「ひらく」で元に戻す。縮めたかどうかは端末が覚える（localStorage shop-sim-payf。見た目の好みだけなのでセーブには入れない）
  */
@@ -562,7 +585,7 @@ function initLayout() {
     // 画面の向きや大きさが変わったら、隠す量（タブバーの高さ）を測り直す
     addEventListener('resize', () => byId('tabs').classList.contains('off') && tabBar(true, true));
     // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
-    const wide = matchMedia('(orientation:landscape) and (max-height:560px) and (min-width:560px), (min-width:900px)');
+    const wide = matchMedia(WIDE_Q);
     const gc = byId('gl').closest('.card'), ck = byId('clk');
     const place = () => wide.matches ? tp.append(ck, gc) : P0.prepend(ck, gc);
     place();
