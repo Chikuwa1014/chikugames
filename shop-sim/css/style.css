@@ -2519,3 +2519,31 @@ button.dbc.here {
 .clrend .row { margin-bottom:8px; }
 .clrend .row button { flex:1; }
 @media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs, .clrsl, .clrpx canvas, .clrpx span, .clrsay, .clrfin b, .clrmsg p { animation:none; } .clrbox { transition:none; } }
+
+/* ---- 文字を入力している間（キーボードが出ている間）は、上の部分とタブバーをたたんで入力欄の周りを広くする（v2.3.3〜） ----
+   html.kb は js/ui.js の kbSet が付け外しする。所持金のカードだけ小さく残す。2列（横画面・PC）のときは付けない */
+html.kb .awning,
+html.kb #top details.shop,
+html.kb #top #dt,
+html.kb #top #spd,
+html.kb #tabs {
+  display:none !important;
+}
+
+html.kb .mrow {
+  padding:2px 8px 2px 12px;
+  margin-top:4px;
+}
+
+html.kb .money {
+  font-size:17px;
+}
+
+html.kb .money small {
+  font-size:12px;
+}
+
+html.kb button.achb {
+  padding:2px 9px;
+  font-size:11px;
+}
