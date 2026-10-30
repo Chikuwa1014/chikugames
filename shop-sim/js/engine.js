@@ -36,7 +36,7 @@ function endDay() {
         state.over = true;
         addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
     }
-    if (state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
+    if (!isShisha() && !styAlt() && state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（' + yen(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''), 1);
@@ -119,6 +119,7 @@ function endDay() {
     }
     state.phase = 'closed';
     coDaily();
+    clrCheck();
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */

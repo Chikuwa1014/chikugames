@@ -45,7 +45,8 @@ function openEv() {
 
 /** 最終段階の商品によるイベント抽選 */
 function rollProd() {
-    if (isShisha())
+    // シーシャ屋と、いつもの以外のスタイルでは起きない（新しいスタイルのイベントは保留。v2.3.0〜）
+    if (isShisha() || styAlt())
         return;
     const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
     if (on(0) && R() < 0.02) {

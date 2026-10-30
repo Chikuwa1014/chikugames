@@ -848,6 +848,10 @@ function drawPx() {
     const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
     const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
     const bad = badDay();
+    // お店の屋根・看板の色：スタイルの店はスタイルの色、いつもの・シーシャ屋はイメージカラー（v2.3.0〜）
+    const sty = styAlt();
+    PXT.r = sty ? sty.r : PXB.r;
+    PXT.c = sty ? sty.c : PXB.c;
     pxScene(W, se, wt, night, bad);
     pxLights(op, night);
     pxSec();

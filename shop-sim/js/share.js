@@ -157,7 +157,7 @@ function syncOver() {
         }
         catch (e) { }
         o.innerHTML = '<div class="ovbox"><div class="ovhd">💸 倒産しました…</div>' +
-            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + shareBox() +
+            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + adReviveBtn() + shareBox() +
             '<button class="big" data-a="restart">🔄 最初からやり直す</button>' +
             '<button class="alt" data-a="ovclose" style="width:100%">閉じる（お店の様子を見る）</button></div>';
         o.hidden = false;
