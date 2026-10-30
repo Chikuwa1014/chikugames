@@ -562,7 +562,7 @@ function initLayout() {
     // 画面の向きや大きさが変わったら、隠す量（タブバーの高さ）を測り直す
     addEventListener('resize', () => byId('tabs').classList.contains('off') && tabBar(true, true));
     // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
-    const wide = matchMedia('(orientation:landscape) and (max-height:560px), (min-width:900px)');
+    const wide = matchMedia('(orientation:landscape) and (max-height:560px) and (min-width:560px), (min-width:900px)');
     const gc = byId('gl').closest('.card'), ck = byId('clk');
     const place = () => wide.matches ? tp.append(ck, gc) : P0.prepend(ck, gc);
     place();
