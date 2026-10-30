@@ -1686,8 +1686,10 @@ button.achr {
   display:none;
 }
 
-/* ---- 横画面（横向きで高さ 560px 以下）と PC・タブレット（幅 900px 以上）：左に上の部分、右にタブの中身とタブバー ---- */
-@media (orientation:landscape) and (max-height:560px), (min-width:900px) {
+/* ---- 横画面（横向きで高さ 560px 以下）と PC・タブレット（幅 900px 以上）：左に上の部分、右にタブの中身とタブバー ----
+   横画面は幅 560px 以上のときだけ（v2.3.2〜）。iOS の Chrome は、縦向きでもキーボードが出ると画面の高さが縮んで
+   「横向き」と判定され、名前の入力中に横画面の2列に切り替わって表示がくずれたため */
+@media (orientation:landscape) and (max-height:560px) and (min-width:560px), (min-width:900px) {
   body {
     max-width:1280px;
     display:grid;
@@ -1759,7 +1761,7 @@ button.achr {
   }
 }
 
-@media (orientation:landscape) and (max-height:560px) {
+@media (orientation:landscape) and (max-height:560px) and (min-width:560px) {
   #px {
     max-height:42vh;
     object-fit:contain;
