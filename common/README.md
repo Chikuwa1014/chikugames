@@ -46,9 +46,9 @@ CG.room.lobby(document.getElementById('lobby'), room, { nameKey: 'my-game-name',
 | `v1/debug.js` | `CG.debug`：`init`・`add`・`wrap`・`send`・`mount`・`clear`・`log` |
 | `v1/move.js` | `CG.move`：`mount`（セーブの引っ越しの欄）・`collect` |
 | `v1/ad.js` | `CG.ad`：リワード広告。`on`（いまは false＝出さない）・`client`・`ready()`・`kinds()`・`reward({ kind, name })`。URL に `?ad=test` で仮の広告（2026-10-30） |
-| `v1/room.js` | `CG.room`：`create`・`lobby`・`lobbyName`・`codeFromUrl`。部屋の `takeOver`・`rejoin`（親の引き継ぎ。ほりほりもぐもぐ） |
+| `v1/room.js` | `CG.room`：`create`・`lobby`・`lobbyName`・`codeFromUrl`。部屋の `takeOver`・`rejoin`（親の引き継ぎ。ほりほりもぐもぐ）。親は 15 秒ごとに仲介へ ping を送り、切れていたら合い言葉（`key`）でつなぎ直す。子は親がいなければ 10 秒ほど待つ（2026-10-31） |
 | `v1/common.css` | ロビー画面と送信欄の見た目 |
-| `dev/room-test.html`・`dev/test-room.py` | ルームの見本と通しテスト（公開されない） |
+| `dev/room-test.html`・`dev/test-room.py`・`dev/test-reconnect.cjs` | ルームの見本と通しテスト、親の接続が黙って切れたときのテスト（公開されない） |
 
 ## 版の決まり
 
