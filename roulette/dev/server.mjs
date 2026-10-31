@@ -17,6 +17,8 @@ let pendingRaw = null;
 class FakeServerSocket {
   constructor(raw) { this.raw = raw; this.tags = []; }
   accept() {}
+  serializeAttachment(v) { this.att = v; }
+  deserializeAttachment() { return this.att ?? null; }
   send(text) { if (this.raw && !this.raw.destroyed) this.raw.write(frame(Buffer.from(text))); }
   close(code = 1000) { if (this.raw && !this.raw.destroyed) { const b = Buffer.alloc(2); b.writeUInt16BE(code); this.raw.end(frame(b, 0x8)); } }
 }
@@ -68,7 +70,7 @@ server.on("upgrade", async (req, raw) => {
   raw.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
   const { room, state } = getRoom(gm[1] + ":" + code);
   pendingRaw = raw;
-  await room.fetch({ headers: new Headers({ "X-Max-Peers": String(WS_GAMES[gm[1]]) }) });
+  await room.fetch({ url: "http://localhost" + req.url, headers: new Headers({ "X-Max-Peers": String(WS_GAMES[gm[1]]) }) });
   const ws = [...state._set].find((w) => w.raw === raw);   // 満室のときは登録されない
   let buf = Buffer.alloc(0), closed = false;
   const onClose = () => {
