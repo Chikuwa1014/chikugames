@@ -1188,7 +1188,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm, #costm, #codash, #stym {
+#ovm, #ama, #achm, #costm, #codash, #stym, #sbm {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1206,7 +1206,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden], #sbm[hidden] {
   display:none;
 }
 
@@ -2547,3 +2547,42 @@ html.kb button.achb {
   padding:2px 9px;
   font-size:11px;
 }
+/* スタイルビルダー（v2.4.0〜） */
+#sbm { z-index:43; }
+.stmy { font-size:10px; font-weight:800; color:#fff; background:var(--coral2); border-radius:999px; padding:1px 6px; vertical-align:2px; }
+.sbneed { display:grid; gap:6px; margin-top:6px; }
+.sbneed span { font-size:13px; font-weight:800; background:var(--bg); border-radius:10px; padding:6px 10px; }
+.sbneed span.ok { background:var(--mintl); }
+.sbneed small { display:block; font-weight:500; color:var(--sub); font-size:11px; }
+.sbmine { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.sbmine span { font-size:12px; font-weight:700; background:var(--bg); border-radius:10px; padding:4px 8px; }
+.sbbox .clrsay { margin:0 0 12px; animation:none; }
+.sbhi .achtop { margin-bottom:10px; }
+.sbhi .achx { margin-left:auto; }
+.sblater { width:100%; margin-top:8px; }
+.sbbtn { display:flex; flex-direction:column; gap:6px; flex:none; }
+.sbbtn button { flex:none; padding:7px 12px; font-size:12px; }
+.sbnew { margin-top:12px; }
+.sbpv { position:relative; border-radius:12px; overflow:hidden; margin-bottom:10px; }
+.sbpv canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+.sbpv .sbpe { position:absolute; left:50%; top:11.5%; transform:translateX(-50%); font-size:clamp(16px, 5vw, 24px); line-height:1; }
+.sbbox input:not([type=color]), .sbbox select { font:inherit; font-size:16px; padding:7px 8px; border-radius:10px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); min-width:0; box-sizing:border-box; }
+.sbrow { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.sbrow .sbe { width:52px; flex:none; text-align:center; }
+.sbrow .sbn { flex:1; }
+.sbbox .sbd { width:100%; margin-bottom:6px; }
+.sbcol label { flex:1; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--sub); }
+.sbcol input[type=color] { width:44px; height:34px; border:0; padding:0; background:none; flex:none; }
+.sbbal { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--sub); background:var(--bg); border-radius:10px; padding:8px 10px; margin:6px 0; }
+.sbbal b { color:var(--ink); }
+.sbits { display:grid; gap:8px; margin:8px 0; }
+.sbit { border:1.5px solid var(--line); border-radius:12px; padding:8px; }
+.sbit .sbrow { flex-wrap:wrap; margin-bottom:4px; }
+.sbno { font-size:12px; font-weight:900; color:var(--sub); width:18px; flex:none; text-align:center; }
+.sbit .sbn { flex:1 1 120px; }
+.sbit .sbcst { width:110px; flex:1 1 90px; }
+.sbit select { flex:none; }
+.sbit summary { font-size:11px; color:var(--sub); cursor:pointer; }
+.sbups { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; }
+.sberr { color:var(--red); font-size:12px; font-weight:700; margin:6px 0; }
+.sbbox input:disabled, .sbbox select:disabled { opacity:.55; }

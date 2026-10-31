@@ -7,6 +7,7 @@
  * シーシャ屋はフレーバーのお店なので、スタイルは選べない。
  * はじめから選べるのは STY_INIT の4つ。残りは広告を見て1つずつ解放する（1日1回まで。広告が出ていないあいだは解放できない）。
  * 最終段階の商品のイベント（熱ばくだんおにぎりの爆発など）は「いつもの」だけ（新しいスタイルのイベントは保留）。
+ * v2.4.0〜 プレイヤーがスタイルビルダー（builder.js）で作ったスタイル（state.co.myS）も、ここの一覧 styAll に入る（いつでも選べる）。
  */
 
 /** スタイルの一覧。items の並びは棚の解放順（安い順）。g：よく買う人（m 男性・f 女性・a みんな）、up：アップグレード7段階の名前、cust：来店数の倍率 */
@@ -184,8 +185,11 @@ const STYLES = [
 /** はじめから選べるスタイル（いつもの＋3つ） */
 const STY_INIT = ['normal', 'food', 'toy', 'shoes'];
 
+/** 選べるスタイルの全部（12種＋自分で作ったスタイル） */
+const styAll = () => STYLES.concat((state.co && state.co.myS) || []);
+
 /** そのお店のスタイル（シーシャ屋は null） */
-const styOf = (s = state) => isShisha(s) ? null : (STYLES.find(t => t.id === s.sty) || STYLES[0]);
+const styOf = (s = state) => isShisha(s) ? null : (styAll().find(t => t.id === s.sty) || STYLES[0]);
 
 /** 「いつもの」以外のスタイルなら、そのスタイル（いつもの・シーシャ屋は null） */
 const styAlt = (s = state) => {
@@ -206,7 +210,7 @@ const styCust = (s = state) => {
 };
 
 /** 解放したスタイルの id（会社ができる前は、はじめの4つ） */
-const styOpen = () => (state.co && state.co.styU) || STY_INIT;
+const styOpen = () => ((state.co && state.co.styU) || STY_INIT).concat(((state.co && state.co.myS) || []).map(t => t.id));
 
 /** 商品のもとの原価（アップグレード前）。シーシャ屋はフレーバー、スタイルの店はスタイルの商品 */
 const baseCost = (s, id) => {
@@ -230,7 +234,7 @@ const styAdUsed = () => !!(state.co && state.co.styAd === styToday());
 
 /** お店のスタイルを変える（閉店中だけ。棚の在庫は原価で引き取り、解放した棚とアップグレードの段階は同じ番号の商品に引きつぐ） */
 function styChange(i, id) {
-    const A = allStores(), s = A[i], t = STYLES.find(x => x.id === id);
+    const A = allStores(), s = A[i], t = styAll().find(x => x.id === id);
     if (!state.co || !s || !t || state.phase !== 'closed' || state.over || isShisha(s) || !styOpen().includes(id) || (s.sty || 'normal') === id)
         return;
     const fee = styFee(s);
@@ -275,10 +279,10 @@ function styPick() {
     const c = state.co, sel = c.ssel || 'normal', O = styOpen(), shi = (c.lsel || 'suburb') === 'shisha';
     if (shi)
         return '<div class="meta stynote">💨 シーシャ屋はフレーバーのお店なので、スタイルは選べません。</div>';
-    const t = STYLES.find(x => x.id === sel) || STYLES[0];
-    return '<label class="cof">お店のスタイル<select id="ssty">' + STYLES.map(x => '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + (O.includes(x.id) ? '' : ' disabled') + '>' + (O.includes(x.id) ? x.e : '🔒') + ' ' + x.n + '</option>').join('') + '</select></label>'
+    const L = styAll(), t = L.find(x => x.id === sel) || STYLES[0];
+    return '<label class="cof">お店のスタイル<select id="ssty">' + L.map(x => '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + (O.includes(x.id) ? '' : ' disabled') + '>' + (O.includes(x.id) ? x.e : '🔒') + ' ' + x.n + (x.my ? '（自作）' : '') + '</option>').join('') + '</select></label>'
         + '<div class="stypv"><span>' + t.d + '</span><span class="styit">' + t.items.slice(0, 6).map(p => p.e).join('') + '…</span></div>'
-        + (O.length < STYLES.length ? '<div class="meta">🔒 のスタイルは、店舗管理の「🎨 スタイル」から解放できます（' + O.length + ' / ' + STYLES.length + '）。</div>' : '');
+        + (STYLES.some(x => !O.includes(x.id)) ? '<div class="meta">🔒 のスタイルは、店舗管理の「🎨 スタイル」から解放できます（' + STYLES.filter(x => O.includes(x.id)).length + ' / ' + STYLES.length + '）。</div>' : '');
 }
 
 /** スタイルの画面（店舗管理の「🎨 スタイル」。i＝お店の番号、-1 で閉じる） */
@@ -301,12 +305,12 @@ function styPanel(i) {
         document.body.appendChild(el);
     }
     const s = allStores()[i], O = styOpen(), ok = state.phase === 'closed' && !state.over, fee = styFee(s), cur = (s.sty || 'normal'), ad = CG.ad.ready(), used = styAdUsed();
-    const rows = STYLES.map(t => {
+    const rows = styAll().map(t => {
         const op = O.includes(t.id), here = t.id === cur;
         const btn = here ? '<span class="dbt here">いまのスタイル</span>'
             : op ? '<button data-a="stygo" data-v="' + t.id + '"' + (ok && state.money >= fee ? '' : ' disabled') + '>改装する</button>'
                 : ad ? '<button class="alt" data-a="styad" data-v="' + t.id + '"' + (used ? ' disabled' : '') + '>📺 広告で解放</button>' : '<span class="dbt off">🔒 まだ</span>';
-        return '<div class="styr' + (here ? ' here' : '') + (op ? '' : ' lock') + '"><span class="ste">' + (op ? t.e : '🔒') + '</span><div class="stx"><b>' + t.n + '</b><span>' + t.d + '</span><span class="styit">' + t.items.map(p => p.e).join('') + '</span><span class="meta">来店数×' + t.cust + '</span></div>' + btn + '</div>';
+        return '<div class="styr' + (here ? ' here' : '') + (op ? '' : ' lock') + '"><span class="ste">' + (op ? t.e : '🔒') + '</span><div class="stx"><b>' + t.n + (t.my ? ' <small class="stmy">自作</small>' : '') + '</b><span>' + t.d + '</span><span class="styit">' + t.items.map(p => p.e).join('') + '</span><span class="meta">来店数×' + t.cust + '</span></div>' + btn + '</div>';
     }).join('');
     el.innerHTML = '<div class="ovbox cobox"><div class="achtop"><b>🎨 「' + esc(s.sname || (i + 1) + '号店') + '」のスタイル</b><button class="alt achx" data-a="styclose" aria-label="閉じる">✕</button></div><div class="achbody">'
         + '<div class="meta">改装費 ' + yen(fee) + '（' + locOf(s).n + 'の出店費の半分）。棚の在庫は原価で引き取ります。解放した棚とアップグレードの段階は、同じ番号の商品に引きつぎます。' + (ok ? '' : '<b>閉店後に改装できます。</b>') + '</div>'
