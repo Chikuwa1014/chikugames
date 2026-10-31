@@ -161,15 +161,16 @@ const CLR_SAY = {
     car: 'たくさんの人の、はじめてのドライブを送り出してきたお店だね',
     tcg: '放課後になると、カードを広げる声でにぎやかだったね',
     happy: 'その名前のとおり、しあわせを配ってきたお店だね',
+    my: 'きみが考えたお店。世界にひとつだけの、すてきなお店だね',
     shisha: 'ゆっくり煙をくゆらせて、夜を楽しむ大人のお店だったね'
 };
 
 /** 日にちの表示（◯ヶ月目・通算◯日） */
 const clrDate = d => (Math.floor((d - 1) / MD) + 1) + 'ヶ月目・通算' + fmt(d) + '日';
 
-/** お店のドット絵（96×60。屋根と日よけはスタイルの色、看板にスタイルの絵文字） */
-function clrShop(cv, s) {
-    const g = cv.getContext('2d'), t = styAlt(s), R = t ? t.r : PXB.r, C = t ? t.c : PXB.c;
+/** お店のドット絵（96×60。屋根と日よけはスタイルの色、看板にスタイルの絵文字。o を渡すとその色で描く：スタイルビルダーの見本） */
+function clrShop(cv, s, o) {
+    const g = cv.getContext('2d'), t = o || styAlt(s), R = t ? t.r : PXB.r, C = t ? t.c : PXB.c;
     const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
     r(0, 0, 96, 60, '#1d2b4a');
     for (let i = 0; i < 18; i++)
@@ -200,7 +201,7 @@ function clrShop(cv, s) {
 function clrSlide(i) {
     const A = allStores(), s = A[i], L = locOf(s), sh = isShisha(s);
     const od = i === 0 ? 1 : s.od, kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
-    const say = i === 0 ? CLR_SAY.first : sh ? CLR_SAY.shisha : CLR_SAY[(styAlt(s) || {}).id] || CLR_SAY.normal;
+    const say = i === 0 ? CLR_SAY.first : sh ? CLR_SAY.shisha : (styAlt(s) && styAlt(s).my ? CLR_SAY.my : CLR_SAY[(styAlt(s) || {}).id]) || CLR_SAY.normal;
     const emo = sh ? L.e : styOf(s).e;
     return '<div class="clrsl"><div class="clrno">' + (i + 1) + '号店 <small>' + (i + 1) + ' / ' + A.length + '</small></div>'
         + '<div class="clrpx"><canvas width="96" height="60"></canvas><span>' + emo + '</span></div>'

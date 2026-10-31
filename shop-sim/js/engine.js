@@ -120,6 +120,7 @@ function endDay() {
     state.phase = 'closed';
     coDaily();
     clrCheck();
+    sbCheck();
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */

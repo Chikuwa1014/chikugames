@@ -6,7 +6,7 @@
 ## 1. 概要
 
 季節や天気、お客さんの動きを読んで商品を仕入れて売る経営シミュレーション。稼いだお金で商品を増やし、棚を広げてお店を育てる。
-ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.3.3・2026-10-30。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
+ブラウザだけで動く静的ゲーム（HTML/CSS/JS、ライブラリなし、スマホ優先・横画面も可）。共有・セーブ・デバッグ送信の土台は共通部品 `../common/v1/`（号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` の 15 章）。現在のバージョンは `js/data.js` の `VERSION`（v2.4.0・2026-10-31。履歴は `CHANGELOG.md`、画面の更新履歴は `js/data.js` の `CHANGES`）。
 仕様の詳しい中身は末尾の「付録：ゲームの仕様」。
 
 ## 2. URL
@@ -40,6 +40,7 @@
 | `js/theme.js` | イメージカラー（v2.0.0〜）。色の一覧 `THEMES`（`m` 主な色・`c` 差し色・`dm`/`dc` 暗いモード・`h`/`s` 背景の色あい）、`themeApply`（`:root` の CSS 変数を上書き。`mint` は style.css のまま）、お店の絵の色 `PXT`（`r` 屋根など・`c` 看板など。pixel.js が読む。v2.3.0〜 `drawPx` がスタイルの店はスタイルの色に入れ替え、イメージカラーの色は `PXB` に置く）、設定タブの欄 `themeRender`（`#thc`） |
 | `v1/index.html` | ver.1（v1.5.4）の画面（v2.0.0〜）。v1.5.4 の `build.py` の出力を1ファイルで置いたもの。**直さない**（v2 で直した不具合も入っていない）。パスはフォルダが1段深い分だけ変えた（`CG.debug.init` の `url: '../debug'`・`../../hikkoshi/`）。セーブ（`KEY` など）は `/shop-sim/` と同じものを読み書きするので、v2 でセーブの形を変えるときは v1 で読めなくならないか気をつける。設定タブの `#v1c` からリンク。ver.1 の設定タブにも v2 へ戻るリンク（`#v2c`、`../`）を足した |
 | `js/styles.js` | お店のスタイル（v2.3.0〜。company.js の後、actions.js の前に読む）。一覧 `STYLES`（12種。`items` は棚の解放順の12個：`e`・`n`・`c` 原価・`g` よく買う人・`up` アップグレード7段階の名前。`cust` 来店数・`r`/`c` 屋根と看板の色）、はじめに選べる `STY_INIT`、`styOf`・`styAlt`（いつもの以外）・`styName`・`styCust`・`styOpen`（解放済み）・`baseCost`（店ごとの元の原価）、改装 `styFee`・`styChange`、広告で解放 `styAdUnlock`（1日1回 `styAdUsed`）、新しいお店のプルダウン `styPick`（`#ssty`）、スタイルの画面 `styPanel`（`#stym`） |
+| `js/builder.js` | スタイルビルダー（v2.4.0〜。clear.js の後に読む）。解放の条件 `SB_NEED`（10店舗・純資産10億円）・`sbNet`・`sbParts`、`sbCheck`（engine.js の `endDay` の最後。解放した日を `state.co.sbU`）、会社タブのカード `sbCard`、画面 `sbOpen`（`#sbm`。`list`・`edit`・`hello`）・編集の欄 `sbForm`・下書き `sbDraft`・`sbSync`・保存 `sbSave`（記号を消し、安い順に並べ、来店数を `sbCust` で自動）・`sbStart`・`sbDel`。持てる数はじめ `SB_INIT`（3）・広告で1つずつ増やして最大 `SB_MAX`（5）：`sbCap`・`sbSlotAd`（増やした数 `state.co.sbX`） |
 | `js/adgame.js` | 広告のごほうび（v2.3.0〜。広告そのものは共通部品 `CG.ad`。いまは出さない）。倒産からの復活 `adRevive`・`adReviveBtn`、返済不要の融資 `adLoan`・`adLoanAmt`・`adLoanCard`（営業タブの融資の下） |
 | `js/clear.js` | クリア（v2.3.0〜。achv.js の前に読む）。条件 `CLR`・`clrParts`・`clrTot`、`clrCheck`（engine.js の `endDay` の最後）、カットイン `clrShow`（`#clrm`。帯＋紙吹雪と花火の `clrFx`→成績のカード）・`clrClose`・`clrShare`。v2.3.1〜 成績のカードの「お店を見る ▶」でお店紹介 `clrTour`（1店1枚 `clrSlide`・ドット絵 `clrShop`・ひとこと `CLR_SAY`・4.5秒かタップで次へ）→「おしまい」`clrEndHtml`（ちくわくんの言葉 `CLR_THANKS` が1行ずつ出る）。設定タブの `#clrc` |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
@@ -56,7 +57,7 @@
 - 会社の遊び方を見たか（v2.2.0〜）：localStorage `shop-sim-tutorial-co`（`'1'`＝見た）。`js/tutorial.js` の `TUT_CO_KEY`。
 - 月末の支払い予想を縮めたか（v2.2.0〜）：localStorage `shop-sim-payf`（`'1'`＝縮める）。`js/ui.js` の `PAYF_KEY`。
 - イメージカラー（v2.0.0〜）：localStorage `shop-sim-theme`（`THEMES` の `id`。無いときは `mint`）。見た目の好みだけなので、ゲームのセーブ・引っ越しには入れない。`js/theme.js` の `THEME_KEY`
-- 会社と複数のお店（v2.1.0〜）：`state.co`（`est` 設立済み・`name` 屋号・`cap` 資本金・`pol` 方針・`ek` 景気の位置・`hist` 月ごとの記録〈最大60〉・`tr`/`trTot` 取引収入・`since` 設立日・`seen` 出したことのある場所・`lsel`/`draft` 入力中の値）、`state.stores`（お店の一覧。`STK` の項目。いまいる店の分は古いので `allStores()` で読む）、`state.cur`（いまいる店の番号）、店ごとの `sname`・`loc`・`mgr`・`qual`（天井に来たことがある＝出店枠のもと）・`sty`（スタイル。v2.3.0〜、無いときは `normal`）・`od`（開店日。v2.3.1〜、1号店は1日目として扱い、それより前に出した店は無い）。v2.3.0〜 `state.co` に `styU`（解放したスタイル。無いときは `STY_INIT`）・`styAd`（広告で解放した日）・`ssel`/`sdraft`（入力中）・`clr`（クリアした日 `{ day, diff, at }`）、`state` に `adLoan`（返済不要の融資を受けた日）・`revive`（広告で復活した回数）。項目を足しただけなので `KEY`・`SAVE_VER` はそのまま。ver.1 の画面はこれらを知らない（読み書きはするが使わない）
+- 会社と複数のお店（v2.1.0〜）：`state.co`（`est` 設立済み・`name` 屋号・`cap` 資本金・`pol` 方針・`ek` 景気の位置・`hist` 月ごとの記録〈最大60〉・`tr`/`trTot` 取引収入・`since` 設立日・`seen` 出したことのある場所・`lsel`/`draft` 入力中の値）、`state.stores`（お店の一覧。`STK` の項目。いまいる店の分は古いので `allStores()` で読む）、`state.cur`（いまいる店の番号）、店ごとの `sname`・`loc`・`mgr`・`qual`（天井に来たことがある＝出店枠のもと）・`sty`（スタイル。v2.3.0〜、無いときは `normal`）・`od`（開店日。v2.3.1〜、1号店は1日目として扱い、それより前に出した店は無い）。v2.3.0〜 `state.co` に `styU`（解放したスタイル。無いときは `STY_INIT`）・`styAd`（広告で解放した日）・`ssel`/`sdraft`（入力中）・`clr`（クリアした日 `{ day, diff, at }`）・v2.4.0〜 `sbU`（スタイルビルダーを解放した日）・`sbX`（広告で増やした持てる数）・`myS`（作ったスタイル。`STYLES` と同じ形に `my: true`）、`state` に `adLoan`（返済不要の融資を受けた日）・`revive`（広告で復活した回数）。項目を足しただけなので `KEY`・`SAVE_VER` はそのまま。ver.1 の画面はこれらを知らない（読み書きはするが使わない）
 - 実績：localStorage `shop-sim-achv`（`{ id: { at, diff } }`）。ゲームの保存とは別で、やり直し・倒産でも消えない。実績の `id`（`tot<金額>`・`day<日数>`・`sv<金額>`・`inf<日数>`・`clear`）は公開後に変えない。
 
 ## 5. 調整用の数値
@@ -71,6 +72,7 @@
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
 - `python3 shop-sim/dev/test-v230.py [出力先]`：v2.3.0 の確認（スタイルの選択・出店・営業・店へ行ったときの商品と色・改装・シーシャ屋・読み直し・クリア演出・広告がふだん出ないこと・`?ad=test` での融資・スタイル解放・復活）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。この作業環境では Python の Playwright の版が中の Chromium と合わないことがあるので、そのときは `PW_CHROME=/opt/pw-browsers/chromium` を付ける。
 - `python3 shop-sim/dev/test-v233.py`：v2.3.3 の確認（文字の入力中は上の部分とタブバーをたたみ、やめると戻る。PC 幅ではたたまない）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。
+- `python3 shop-sim/dev/test-v240.py [出力先]`：v2.4.0 の確認（スタイルビルダーの解放の条件・お知らせ・作る・直す・消す・はじめ3つまで・`?ad=test` で5つまで増やす・出店と改装で選ぶ・自作の店で営業・読み直し）。起動のしかたは test-v230.py と同じ。
 - `python3 shop-sim/dev/test-v220.py [出力先]`：v2.2.0 の確認（デバッグ報告#13 ログが店ごと・通算の表示・千円単位・月末の支払い予想の縮小・お店のダッシュボード・会社の遊び方・預金のスライダー・拡大縮小を止める指定）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。ほかのテストは開く前に `shop-sim-tutorial-co` も入れて、会社の遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-company.py [出力先]`：v2.1.0 の店長・会社・出店（条件を満たすまで出ない・雇う・設立・出店・店長の店の売上と月末・切り替え・6か所の絵・シーシャ屋のフレーバー・方針・ステータス画面・読み直し）。スマホ幅と PC 幅。リポジトリ直下で `python3 -m http.server 8090` を先に起動（file:// だと読み直しで localStorage が消えることがある）。
 - `python3 shop-sim/dev/test-tutorial.py [出力先]`：v2.0.0 の遊び方（初回だけ出る・説明10場面＋1日目の練習5場面・光っていない所はふさぐ・スキップ・次からは出ない・設定から見直す・営業中は一時停止・セーブがある人には出ない）。サーバー不要。ほかのテストは開く前に `shop-sim-tutorial` を入れて、遊び方を出さないようにしている。
@@ -93,7 +95,6 @@
 ## 8. 残りのタスク
 
 `claude/未実装タスク.md` で管理（issue と機能）。いちばん優先：
-- 【許可済み】ゲーム内のスタイルビルダー（クリアで解放。条件は開発者が別に指示する）
 - 【保留】広告を画面に出す（AdSense の許可が降りたら開発者が指示。`CG.ad.on` と `CG.ad.client`）
 - 【保留】新しいスタイルの商品のイベント（熱ばくだんおにぎりのような最終段階のイベント）
 - 【保留】夜に、車・爆発・6台の事故で割れた窓・煤けた窓が窓の描き直しで消える（v1.5.1の#6の続き。同じ原因）
