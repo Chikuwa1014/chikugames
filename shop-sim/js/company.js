@@ -533,6 +533,62 @@ function coStat(on) {
         + '</div></div>';
 }
 
+/** 閉店後に、隣（左右）のお店へ行く（v2.4.0〜。お店の絵を左右にスワイプしたとき） */
+function coStep(d) {
+    const A = allStores();
+    if (!state.co || A.length < 2 || state.phase !== 'closed' || state.over)
+        return;
+    coSwitch((((state.cur || 0) + d) % A.length + A.length) % A.length);
+}
+
+// お店の絵（.pxw）の上を左右にはらうと、隣のお店へ。ほぼ横のはらいだけを数える（縦のスクロールや小さな動きは無視）
+let swX = null, swY = 0;
+document.addEventListener('touchstart', e => {
+    const on = e.touches.length === 1 && e.target.closest && e.target.closest('.pxw');
+    swX = on ? e.touches[0].clientX : null;
+    swY = on ? e.touches[0].clientY : 0;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+    if (swX === null)
+        return;
+    const dx = e.changedTouches[0].clientX - swX, dy = e.changedTouches[0].clientY - swY;
+    swX = null;
+    if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.5)
+        coStep(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+/**
+ * 店の一覧（v2.4.0〜）。「○号店」のチップをタップすると、ほかのお店へ行く一覧を出す。閉店後だけ行ける。
+ * 開いている間は描き直さない（閉店後にだけ動くため）
+ */
+function coPick(on) {
+    let el = byId('copick');
+    if (!on) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!state.co || allStores().length < 2)
+        return;
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'copick';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                coPick(false);
+        });
+        document.body.appendChild(el);
+    }
+    el.hidden = false;
+    const A = allStores(), cur = state.cur || 0, ok = state.phase === 'closed' && !state.over;
+    el.innerHTML = '<div class="ovbox copbox"><div class="achtop"><b>🏪 お店へ行く</b><button class="alt achx" data-a="copickclose" aria-label="閉じる">✕</button></div><div class="achbody">'
+        + '<div class="meta">' + (ok ? '行きたいお店を選んでください。' : '閉店後に、ほかのお店へ行けます。') + '</div><div class="dbl">'
+        + A.map((s, i) => {
+            const L = locOf(s), here = i === cur;
+            return '<button type="button" class="dbc' + (here ? ' here' : '') + '" data-a="pickgo" data-i="' + i + '"' + (here || !ok ? ' disabled' : '') + '><div class="dbh"><span class="dbe">' + L.e + '</span><span class="dbn"><b>' + esc(s.sname || (i + 1) + '号店') + '</b><small>' + L.n + '</small></span>' + (here ? '<span class="dbt here">🙋 ここ</span>' : '') + '</div></button>';
+        }).join('') + '</div></div></div>';
+}
+
 /**
  * お店のダッシュボード（v2.2.0〜）。会社タブのボタンで開き、全店の状況を1枚ずつのカードで並べる。
  * カードを押すとその店へ行く（閉店後だけ）。開いている間は render のたびに描き直す（同じなら描き直さない）
@@ -618,6 +674,12 @@ document.addEventListener('click', e => {
         coStat(true);
     if (a === 'costclose')
         coStat(false);
+    if (a === 'copickclose')
+        coPick(false);
+    if (a === 'pickgo') {
+        coPick(false);
+        coSwitch(+b.dataset.i);
+    }
     if (a === 'codash')
         coDash(true);
     if (a === 'codashclose')
@@ -644,4 +706,10 @@ document.addEventListener('input', e => {
         state.co.draft = e.target.value;
     if (e.target.id === 'sname' && state.co)
         state.co.sdraft = e.target.value;
+});
+
+// 店のチップ（「○号店」）をタップすると、店の一覧を出す（v2.4.0〜）
+document.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('.chip.sto'))
+        coPick(true);
 });

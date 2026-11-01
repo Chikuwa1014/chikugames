@@ -1188,7 +1188,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm, #costm, #codash, #stym, #sbm {
+#ovm, #ama, #achm, #costm, #codash, #copick, #stym, #sbm {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1206,7 +1206,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden], #sbm[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #copick[hidden], #stym[hidden], #clrm[hidden], #sbm[hidden] {
   display:none;
 }
 
@@ -2591,4 +2591,47 @@ html.kb button.achb {
 .maxnote {
   color:var(--red);
   font-weight:800;
+}
+
+/* 融資の行：2つの選択肢と「借りる」を、枠の中に収める（v2.4.0〜。選択肢の幅で枠からはみ出していた） */
+.row.loanr select {
+  min-width:0;
+}
+
+.row.loanr button.loanb {
+  flex:0 0 auto;
+  padding:8px 12px;
+  white-space:nowrap;
+}
+
+/* 店舗管理のボタン：「この店へ行く」などを1行に収める（v2.4.0〜。スタイルのボタンが増えて2行になっていた） */
+.sti .btns button {
+  flex:1 1 auto;
+  min-width:0;
+  padding:8px 8px;
+  white-space:nowrap;
+  font-size:13px;
+}
+
+/* 店のチップ（○号店）は押せる（v2.4.0〜） */
+.chip.sto {
+  cursor:pointer;
+}
+
+/* 店の一覧（v2.4.0〜） */
+#copick {
+  z-index:42;
+}
+
+.ovbox.copbox {
+  max-height:min(560px, 100%);
+  display:flex;
+  flex-direction:column;
+  padding:14px 16px;
+  border-top-color:var(--mint);
+  overflow:hidden;
+}
+
+.copbox .achbody {
+  overflow-y:auto;
 }
