@@ -45,7 +45,7 @@
 | `js/clear.js` | クリア（v2.3.0〜。achv.js の前に読む）。条件 `CLR`・`clrParts`・`clrTot`、`clrCheck`（engine.js の `endDay` の最後）、カットイン `clrShow`（`#clrm`。帯＋紙吹雪と花火の `clrFx`→成績のカード）・`clrClose`・`clrShare`。v2.3.1〜 成績のカードの「お店を見る ▶」でお店紹介 `clrTour`（1店1枚 `clrSlide`・ドット絵 `clrShop`・ひとこと `CLR_SAY`・4.5秒かタップで次へ）→「おしまい」`clrEndHtml`（ちくわくんの言葉 `CLR_THANKS` が1行ずつ出る）。設定タブの `#clrc` |
 | `js/debuglog.js` | デバッグログ（操作・イベント・エラーを localStorage `shop-sim-debuglog` に直近300件）と送信欄 `syncDbg`・`dbgSend`。記録・送信は `CG.debug`、ここは包む関数と見た目だけ（ui.js の後に読む） |
 | `js/main.js` | 起動、設定タブの更新履歴 `#chg`（`CHANGES` から作る） |
-| `js/company.js` | 店長・会社・複数のお店（v2.1.0〜。events.js の後、actions.js の前に読む）。店ごとの項目 `STK`（切り替えで出し入れ。所持金・日付・天気・幸福度・融資などは会社でひとつ）、店長 `MGR_HIRE`・`MGR_SAL`・`mgrShow`・`mgrNeed`・`hireMgr`、出店場所 `LOCS`（`cust`・`crime`・`fee`・`dis`・`cost`・`pref`・`indoor`・`kind`）と `locF`・`coCust`・`locPref`、シーシャ屋 `FLAV`・`FLUP`・`isShisha`・`kindN`・`upName`・`applyKind`（PRODUCTS をフレーバーと入れ替える。render が店の変化を見て呼ぶ）、会社 `coFound`・資本金 `CAPT`・`capNext`・`capUp`・取引先 `PARTNERS`・`partner`・方針 `POLS`、景気 `NK`・`nkAt`・`econ`、出店 `storeSlots`・`coOpen`・`newStore`・切り替え `coSwitch`、店主がいない店の1日 `coBgDay`・月末 `coBgMonth`、閉店ごとの処理 `coDaily`（engine.js の `endDay` の最後）、会社タブ `coRender`（`#co`）・ステータス `coStat`（`#costm`）・お店のダッシュボード `coDash`（`#codash`。v2.2.0〜） |
+| `js/company.js` | 店長・会社・複数のお店（v2.1.0〜。events.js の後、actions.js の前に読む）。店ごとの項目 `STK`（切り替えで出し入れ。所持金・日付・天気・幸福度・融資などは会社でひとつ）、店長 `MGR_HIRE`・`MGR_SAL`・`mgrShow`・`mgrNeed`・`hireMgr`、出店場所 `LOCS`（`cust`・`crime`・`fee`・`dis`・`cost`・`pref`・`indoor`・`kind`）と `locF`・`coCust`・`locPref`、シーシャ屋 `FLAV`・`FLUP`・`isShisha`・`kindN`・`upName`・`applyKind`（PRODUCTS をフレーバーと入れ替える。render が店の変化を見て呼ぶ）、会社 `coFound`・資本金 `CAPT`・`capNext`・`capUp`・取引先 `PARTNERS`・`partner`・方針 `POLS`、景気 `NK`・`nkAt`・`econ`、出店 `storeSlots`・`coOpen`・`newStore`・切り替え `coSwitch`、店主がいない店の1日 `coBgDay`・月末 `coBgMonth`、閉店ごとの処理 `coDaily`（engine.js の `endDay` の最後）、会社タブ `coRender`（`#co`）・ステータス `coStat`（`#costm`）・お店のダッシュボード `coDash`（`#codash`。v2.2.0〜） |。お店の絵の左右スワイプ `coStep`・店の一覧 `coPick`（`#copick`。v2.4.1〜）
 
 ## 4. 保存キー
 
@@ -72,6 +72,7 @@
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
 - `python3 shop-sim/dev/test-v230.py [出力先]`：v2.3.0 の確認（スタイルの選択・出店・営業・店へ行ったときの商品と色・改装・シーシャ屋・読み直し・クリア演出・広告がふだん出ないこと・`?ad=test` での融資・スタイル解放・復活）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。この作業環境では Python の Playwright の版が中の Chromium と合わないことがあるので、そのときは `PW_CHROME=/opt/pw-browsers/chromium` を付ける。
 - `python3 shop-sim/dev/test-v233.py`：v2.3.3 の確認（文字の入力中は上の部分とタブバーをたたみ、やめると戻る。PC 幅ではたたまない）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。
+- `python3 shop-sim/dev/test-v241.py [出力先]`：v2.4.1 の確認（融資の行の収まり・店舗管理のボタンの1行・10店舗の入力・お店の絵の左右スワイプ・○号店の一覧）。先に `python3 -m http.server 8090` を起動。
 - `python3 shop-sim/dev/test-v240.py [出力先]`：v2.4.0 の確認（スタイルビルダーの解放の条件・お知らせ・作る・直す・消す・はじめ3つまで・`?ad=test` で5つまで増やす・出店と改装で選ぶ・自作の店で営業・読み直し）。起動のしかたは test-v230.py と同じ。
 - `python3 shop-sim/dev/test-v220.py [出力先]`：v2.2.0 の確認（デバッグ報告#13 ログが店ごと・通算の表示・千円単位・月末の支払い予想の縮小・お店のダッシュボード・会社の遊び方・預金のスライダー・拡大縮小を止める指定）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。ほかのテストは開く前に `shop-sim-tutorial-co` も入れて、会社の遊び方を出さないようにしている。
 - `python3 shop-sim/dev/test-company.py [出力先]`：v2.1.0 の店長・会社・出店（条件を満たすまで出ない・雇う・設立・出店・店長の店の売上と月末・切り替え・6か所の絵・シーシャ屋のフレーバー・方針・ステータス画面・読み直し）。スマホ幅と PC 幅。リポジトリ直下で `python3 -m http.server 8090` を先に起動（file:// だと読み直しで localStorage が消えることがある）。
