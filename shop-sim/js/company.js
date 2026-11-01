@@ -479,10 +479,10 @@ function coRender() {
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
     h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
-        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"></label>'
+        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"' + (n >= MAX_STORES ? ' disabled' : '') + '></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
-            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
+            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + (n >= MAX_STORES ? ' disabled' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
         }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>' + sbCard();
     if (h !== coHtml)
@@ -531,6 +531,62 @@ function coStat(on) {
         + '<h3>景気（株価の動き・直近24ヶ月）　' + econName(econ()) + '</h3><svg class="coeco" viewBox="0 0 300 60" preserveAspectRatio="none"><polyline points="' + poly + '" fill="none" stroke="var(--mint)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
         + '<h3>店舗ごと（先月）</h3><table class="cotb"><tr><th>店</th><th>場所</th><th>売上</th><th>棚</th><th>店員</th></tr>' + A.map(s => '<tr><td>' + esc(s.sname || '') + '</td><td>' + locOf(s).e + locOf(s).n + '</td><td>' + yen(s.prev || 0) + '</td><td>' + s.slots + '</td><td>' + s.clerk + '</td></tr>').join('') + '</table>'
         + '</div></div>';
+}
+
+/** 閉店後に、隣（左右）のお店へ行く（v2.4.0〜。お店の絵を左右にスワイプしたとき） */
+function coStep(d) {
+    const A = allStores();
+    if (!state.co || A.length < 2 || state.phase !== 'closed' || state.over)
+        return;
+    coSwitch((((state.cur || 0) + d) % A.length + A.length) % A.length);
+}
+
+// お店の絵（.pxw）の上を左右にはらうと、隣のお店へ。ほぼ横のはらいだけを数える（縦のスクロールや小さな動きは無視）
+let swX = null, swY = 0;
+document.addEventListener('touchstart', e => {
+    const on = e.touches.length === 1 && e.target.closest && e.target.closest('.pxw');
+    swX = on ? e.touches[0].clientX : null;
+    swY = on ? e.touches[0].clientY : 0;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+    if (swX === null)
+        return;
+    const dx = e.changedTouches[0].clientX - swX, dy = e.changedTouches[0].clientY - swY;
+    swX = null;
+    if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.5)
+        coStep(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+/**
+ * 店の一覧（v2.4.0〜）。「○号店」のチップをタップすると、ほかのお店へ行く一覧を出す。閉店後だけ行ける。
+ * 開いている間は描き直さない（閉店後にだけ動くため）
+ */
+function coPick(on) {
+    let el = byId('copick');
+    if (!on) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!state.co || allStores().length < 2)
+        return;
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'copick';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                coPick(false);
+        });
+        document.body.appendChild(el);
+    }
+    el.hidden = false;
+    const A = allStores(), cur = state.cur || 0, ok = state.phase === 'closed' && !state.over;
+    el.innerHTML = '<div class="ovbox copbox"><div class="achtop"><b>🏪 お店へ行く</b><button class="alt achx" data-a="copickclose" aria-label="閉じる">✕</button></div><div class="achbody">'
+        + '<div class="meta">' + (ok ? '行きたいお店を選んでください。' : '閉店後に、ほかのお店へ行けます。') + '</div><div class="dbl">'
+        + A.map((s, i) => {
+            const L = locOf(s), here = i === cur;
+            return '<button type="button" class="dbc' + (here ? ' here' : '') + '" data-a="pickgo" data-i="' + i + '"' + (here || !ok ? ' disabled' : '') + '><div class="dbh"><span class="dbe">' + L.e + '</span><span class="dbn"><b>' + esc(s.sname || (i + 1) + '号店') + '</b><small>' + L.n + '</small></span>' + (here ? '<span class="dbt here">🙋 ここ</span>' : '') + '</div></button>';
+        }).join('') + '</div></div></div>';
 }
 
 /**
@@ -618,6 +674,12 @@ document.addEventListener('click', e => {
         coStat(true);
     if (a === 'costclose')
         coStat(false);
+    if (a === 'copickclose')
+        coPick(false);
+    if (a === 'pickgo') {
+        coPick(false);
+        coSwitch(+b.dataset.i);
+    }
     if (a === 'codash')
         coDash(true);
     if (a === 'codashclose')
@@ -644,4 +706,10 @@ document.addEventListener('input', e => {
         state.co.draft = e.target.value;
     if (e.target.id === 'sname' && state.co)
         state.co.sdraft = e.target.value;
+});
+
+// 店のチップ（「○号店」）をタップすると、店の一覧を出す（v2.4.0〜）
+document.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('.chip.sto'))
+        coPick(true);
 });
