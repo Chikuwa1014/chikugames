@@ -2593,6 +2593,12 @@ html.kb button.achb {
 .sbups { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; }
 .sberr { color:var(--red); font-size:12px; font-weight:700; margin:6px 0; }
 .sbbox input:disabled, .sbbox select:disabled { opacity:.55; }
+
+/* 出店の上限に達したとき（11号店の表示・v2.4.0〜）：赤字で「出店上限に達しました」 */
+.maxnote {
+  color:var(--red);
+  font-weight:800;
+}
 </style>
 </head>
 <body>
@@ -3498,13 +3504,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.4.0';
+const VERSION = '2.4.1';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['2.4.1', '2026-11-01', '出店の上限（10店舗）に達したとき、新しいお店を出す欄に赤字で「出店上限に達しました」と出し、名前の入力欄の「11号店」の表示を消し、名前と立地の選択を入力できないように'],
     ['2.4.0', '2026-10-31', 'スタイルビルダーを追加：お店が10店舗（出店の上限）になり、純資産が10億円に届いた日の閉店後に解放（ちくわくんがお知らせ）。会社タブの「🛠️ スタイルビルダー」から、自分だけのお店のスタイルを作れる（名前・絵文字・説明・屋根と看板の色・商品12個の絵・名前・原価・よく買う人・上位品の名前）。もとにするスタイルを選んで作り始められる。来店数は原価から自動で決まる（高い商品ばかりならお客さんは少なめ）。作ったスタイルは、新しいお店と「🎨 スタイル」の改装で選べる。作ったスタイルは、はじめ3つまで持てて、広告を見ると1つずつ増やせる（最大5つ。広告はまだ出していないので、いまは3つまで）。お店で使っているスタイルは原価とよく買う人を変えられず、消せない。解放前は、会社タブに条件と今の値を表示'],
     ['2.3.3', '2026-10-30', 'お店の名前などを入力している間（キーボードが出ている間）は、お店の絵・日付・タブバーをたたみ、所持金を小さく表示して、入力欄の周りを広く使えるように（入力が終わると元に戻る。iPhone の Chrome で入力欄の周りがとても狭くなっていたため）'],
     ['2.3.2', '2026-10-30', 'iPhone の Chrome で、お店の名前などを入力しようとしてキーボードが出ると、横画面の2列の表示に切り替わってくずれる不具合を修正'],
@@ -4913,11 +4920,11 @@ function coRender() {
         }).join('') + '</div></div>';
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
-    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
-        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"></label>'
+    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? ' <b class="maxnote">出店上限に達しました</b>' : '') + '</div>'
+        + '<label class="cof">名前<input id="sname" maxlength="16"' + (n >= MAX_STORES ? ' disabled' : '') + ' placeholder="' + (n >= MAX_STORES ? '' : (n + 1) + '号店') + '" value="' + esc(c.sdraft || '') + '"></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
-            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
+            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + (n >= MAX_STORES ? ' disabled' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
         }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>' + sbCard();
     if (h !== coHtml)

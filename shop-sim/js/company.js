@@ -478,11 +478,11 @@ function coRender() {
         }).join('') + '</div></div>';
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
-    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
-        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"></label>'
+    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? ' <b class="maxnote">出店上限に達しました</b>' : '') + '</div>'
+        + '<label class="cof">名前<input id="sname" maxlength="16"' + (n >= MAX_STORES ? ' disabled' : '') + ' placeholder="' + (n >= MAX_STORES ? '' : (n + 1) + '号店') + '" value="' + esc(c.sdraft || '') + '"></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
-            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
+            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + (n >= MAX_STORES ? ' disabled' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
         }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>' + sbCard();
     if (h !== coHtml)

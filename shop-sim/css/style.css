@@ -2586,3 +2586,9 @@ html.kb button.achb {
 .sbups { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; }
 .sberr { color:var(--red); font-size:12px; font-weight:700; margin:6px 0; }
 .sbbox input:disabled, .sbbox select:disabled { opacity:.55; }
+
+/* 出店の上限に達したとき（11号店の表示・v2.4.0〜）：赤字で「出店上限に達しました」 */
+.maxnote {
+  color:var(--red);
+  font-weight:800;
+}
