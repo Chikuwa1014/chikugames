@@ -72,6 +72,7 @@
 - `python3 shop-sim/dev/test-debuglog.py [出力先]`：デバッグログの送信と「投資できない理由」の確認（上のサーバーを先に起動）。
 - `python3 shop-sim/dev/test-v230.py [出力先]`：v2.3.0 の確認（スタイルの選択・出店・営業・店へ行ったときの商品と色・改装・シーシャ屋・読み直し・クリア演出・広告がふだん出ないこと・`?ad=test` での融資・スタイル解放・復活）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。この作業環境では Python の Playwright の版が中の Chromium と合わないことがあるので、そのときは `PW_CHROME=/opt/pw-browsers/chromium` を付ける。
 - `python3 shop-sim/dev/test-v233.py`：v2.3.3 の確認（文字の入力中は上の部分とタブバーをたたみ、やめると戻る。PC 幅ではたたまない）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。
+- `PW_CHROME=/opt/pw-browsers/chromium python3 shop-sim/dev/test-v243.py`：v2.4.3 の確認（預金があれば閉店時の倒産判定の前に自動で引き出す・預金が足りないと倒産・商品切れのとき・ほかの店の売上が入ってから判定）。先に `python3 -m http.server 8090` を起動。
 - `python3 shop-sim/dev/test-v241.py [出力先]`：v2.4.1 の確認（融資の行の収まり・店舗管理のボタンの1行・10店舗の入力・お店の絵の左右スワイプ・○号店の一覧）。先に `python3 -m http.server 8090` を起動。
 - `python3 shop-sim/dev/test-v240.py [出力先]`：v2.4.0 の確認（スタイルビルダーの解放の条件・お知らせ・作る・直す・消す・はじめ3つまで・`?ad=test` で5つまで増やす・出店と改装で選ぶ・自作の店で営業・読み直し）。起動のしかたは test-v230.py と同じ。
 - `python3 shop-sim/dev/test-v220.py [出力先]`：v2.2.0 の確認（デバッグ報告#13 ログが店ごと・通算の表示・千円単位・月末の支払い予想の縮小・お店のダッシュボード・会社の遊び方・預金のスライダー・拡大縮小を止める指定）。リポジトリ直下で `python3 -m http.server 8090` を先に起動。ほかのテストは開く前に `shop-sim-tutorial-co` も入れて、会社の遊び方を出さないようにしている。

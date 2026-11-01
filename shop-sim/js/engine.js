@@ -32,10 +32,6 @@ function endDay() {
         state.overMsg = '幸福度5%未満が7日続き、店主は限界を迎えて店を続けられなくなりました。';
         addLog(state.overMsg);
     }
-    if (state.money < LIMIT && !state.over) {
-        state.over = true;
-        addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
-    }
     if (!isShisha() && !styAlt() && state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
@@ -57,11 +53,6 @@ function endDay() {
             }
             addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m, 1);
         }
-    }
-    if (state.money < 0 && state.shelf.every(s => !s || s.st <= 0) && !state.over) {
-        state.over = true;
-        state.overMsg = '商品が尽き、資金もマイナス。もうダメだ…';
-        addLog(state.overMsg);
     }
     if (!state.dOpen && (state.dn || 0) > 0)
         state.dn--;
@@ -112,15 +103,37 @@ function endDay() {
                 addLog('投資チェック：期間中に棚を増やしたのでスキップ');
             state.slotQ = 0;
         }
-        if (state.money < LIMIT) {
-            state.over = true;
-            addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
-        }
     }
     state.phase = 'closed';
     coDaily();
+    overCheck();
     clrCheck();
     sbCheck();
+}
+
+/**
+ * 資金の倒産判定（v2.4.3）。ほかの店のその日の売上（coDaily）が入った後に呼ぶ。
+ * 倒産ラインを下回る・商品が尽きて資金がマイナスのときは、先に預金から自動で引き出し、それでも足りないときだけ倒産にする。
+ */
+function overCheck() {
+    if (state.over)
+        return;
+    const empty = () => state.shelf.every(s => !s || s.st <= 0);
+    if ((state.money < LIMIT || (state.money < 0 && empty())) && (state.sv || 0) > 0) {
+        const w = Math.min(state.sv, Math.ceil(-state.money));
+        state.money += w;
+        state.sv -= w;
+        addLog('🏦 預金から' + yen(w) + 'を自動で引き出しました。');
+    }
+    if (state.money < LIMIT) {
+        state.over = true;
+        addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
+    }
+    else if (state.money < 0 && empty()) {
+        state.over = true;
+        state.overMsg = '商品が尽き、資金もマイナス。もうダメだ…';
+        addLog(state.overMsg);
+    }
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */
