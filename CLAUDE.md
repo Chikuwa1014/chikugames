@@ -300,3 +300,13 @@ iPhone の Safari は `user-scalable=no` を無視するので、viewport だけ
 | `ugokase-chikuwa/` | うごかせ！ちくわくん | `ugokase-chikuwa-v1`・`ugokase-chikuwa-mute`・`ugokase-chikuwa-debuglog` |
 
 β版のゲーム一覧（公開の種類と状態）は、β版リポジトリの `cards.js` と `README.md` を参照する。
+
+## 検索の分担
+
+- 広い範囲を探すとき（過去の作り方の例・仕様・ほかのゲームでの実装など、どこにあるか分からないもの）は、検索係のサブエージェント `search`（`.claude/agents/search.md`、Haiku・読むだけ）に任せる。場所が分かっている少しのファイルを読むときは、自分で直接読む。
+
+## モデルの使い分け（2026-11-08 開発者の指示。プロジェクトのルール）
+
+- 開発スレッドの既定は Sonnet 5.5（`.claude/settings.json`）。
+- 軽い調査や小さな修正は Haiku 5.5 に任せる（`search`＝広い検索、`small-fix`＝小さな修正）。
+- モック作成などのアーティファクト生成は、完成度を重視して Opus 5.5 を使う（`mock-maker`）。
