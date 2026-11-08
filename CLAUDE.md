@@ -213,7 +213,7 @@
 - テスト：`common/dev/room-test.html`（ルームの見本）と `python3 common/dev/test-room.py`、親の接続が黙って切れたときの `node common/dev/test-reconnect.cjs`（どちらも `node roulette/dev/server.mjs` を先に起動）。
 - 仲介（`worker/index.js` の `MultiRoom`）は、`{"type":"ping"}` に `pong` を返す・`?join=1` で親がいなければ `nohost`・`?reclaim=<key>` で親が古い接続と入れかわる（2026-10-31。キャリア回線で親の接続が黙って切れ、子が「その部屋は見つかりません」になる不具合の修正）。パラメータを送らない古い版・ルーレット・バトルオセロの動きは変わらない。
 - **デバッグ報告の対応履歴**（D1 `chikuwa-debug`、2026-10-25〜）：報告（`debug_logs`）を直したら、対応の記録を `debug_handling`（`log_id`・`status`・`version`・`note`・`at`。履歴なので足していく）に 1 行足す。最新の状態は見る用のビュー `debug_logs_status`（`status`・`handled_ver`・`handled_note`・`handled_at`）で見る。記録のない報告は `open`（未対応）。`status`：`open`（未対応）・`fixed`（修正してコミット済み・まだ号口に出していない）・`released`（号口に公開済み）・`hold`（保留）・`wontfix`（直さない）・`dup`（別の報告と同じ。`note` に番号）・`info`（不具合ではない・テスト送信）。`fixed` のものは号口へ push したら `released` を足す。報告を直す・保留にする・直さないと決めたときに、そのつど足す（根拠がないものは書かない）。
-- 使っているゲーム：`shop-sim`（core・share・save・debug・move・ad）、`hayaoshi-chikupon`（core・share・room・save・move）、`horimogu`（core・share・room・save・move・debug。room の `takeOver`・`rejoin` を使う）、`stage-kobo`・`roulette`・`battle-othello`（core・save・move）、`ugokase-chikuwa`（core・save・move・debug）。
+- 使っているゲーム：`shop-sim`（core・share・save・debug・move・ad）、`hayaoshi-chikupon`（core・share・room・save・move）、`horimogu`（core・share・room・save・move・debug。room の `takeOver`・`rejoin` を使う）、`stage-kobo`・`roulette`・`battle-othello`（core・save・move）、`ugokase-chikuwa`（core・save・move・debug）、`chikunator`（core・share・save・move・ad）。
 - **新しいゲームにも `move.js` の欄を付ける**（5 章の「セーブの持ち運び」）。保存キーを増やしたら `keys` にも足す。
 - `room.js` のロビーは、`?room=` 付き（招待リンク・QR）で開くと部屋コードを入れておく。名前欄（`nameKey`）があるときは名前を入れてから「参加する」を押してもらい、無いときはそのまま自動で参加する（2026-10-24。途中参加で名前を入れられない不具合の修正）。
 
@@ -300,6 +300,7 @@ iPhone の Safari は `user-scalable=no` を無視するので、viewport だけ
 | `ugokase-chikuwa/` | うごかせ！ちくわくん | `ugokase-chikuwa-v1`・`ugokase-chikuwa-mute`・`ugokase-chikuwa-debuglog` |
 | `gomibako-shooter/` | スタイリッシュゴミ箱シューター | `gomibako-shooter-v1`（`gomibako-shooter/CLAUDE.md`） |
 | `nukadoko/` | ぬか床そだて | `nukadoko-save-v1`・`nukadoko-challenge-v1`・`nukadoko-best-v1`（`nukadoko/CLAUDE.md`） |
+| `chikunator/` | チクネーター（思い浮かべた食べ物を当てる推理ゲーム） | `chikunator-v1`（`chikunator/CLAUDE.md`） |
 
 β版のゲーム一覧（公開の種類と状態）は、β版リポジトリの `cards.js` と `README.md` を参照する。
 
