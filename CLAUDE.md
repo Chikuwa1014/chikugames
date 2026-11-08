@@ -128,7 +128,7 @@
 - 共通の世界観は「おでん横丁」。主人公は**ちくわくん**、敵は**こんにゃん**などおでんの具がモチーフ。ゲームに合えば、この世界観とキャラを使い回してよい。
 - ブランドの色：ちくわ色 `#C9772E`・`#E9A55B`・`#F3DDB2`。トップページは明るい／暗いの両方に対応している。各ゲームの配色は自由。
 - 外部から読み込んでよいのは Google Fonts と cdnjs（`cdnjs.cloudflare.com`）だけ。読み込めなくても遊べるようにする。
-- **外部ライブラリ**（2026-11-08 開発者が決定）：ゲームで使うライブラリは、CDN から読まず `common/lib/<名前>/<版数>/` に置いて配る。ライセンスの文書を同じ場所に置く。版を上げるときは新しい版数のフォルダを作り、公開済みのゲームが使う古い版は消さない。いまあるもの：Babylon.js（3D。まだ置いていない）。
+- **外部ライブラリ**（2026-11-08 開発者が決定）：ゲームで使うライブラリは、CDN から読まず `common/lib/<名前>/<版数>/` に置いて配る。ライセンスの文書を同じ場所に置く。版を上げるときは新しい版数のフォルダを作り、公開済みのゲームが使う古い版は消さない。いまあるもの：three.js 0.170.0（3D。`common/lib/three/0.170.0/`。`gomibako-shooter/` で使用）。Babylon.js（3D。号口にはまだ置いていない。β版の `kenkyujo/` で使用）。
 
 ## 9. 保存（localStorage）
 
@@ -298,6 +298,7 @@ iPhone の Safari は `user-scalable=no` を無視するので、viewport だけ
 | `hayaoshi-chikupon/` | 早押し！ちくぽん！ | `hayaoshi-chikupon-best-v1`・`hayaoshi-chikupon-name` |
 | `horimogu/` | ほりほりもぐもぐ | `horimogu-best-v2`・`horimogu-color`・`horimogu-name` ほか（`horimogu/CLAUDE.md`） |
 | `ugokase-chikuwa/` | うごかせ！ちくわくん | `ugokase-chikuwa-v1`・`ugokase-chikuwa-mute`・`ugokase-chikuwa-debuglog` |
+| `gomibako-shooter/` | スタイリッシュゴミ箱シューター | `gomibako-shooter-v1`（`gomibako-shooter/CLAUDE.md`） |
 
 β版のゲーム一覧（公開の種類と状態）は、β版リポジトリの `cards.js` と `README.md` を参照する。
 
