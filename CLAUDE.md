@@ -299,6 +299,7 @@ iPhone の Safari は `user-scalable=no` を無視するので、viewport だけ
 | `horimogu/` | ほりほりもぐもぐ | `horimogu-best-v2`・`horimogu-color`・`horimogu-name` ほか（`horimogu/CLAUDE.md`） |
 | `ugokase-chikuwa/` | うごかせ！ちくわくん | `ugokase-chikuwa-v1`・`ugokase-chikuwa-mute`・`ugokase-chikuwa-debuglog` |
 | `gomibako-shooter/` | スタイリッシュゴミ箱シューター | `gomibako-shooter-v1`（`gomibako-shooter/CLAUDE.md`） |
+| `nukadoko/` | ぬか床そだて | `nukadoko-save-v1`・`nukadoko-challenge-v1`・`nukadoko-best-v1`（`nukadoko/CLAUDE.md`） |
 
 β版のゲーム一覧（公開の種類と状態）は、β版リポジトリの `cards.js` と `README.md` を参照する。
 
