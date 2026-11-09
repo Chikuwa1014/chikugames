@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <title>ぬか床そだて</title>
+<meta name="description" content="ぬか床をかき混ぜて育て、100種の食べ物を食べごろで取り出して売ろう。3日から365日までのチャレンジも。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ちくわゲームズ">
+<meta property="og:title" content="ぬか床そだて">
+<meta property="og:description" content="ぬか床をかき混ぜて育て、100種の食べ物を食べごろで取り出して売ろう。3日から365日までのチャレンジも。">
+<meta property="og:image" content="https://games.chikuwa-hookah.com/nukadoko/og.png">
+<meta property="og:url" content="https://games.chikuwa-hookah.com/nukadoko/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#2b2014">
 <style>
 :root{--bg:#2b2014;--panel:#3d2e1c;--panel2:#4a3822;--ink:#f8eedb;--sub:#cdb48a;--accent:#9fc75a;--accent2:#e8b54a;--bad:#e5603d;--cg-accent:#9fc75a}
 *{box-sizing:border-box}
@@ -112,6 +121,7 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
     <div class="modes" id="modes"></div>
     <div id="move"></div>
     <details><summary>更新履歴</summary>
+      <p>1.0.1（2026-11-09）SNS 共有の文面にひとことと結果（ベスト更新・極み）を追加。リンクのプレビュー（OGP）を追加。</p>
       <p>1.0.0（2026-11-09）号口で公開。β0.3.0 と同じ内容（フリーモード・3日〜365日チャレンジ・食べ物100種）。</p>
       <p>β0.3.0（2026-11-09）フリーモードのほかに、3日・7日・30日・180日・365日チャレンジを追加。</p>
       <p>β0.2.0（2026-11-08）漬ける食べ物を100種に（実もの・葉・根・山菜・果物・卵や魚）。棚を種類別のタブに。</p>
@@ -170,7 +180,7 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
 <script>
 (() => {
 'use strict';
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const KEY_SAVE = 'nukadoko-save-v1';       // フリーモード
 const KEY_CH = 'nukadoko-challenge-v1';    // とちゅうのチャレンジ（1つだけ）
 const KEY_BEST = 'nukadoko-best-v1';       // チャレンジのベスト { 日数: { coins, sold, star3 } }
@@ -618,7 +628,10 @@ $('dexBtn').onclick = () => {
 $('dexClose').onclick = () => { $('mDex').hidden = true; };
 $('shareBtn').onclick = () => {
   const done = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
-  try { CG.share.open({ msg: `ぬか床そだて ${S.day}日目、ぬか漬けを${S.sold}本売って 💰${S.earned}！ 図鑑★3 ${done}/${VEG.length}`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
+  /* ひとこと：極みが出ていれば、いちばん高い食べ物の名前を入れる */
+  const top = VEG.filter(v => (S.dex[v.id] || {}).kiwami).sort((a, b) => b.sell - a.sell)[0];
+  const one = top ? `極みの${top.name}もできた！` : '食べごろをねらって、ぬか床をまぜまぜ🥒';
+  try { CG.share.open({ msg: `ぬか床そだて ${S.day}日目、ぬか漬けを${S.sold}本売って 💰${S.earned}！（図鑑★3 ${done}/${VEG.length}）${one}`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
 };
 $('tabs').onclick = e => { const b = e.target.closest('.tab'); if (!b) return; tab = b.dataset.cat; shelf(); $('shelf').scrollLeft = 0; };
 /* ---- モード ---- */
@@ -655,6 +668,7 @@ function endChallenge() {
   S.ended = true;
   const B = bests(), old = B[S.mode], star3 = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
   const rec = !old || S.coins > old.coins;
+  S.rec = rec; S.star3 = star3;
   if (rec) { B[S.mode] = { coins: S.coins, sold: S.sold, star3 }; CG.ls.set(KEY_BEST, JSON.stringify(B)); }
   CG.ls.del(KEY_CH);
   $('eTitle').textContent = S.mode + '日チャレンジ 終了！';
@@ -666,7 +680,7 @@ function endChallenge() {
 $('eAgain').onclick = () => { $('mEnd').hidden = true; begin(fresh(S.mode)); };
 $('eTitleBtn').onclick = () => { $('mEnd').hidden = true; modes(); $('mTitle').hidden = false; };
 $('eShare').onclick = () => {
-  try { CG.share.open({ msg: `ぬか床そだて ${S.mode}日チャレンジで 💰${S.coins}！ ぬか漬けを${S.sold}本売った`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
+  try { CG.share.open({ msg: `ぬか床そだて ${S.mode}日チャレンジで 💰${S.coins}！（ぬか漬け${S.sold}本・図鑑★3 ${S.star3}/${VEG.length}）${S.rec ? 'ベスト更新！' : ''}食べごろをねらって、ぬか床をまぜまぜ🥒`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
 };
 modes();
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
