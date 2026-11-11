@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="ja">
 <head>
+<!-- 号口のトップ（おでん横丁。2026-11-11〜）。ゲーム1本＝屋台1軒。上半分が横丁の絵、下半分が一覧。
+     ゲームは各フォルダの card.js から集める（下の <script src> を1行足すだけ）。カードに stall: { lantern, noren, owner, name } を書くと屋台の見た目を決められる -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ちくわゲームズ</title>
@@ -9,184 +11,302 @@
 <meta property="og:title" content="ちくわゲームズ">
 <meta property="og:description" content="ブラウザですぐ遊べる、ちいさなゲームのあつまり。">
 <meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#F4F5F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1014" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#12162C">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C9772E'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E9A55B'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFF6EA'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=M+PLUS+1:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./common/v1/yokocho.css">
 <style>
-/* Layout: 1カラム。ブランド行 → 短いヒーロー → ゲームカードのグリッド → フッター */
+/* ============================================================
+   おでん横丁のトップ
+   組み立て：ブランド行 → 横丁の絵（横に流れる屋台の通り）→ ごあいさつ
+            → 品書き（正式版・Beta・裏路地）→ フッター
+   色：だし色（クリーム）・焼き目の茶・ちょうちんの赤・夜空の紺 の4つが基本
+   ============================================================ */
 :root{
-  --bg:#F4F5F7; --surface:#FFFFFF; --sunk:#E9EBEF; --ink:#111318; --muted:#5C6270; --line:#DFE2E8;
-  --accent:#C9772E; --accent-soft:#F6E3CF; --accent-ink:#FFFFFF;
-  --f-display:"Bricolage Grotesque","M PLUS 1",system-ui,sans-serif;
-  --f-body:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --shadow:0 1px 2px rgba(17,19,24,.05),0 8px 24px rgba(17,19,24,.06);
-  --shadow-hi:0 2px 4px rgba(17,19,24,.06),0 18px 40px rgba(17,19,24,.12);
-  color-scheme:light;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  /* 色（--yk-*）と書体（--f-head・--f-body・--f-dot）は common/v1/yokocho.css */
+  --scene-h:384px;
+  --pad-l:max(18px,env(safe-area-inset-left,0px));
+  --pad-r:max(18px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+  background:var(--yk-yozora-deep);
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1014; --surface:#171A20; --sunk:#1F232B; --ink:#ECEEF2; --muted:#9BA2AF; --line:#2A2F39;
-  --accent:#F0A35A; --accent-soft:#3A2A1B; --accent-ink:#1A1007;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-  --shadow-hi:0 2px 4px rgba(0,0,0,.35),0 18px 44px rgba(0,0,0,.45);
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E1014; --surface:#171A20; --sunk:#1F232B; --ink:#ECEEF2; --muted:#9BA2AF; --line:#2A2F39;
-  --accent:#F0A35A; --accent-soft:#3A2A1B; --accent-ink:#1A1007;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-  --shadow-hi:0 2px 4px rgba(0,0,0,.35),0 18px 44px rgba(0,0,0,.45);
-  color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+body{
+  background:var(--yk-yozora-deep);
+  background-image:linear-gradient(180deg,var(--yk-yozora-deep) 0,var(--yk-yozora) 520px,var(--yk-yozora-deep) 100%);
+  color:var(--yk-moji);font-family:var(--f-body);font-size:16px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@supports (overflow:clip){body{overflow-x:clip}}
 a{color:inherit}
-.wrap{max-width:1080px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1080px;margin:0 auto;padding-left:var(--pad-l);padding-right:var(--pad-r)}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:focus-visible{outline:3px solid var(--yk-chochin-glow);outline-offset:3px}
 
-/* ブランド行 */
-.top{padding-block:22px}
+/* ---------- のれん（見出し・戻るボタンで使う布。下に2本の切れ目） ---------- */
+.nuno{
+  display:block;position:relative;background:var(--n,var(--yk-chochin));color:#FFF7E6;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% 66% no-repeat,
+    linear-gradient(90deg,#000 calc(33.33% - 1.5px),transparent 0 calc(33.33% + 1.5px),#000 0 calc(66.66% - 1.5px),transparent 0 calc(66.66% + 1.5px),#000 0) bottom/100% 34.5% no-repeat;
+          mask:linear-gradient(#000 0 0) top/100% 66% no-repeat,
+    linear-gradient(90deg,#000 calc(33.33% - 1.5px),transparent 0 calc(33.33% + 1.5px),#000 0 calc(66.66% - 1.5px),transparent 0 calc(66.66% + 1.5px),#000 0) bottom/100% 34.5% no-repeat;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.22) 0 4px,transparent 4px),linear-gradient(0deg,rgba(0,0,0,.18) 0 3px,transparent 3px);
+}
+
+/* ---------- ブランド行 ---------- */
+.top{padding-top:calc(14px + env(safe-area-inset-top,0px));padding-bottom:12px}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--yk-dashi-hi)}
 .brand svg{width:34px;height:34px;flex:none}
-.brand b{font-family:var(--f-body);font-weight:800;font-size:18px;letter-spacing:.02em}
-.brand small{display:block;font-family:var(--f-display);font-weight:600;font-size:11px;letter-spacing:.18em;color:var(--muted);line-height:1}
-.toplink{font-size:14px;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:999px;border:1px solid var(--line)}
-.toplink:hover{color:var(--ink);border-color:var(--muted)}
+.brand b{display:block;font-family:var(--f-head);font-weight:800;font-size:19px;letter-spacing:.04em;line-height:1.2}
+.brand small{display:block;font-family:var(--f-dot);font-size:11px;letter-spacing:.16em;color:var(--yk-moji-soft);line-height:1.3}
+.toplink{font-family:var(--f-dot);font-size:13px;color:var(--yk-moji);text-decoration:none;padding:5px 12px;background:var(--yk-yaki-deep);border:1px solid #6B3F25}
+.toplink:hover{background:var(--yk-yaki-dark)}
 
-/* ヒーロー */
-.hero{padding-block:36px 40px}
-.hero h1{font-family:var(--f-body);font-weight:800;font-size:clamp(32px,6.2vw,60px);line-height:1.18;letter-spacing:-.01em;margin:0;text-wrap:balance}
-.hero h1 em{font-style:normal;color:var(--accent)}
-.hero p{margin:16px 0 0;color:var(--muted);font-size:17px;max-width:34em}
-.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;padding:0;list-style:none}
-.facts li{font-size:13px;font-weight:500;padding:5px 12px;border-radius:999px;background:var(--sunk);color:var(--muted)}
-.facts li b{color:var(--ink);font-family:var(--f-mono);font-weight:500;margin-right:4px}
+/* ---------- 横丁の絵 ---------- */
+.scene{position:relative;height:var(--scene-h);background:var(--yk-yozora-deep);border-bottom:6px solid var(--yk-yaki-deep);outline:2px solid var(--yk-yaki-sumi)}
+.scene-cv{position:absolute;left:0;top:0;width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.scroller{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--yk-yaki) transparent}
+.scroller::-webkit-scrollbar{height:6px}
+.scroller::-webkit-scrollbar-thumb{background:var(--yk-yaki-dark)}
+.street{position:relative;height:100%}
 
-/* ゲームカード */
-.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
-.section-head h2{font-family:var(--f-display);font-weight:800;font-size:15px;letter-spacing:.16em;text-transform:uppercase;margin:0}
-.section-head span{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:20px;padding-bottom:56px}
-.card{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);text-decoration:none;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
-.card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hi);border-color:transparent}
-.card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-.thumb{position:relative;aspect-ratio:16/9;max-width:100%;background:var(--sunk)}
-.thumb canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block}
-.ver{position:absolute;top:12px;right:12px;font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;background:rgba(14,16,20,.62);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.body{display:flex;flex-direction:column;gap:10px;padding:20px 22px 22px;flex:1}
-.kicker{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
-.card h3{margin:0;font-size:24px;font-weight:800;line-height:1.3}
-.card h3 small{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-top:2px}
-.desc{margin:0;color:var(--muted);font-size:15px}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 0;padding:0;list-style:none}
-.tags li{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-.play{margin-top:auto;padding-top:8px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.play span:first-child{font-size:13px;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;padding:10px 18px;border-radius:999px;background:var(--ink);color:var(--bg);transition:background .2s ease,color .2s ease}
-.btn svg{width:16px;height:16px;transition:transform .2s ease}
-.card:hover .btn{background:var(--accent);color:var(--accent-ink)}
-.card:hover .btn svg{transform:translateX(3px)}
+/* 屋台（キャンバスの上に重ねた本物のリンク） */
+.yatai{position:absolute;display:block;text-decoration:none;color:#FFF7E6;-webkit-tap-highlight-color:transparent}
+.yatai:focus-visible{outline:3px solid var(--yk-chochin-glow);outline-offset:-3px;box-shadow:inset 0 0 0 6px rgba(18,22,44,.85)}
+.yatai-noren{position:absolute;display:grid;place-items:center;text-align:center;padding:0 6px 4px;
+  font-family:var(--f-head);font-weight:800;line-height:1.12;letter-spacing:.03em;color:#FFF7E6;line-break:strict;overflow-wrap:anywhere;
+  text-shadow:1px 0 0 rgba(20,10,4,.75),-1px 0 0 rgba(20,10,4,.75),0 1px 0 rgba(20,10,4,.75),0 -1px 0 rgba(20,10,4,.75),0 2px 0 rgba(20,10,4,.5);
+  transition:transform .25s ease}
+.yatai-noren.l1{font-size:19px}.yatai-noren.l2{font-size:17px}.yatai-noren.l3{font-size:15px}.yatai-noren.l4{font-size:13px}
+.yatai.is-hot .yatai-noren{transform:translateY(-3px)}
+.yatai.is-roji .yatai-noren{color:#DCD3EA}
+.yatai-fuda{position:absolute;left:50%;transform:translateX(-50%) rotate(-3deg);background:var(--yk-dashi-hi);color:var(--yk-chochin-dark);border:2px solid var(--yk-ink);
+  font-family:var(--f-dot);font-size:15px;line-height:1.2;padding:4px 10px 3px;text-align:center;white-space:nowrap}
+.yatai-fuda small{display:block;font-size:11px;color:var(--yk-ink-soft)}
+.yatai-chalk{position:absolute;left:0;right:0;text-align:center;font-family:var(--f-dot);font-size:12px;color:#F3E7CF;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 18px}
+.yatai-kagi{position:absolute;display:inline-flex;align-items:center;gap:4px;background:#2B2440;color:#E8DDF5;border:1px solid #6E5A96;font-family:var(--f-dot);font-size:12px;padding:2px 6px;white-space:nowrap}
+.yatai-kagi svg{width:12px;height:12px}
 
-/* ベータ版の欄（card.js に beta: true があるゲーム） */
-.beta-sec{padding-top:8px}
-.beta-note{margin:-6px 0 16px;color:var(--muted);font-size:14px}
-.ver.beta{background:var(--accent);color:var(--accent-ink);font-weight:700}
-.card.is-beta{border-style:dashed}
-.card.is-beta:hover{border-color:transparent}
+/* 案内役のちくわくんとふきだし */
+.annai{position:absolute;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.annai:focus-visible{outline:3px solid var(--yk-chochin-glow);outline-offset:2px}
+.fukidashi{position:absolute;margin:0;width:180px;background:var(--yk-dashi-hi);color:var(--yk-ink);border:2px solid var(--yk-ink);
+  padding:8px 11px 9px;font-size:14px;line-height:1.55;font-weight:500;transition:opacity .25s ease;pointer-events:none}
+.fukidashi::after{content:"";position:absolute;left:var(--tail,78px);bottom:-8px;width:12px;height:12px;background:var(--yk-dashi-hi);border-right:2px solid var(--yk-ink);border-bottom:2px solid var(--yk-ink);transform:rotate(45deg)}
+.fukidashi.is-fade{opacity:0}
+.fukidashi b{color:var(--yk-chochin-dark);font-weight:700}
 
-/* 限定公開（card.js に lock があるカード）。パスワードが合うまでは中身を伏せる */
-.card.is-locked{cursor:default}
-.card.is-locked:hover{transform:none;box-shadow:var(--shadow);border-color:var(--line)}
-.card.is-locked .thumb canvas{filter:blur(6px) saturate(.6);opacity:.55}
-.lockmark{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink)}
-.lockmark span{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow)}
-.lockmark svg{width:16px;height:16px}
-/* 開発中（card.js に dev: true があるカード）。中身をぼかし、リンクを貼らない */
-.card.is-dev{cursor:default}
-.card.is-dev:hover{transform:none;box-shadow:var(--shadow);border-color:var(--line)}
-.card.is-dev .thumb canvas{filter:blur(6px) saturate(.6);opacity:.55}
-.devmark{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink)}
-.devmark span{font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow)}
-.unlock{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:8px}
-.unlock input{flex:1 1 160px;min-width:0;font:inherit;font-size:15px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--sunk);color:var(--ink)}
-.unlock input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
-.unlock button{font:inherit;font-weight:700;font-size:15px;padding:9px 18px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);cursor:pointer}
-.unlock button:hover{background:var(--accent);color:var(--accent-ink)}
-.unlock button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.unlock-msg{flex-basis:100%;margin:0;font-size:13px;color:var(--muted);min-height:1.5em}
-.unlock-msg.ng{color:#C2412D}
+/* 絵の中の看板の文字（飾り。押せない） */
+.e-moji{position:absolute;display:grid;place-items:center;pointer-events:none;text-align:center;white-space:nowrap}
+.e-moji.kanban{font-family:var(--f-head);font-weight:800;font-size:18px;letter-spacing:.22em;color:#FFE9C2;text-shadow:0 2px 0 #3A2112}
+.e-moji.roji{font-family:var(--f-dot);font-size:15px;letter-spacing:.18em;color:#F0E2C6}
+.e-moji.owari{font-family:var(--f-dot);font-size:11px;line-height:1.25;color:var(--yk-ink)}
 
-/* お知らせ（アドレスの引っ越し。2026-10-27） */
-.notice{display:flex;align-items:center;gap:12px;margin-top:4px;padding:12px 16px;border-radius:16px;background:var(--accent-soft);color:var(--ink);text-decoration:none;font-size:14px;line-height:1.55;border:1px solid transparent;transition:border-color .2s ease}
-.notice:hover{border-color:var(--accent)}
-.notice:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.notice-tag{flex:none;font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink)}
-.notice-t{flex:1;min-width:0}
-.notice-t b{font-family:var(--f-mono);font-weight:500;word-break:break-all}
-.notice svg{flex:none;width:16px;height:16px;transition:transform .2s ease}
-.notice:hover svg{transform:translateX(3px)}
+/* 横スクロールの案内とボタン */
+.scene-nav{position:absolute;z-index:3;right:var(--pad-r);bottom:12px;display:flex;gap:6px}
+.scene-nav button{display:grid;place-items:center;width:44px;height:38px;padding:0;border:2px solid var(--yk-yaki-sumi);background:var(--yk-yaki-deep);color:var(--yk-dashi-hi);cursor:pointer}
+.scene-nav button:hover{background:var(--yk-yaki-dark)}
+.scene-nav button:disabled{opacity:.35;cursor:default;background:var(--yk-yaki-deep)}
+.scene-nav svg{width:18px;height:18px}
+.scene-hint{position:absolute;z-index:2;left:50%;bottom:16px;transform:translateX(-50%);margin:0;pointer-events:none;white-space:nowrap;
+  font-family:var(--f-dot);font-size:13px;color:var(--yk-dashi-hi);background:rgba(18,22,44,.78);border:1px solid var(--yk-yozora-line);padding:3px 10px;transition:opacity .4s ease}
+.scene-hint.is-gone{opacity:0}
+/* スマホ幅では案内がちくわくんに重なるので出さない（ふきだしと右下の矢印で伝える） */
+@media (max-width:640px){.scene-hint{display:none}}
 
-footer{border-top:1px solid var(--line);padding-block:26px 34px;color:var(--muted);font-size:13px}
+/* ---------- ごあいさつ ---------- */
+.intro{padding-block:26px 6px}
+.harigami{display:flex;align-items:flex-start;gap:10px;margin:0 0 22px;padding:11px 14px 11px 12px;background:var(--yk-dashi-hi);color:var(--yk-ink);text-decoration:none;font-size:14px;line-height:1.6;
+  border:1px solid var(--yk-dashi-lo);position:relative;transform:rotate(-.4deg)}
+.harigami::before,.harigami::after{content:"";position:absolute;top:-6px;width:38px;height:12px;background:rgba(233,165,91,.55)}
+.harigami::before{left:14px;transform:rotate(-4deg)}.harigami::after{right:14px;transform:rotate(5deg)}
+.harigami:hover .harigami-t{text-decoration:underline}
+.harigami-tag{flex:none;font-family:var(--f-dot);font-size:12px;color:var(--yk-chochin-dark);border:2px solid var(--yk-chochin);padding:0 5px;margin-top:2px}
+.harigami-t b{font-weight:700;word-break:break-all}
+.harigami svg{flex:none;width:16px;height:16px;margin-top:4px}
+.load-note{margin:0 0 18px;padding:9px 12px;border:2px dashed var(--yk-chochin-glow);color:var(--yk-dashi-hi);font-size:14px;line-height:1.6}
+.intro h1{margin:0;font-family:var(--f-head);font-weight:800;font-size:clamp(25px,6.4vw,42px);line-height:1.3;color:var(--yk-dashi-hi);letter-spacing:.01em;text-wrap:balance}
+.intro h1 em{font-style:normal;color:var(--yk-yaki-hi)}
+.intro p.lead{margin:12px 0 0;color:var(--yk-moji-soft);font-size:16px;max-width:36em}
+.kifuda-row{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0;padding:0;list-style:none}
+.kifuda-row li,.kifuda-row a{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-dot);font-size:13px;line-height:1.4;padding:4px 10px;background:#2E1B0E;border:1px solid #6B3F25;color:var(--yk-moji);text-decoration:none}
+.kifuda-row b{font-family:var(--f-dot);font-weight:400;font-size:15px;color:var(--yk-yaki-hi)}
+.mokuji{margin-top:10px}
+.mokuji a{background:transparent;border-color:var(--yk-yozora-line)}
+.mokuji a:hover{border-color:var(--yk-yaki-hi);color:var(--yk-dashi-hi)}
+.mokuji .ya{color:var(--yk-yaki-hi)}
+
+/* ---------- 品書き（一覧の板） ---------- */
+.board{
+  --b-bg:var(--yk-dashi);--b-ink:var(--yk-ink);--b-soft:var(--yk-ink-soft);--b-kick:var(--yk-chochin-dark);--b-rule:rgba(43,26,14,.32);--b-hover:rgba(201,119,46,.10);
+  position:relative;margin:58px auto 0;max-width:1080px;
+  background-color:var(--b-bg);color:var(--b-ink);
+  background-image:repeating-linear-gradient(0deg,rgba(120,80,30,.035) 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,rgba(120,80,30,.025) 0 1px,transparent 1px 7px);
+  border:8px solid var(--yk-yaki-deep);outline:2px solid var(--yk-yaki-sumi);
+  padding:0 clamp(14px,3.2vw,30px) 10px;
+}
+.board::before,.board::after{content:"";position:absolute;top:-36px;width:2px;height:28px;background:#9A7650}
+.board::before{left:16%}.board::after{right:16%}
+.board-wrap{padding-left:var(--pad-l);padding-right:var(--pad-r)}
+.board-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 14px;flex-wrap:wrap}
+.noren-h{margin:0;position:relative;padding-top:6px}
+.noren-h::before{content:"";position:absolute;left:-8px;right:-8px;top:0;height:6px;background:var(--yk-yaki-sumi)}
+.noren-h .nuno{padding:9px 22px 22px;font-family:var(--f-head);font-weight:800;font-size:20px;line-height:1.2;letter-spacing:.12em}
+.noren-h small{display:block;font-family:var(--f-dot);font-weight:400;font-size:11px;letter-spacing:.08em;opacity:.92;margin-top:2px}
+.board-meta{margin:14px 0 0;font-family:var(--f-dot);font-size:13px;color:var(--b-soft);display:flex;flex-wrap:wrap;gap:2px 12px}
+.board-note{margin:10px 0 0;color:var(--b-soft);font-size:14px}
+.shina-list{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr));column-gap:34px}
+
+/* 品書きの1品（ゲーム1本） */
+.shina{position:relative;display:grid;grid-template-columns:clamp(118px,34%,184px) minmax(0,1fr);grid-template-areas:"e h" "d d" "t t" "f f";gap:10px 14px;padding:18px 4px 16px;border-top:2px dotted var(--b-rule);transition:background-color .2s ease}
+.shina.is-dev,.shina.is-lock{grid-template-areas:"e h" "d d" "f f"}
+.shina:focus{outline:none}
+.shina.is-open:hover{background-color:var(--b-hover)}
+.shina-e{grid-area:e;position:relative;align-self:start;border:3px solid var(--yk-yaki-deep);outline:1px solid var(--yk-yaki-sumi);background:#0E0B09;aspect-ratio:16/9}
+.shina-e canvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
+.shina.is-dev .shina-e canvas,.shina.is-lock .shina-e canvas{opacity:.62}
+.nefuda{position:absolute;left:-6px;bottom:-11px;font-family:var(--f-dot);font-size:12px;line-height:1.35;background:var(--yk-dashi-hi);color:var(--yk-ink);border:1.5px solid var(--yk-ink);padding:0 6px;transform:rotate(-3deg)}
+.nefuda.beta{background:var(--yk-yaki-hi)}
+.shirushi{position:absolute;inset:0;display:grid;place-items:center}
+.shirushi span{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-dot);font-size:14px;background:var(--yk-dashi-hi);color:var(--yk-chochin-dark);border:2px solid var(--yk-ink);padding:3px 9px;transform:rotate(-3deg)}
+.shirushi.kagi span{background:#2B2440;color:#E8DDF5;border-color:#8E7AB8}
+.shirushi svg{width:15px;height:15px}
+.shina-h{grid-area:h;min-width:0;align-self:center}
+.shina-k{margin:0;font-family:var(--f-dot);font-size:13px;line-height:1.4;color:var(--b-kick)}
+.shina h3{margin:2px 0 0;font-family:var(--f-head);font-weight:800;font-size:clamp(18px,4.8vw,22px);line-height:1.3;overflow-wrap:anywhere}
+.shina h3 a{text-decoration:none}
+.shina h3 a::after{content:"";position:absolute;inset:0;z-index:1}
+.shina h3 a:focus-visible{outline:none}
+.shina h3 a:focus-visible::after{outline:3px solid var(--yk-chochin);outline-offset:2px}
+.shina-sub{margin:3px 0 0;font-size:13px;line-height:1.5;color:var(--b-soft);font-weight:500}
+.shina-d{grid-area:d;margin:4px 0 0;font-size:15px;line-height:1.8;color:var(--b-ink)}
+.shina-tags{grid-area:t;display:flex;flex-wrap:wrap;margin:0;padding:0;list-style:none;font-family:var(--f-dot);font-size:13px;color:var(--b-soft)}
+.shina-tags li+li::before{content:"／";margin:0 .25em;opacity:.6}
+.shina-f{grid-area:f;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px}
+.shina-u{font-family:var(--f-dot);font-size:12px;color:var(--b-soft)}
+.kifuda{position:relative;display:inline-flex;align-items:center;gap:8px;font-family:var(--f-head);font-weight:800;font-size:15px;line-height:1;color:var(--yk-dashi-hi);background:var(--yk-yaki-deep);
+  padding:11px 15px 10px 13px;border:0;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%,0 9px);transition:background-color .2s ease;white-space:nowrap}
+.kifuda::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1.5px rgba(255,236,200,.25)}
+.kifuda svg{width:15px;height:15px;transition:transform .2s ease}
+.shina.is-open:hover .kifuda,.shina.is-open:focus-within .kifuda{background:var(--yk-chochin)}
+.shina.is-open:hover .kifuda svg{transform:translateX(3px)}
+.kifuda.is-off{background:#8C7E6A;color:#F6EEDD}
+.shina.is-called{animation:yobu 1.8s ease}
+@keyframes yobu{0%,45%{background-color:rgba(255,196,107,.42)}100%{background-color:transparent}}
+
+/* パスワード欄（裏路地） */
+.akeru{grid-area:f;display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.akeru input{flex:1 1 150px;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:2px solid var(--yk-yaki-dark);border-radius:0;background:var(--yk-dashi-hi);color:var(--yk-ink)}
+.akeru input::placeholder{color:#8A7458}
+.akeru input:focus-visible{outline:3px solid var(--yk-chochin-glow);outline-offset:1px}
+.akeru button{cursor:pointer}
+.akeru button:hover{background:var(--yk-chochin)}
+.akeru button:focus-visible{outline:3px solid var(--yk-chochin-glow);outline-offset:3px}
+.akeru-msg{flex-basis:100%;margin:0;font-size:13px;min-height:1.5em;color:var(--b-soft)}
+.akeru-msg.ng{color:#FFA08A;font-weight:700}
+
+/* Beta と 裏路地の板 */
+.board.beta .noren-h .nuno{--n:var(--yk-ai)}
+.board.roji{--b-bg:#22264A;--b-ink:#F3E8D0;--b-soft:#C8BFD6;--b-kick:#FFB49A;--b-rule:rgba(220,210,240,.22);--b-hover:rgba(255,196,107,.08);
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 4px);border-color:#2A1A30;outline-color:#0E0A16}
+.board.roji .noren-h .nuno{--n:var(--yk-sumi)}
+.board.roji .shina-e{border-color:#3A2A44}
+
+/* ---------- フッター ---------- */
+footer{margin-top:64px;border-top:6px solid var(--yk-yaki-deep);background:var(--yk-yozora-deep);padding-block:24px 34px;color:var(--yk-moji-soft);font-size:13px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
 footer a{text-decoration:none}
-footer a:hover{color:var(--ink)}
+footer a:hover{color:var(--yk-dashi-hi);text-decoration:underline}
 
-@media (prefers-reduced-motion:reduce){*{transition:none!important}.card:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+  .shina.is-called{background-color:rgba(255,196,107,.3)}
+}
 </style>
 </head>
 <body>
-<header class="top">
+<p class="sr-only" aria-live="polite" id="sr-live"></p>
+
+<header class="top" id="top">
   <div class="wrap">
     <a class="brand" href="./" aria-label="ちくわゲームズ トップ">
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#C9772E"/><circle cx="16" cy="16" r="12" fill="#E9A55B"/><path d="M8 11.5c2-.6 3.4-.3 4.6.6M19.5 22c1.6.4 3 .2 4.3-.7" stroke="#B5651F" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="16" cy="16" r="6.2" fill="#FFF6EA"/></svg>
-      <span><b>ちくわゲームズ</b><small>CHIKUWA GAMES</small></span>
+      <span><b>ちくわゲームズ</b><small>CHIKUWA GAMES ／ おでん横丁</small></span>
     </a>
     <a class="toplink" href="https://github.com/Chikuwa1014/chikugames" target="_blank" rel="noopener">GitHub</a>
   </div>
 </header>
 
+<!-- 横丁の絵：キャンバスは描くだけ。押せる所は上に重ねた本物の <a>・<button> -->
+<section class="scene" id="scene" aria-label="おでん横丁の通り。屋台を押すとゲームが開きます。横にスクロールできます">
+  <canvas class="scene-cv" id="scene-cv" aria-hidden="true"></canvas>
+  <div class="scroller" id="scroller">
+    <div class="street" id="street"></div>
+  </div>
+  <p class="scene-hint" id="scene-hint" aria-hidden="true">よこにスワイプすると、奥の屋台へ →</p>
+  <div class="scene-nav">
+    <button type="button" id="nav-l" aria-label="手前の屋台へ"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg></button>
+    <button type="button" id="nav-r" aria-label="奥の屋台へ"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg></button>
+  </div>
+</section>
+
+<section class="intro wrap" aria-labelledby="intro-h">
+  <a class="harigami" href="./hikkoshi/" id="notice">
+    <span class="harigami-tag">お知らせ</span>
+    <span class="harigami-t" id="notice-t">ちくわゲームズは新しいアドレス <b>games.chikuwa-hookah.com</b> に引っ越しました。前のアドレスで遊んでいたセーブデータの引っ越し方法はこちら</span>
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <p class="load-note" id="load-note" role="status" hidden></p>
+  <h1 id="intro-h">開いたら、<em>すぐ遊べる。</em><br>ちいさなゲームのあつまり。</h1>
+  <p class="lead">インストールもログインもいりません。スマホでもPCでも、ブラウザだけで動きます。遊んだ記録はあなたのブラウザに保存されます。</p>
+  <ul class="kifuda-row">
+    <li><b id="count">0</b>タイトル</li>
+    <li>インストール不要</li>
+    <li>スマホ・PC対応</li>
+    <li>無料</li>
+  </ul>
+  <nav class="kifuda-row mokuji" aria-label="品書きの目次" id="mokuji"></nav>
+</section>
+
 <main>
-  <div class="wrap">
-    <a class="notice" href="./hikkoshi/" id="notice">
-      <span class="notice-tag">お知らせ</span>
-      <span class="notice-t" id="notice-t">ちくわゲームズは新しいアドレス <b>games.chikuwa-hookah.com</b> に引っ越しました。前のアドレスで遊んでいたセーブデータの引っ越し方法はこちら</span>
-      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
+  <div class="board-wrap">
+    <section class="board" id="b-seishiki" aria-labelledby="h-seishiki">
+      <div class="board-h">
+        <h2 class="noren-h" id="h-seishiki"><span class="nuno">正式版<small>いつでも遊べる屋台</small></span></h2>
+        <p class="board-meta"><span id="seishiki-count"></span><span id="updated"></span></p>
+      </div>
+      <ol class="shina-list" id="list-seishiki"></ol>
+    </section>
   </div>
 
-  <section class="hero">
-    <div class="wrap">
-      <h1>開いたら、<em>すぐ遊べる。</em><br>ちいさなゲームのあつまり。</h1>
-      <p>インストールもログインもいりません。スマホでもPCでも、ブラウザだけで動きます。遊んだ記録はあなたのブラウザに保存されます。</p>
-      <ul class="facts">
-        <li><b id="count">2</b>タイトル</li>
-        <li>インストール不要</li>
-        <li>スマホ・PC対応</li>
-        <li>無料</li>
-      </ul>
-    </div>
-  </section>
+  <div class="board-wrap">
+    <section class="board beta" id="b-beta" aria-labelledby="h-beta" hidden>
+      <div class="board-h">
+        <h2 class="noren-h" id="h-beta"><span class="nuno">Beta<small>ためし営業中の屋台</small></span></h2>
+        <p class="board-meta"><span id="beta-count"></span></p>
+      </div>
+      <p class="board-note">試作中のゲームです。内容が変わったり、セーブが消えたりすることがあります。</p>
+      <ol class="shina-list" id="list-beta"></ol>
+    </section>
+  </div>
 
-  <section class="wrap" aria-labelledby="games-h">
-    <div class="section-head">
-      <h2 id="games-h">Games</h2>
-      <span id="updated"></span>
-    </div>
-    <div class="grid" id="grid"></div>
-  </section>
+  <div class="board-wrap">
+    <section class="board roji" id="b-roji" aria-labelledby="h-roji" hidden>
+      <div class="board-h">
+        <h2 class="noren-h" id="h-roji"><span class="nuno">裏路地（鍵付き）<small>合言葉で入れる屋台</small></span></h2>
+        <p class="board-meta"><span id="roji-count"></span></p>
+      </div>
+      <p class="board-note">パスワードを知っている人だけが遊べる屋台です。</p>
+      <ol class="shina-list" id="list-roji"></ol>
+    </section>
+  </div>
 
-  <section class="wrap beta-sec" id="beta-sec" aria-labelledby="beta-h" hidden>
-    <div class="section-head">
-      <h2 id="beta-h">Beta</h2>
-      <span id="beta-count"></span>
-    </div>
-    <p class="beta-note">試作中のゲームです。内容が変わったり、セーブが消えたりすることがあります。</p>
-    <div class="grid" id="beta-grid"></div>
-  </section>
 </main>
 
 <footer>
@@ -195,8 +315,11 @@ footer a:hover{color:var(--ink)}
     <a href="https://github.com/Chikuwa1014/chikugames" target="_blank" rel="noopener">ソースコード（GitHub）</a>
   </div>
 </footer>
+<noscript><p class="wrap">屋台を並べるには JavaScript が必要です。</p></noscript>
 
 <!-- ゲームの一覧：ゲームを追加したら1行足す（並び順は card.js の order） -->
+<script src="./common/v1/core.js"></script>
+<script src="./common/v1/chara.js"></script>
 <script src="./shop-sim/card.js"></script>
 <script src="./stage-kobo/card.js"></script>
 <script src="./roulette/card.js"></script>
@@ -207,114 +330,583 @@ footer a:hover{color:var(--ink)}
 <script src="./gomibako-shooter/card.js"></script>
 <script src="./nukadoko/card.js"></script>
 <script src="./chikunator/card.js"></script>
-<!-- βのゲーム（別リポジトリ chikugames-beta の cards.js。βを増やすときは本番を触らず、あちらに足す） -->
-<script src="https://chikuwagames-beta.chikuwa-hookah.workers.dev/cards.js"></script>
-<script>
-(() => {
-/* ゲームの一覧は各ゲームのフォルダの card.js（このファイルの下の <script src> で読み込む）。
-   ゲームを追加するときは、そのフォルダに card.js を作り、下の一覧に <script src> を1行足すだけ。
-   card.js に beta: true があるゲームは「Beta」欄に並ぶ（正式版にするときは beta を消す） */
-const ALL = (window.CHIKUWA_GAMES || []).slice().sort((a, b) => a.order - b.order);
-const GAMES = ALL.filter(g => !g.beta);
-const BETAS = ALL.filter(g => g.beta);
+<!-- βのゲーム（別リポジトリ chikugames-beta の cards.js。βを増やすときは本番を触らず、あちらに足す。読めなくても止まらない） -->
+<script src="https://chikuwagames-beta.chikuwa-hookah.workers.dev/cards.js" onerror="window.YK_BETA_NG = 1"></script>
 
-const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const thumbs = [];
-/* 版数の表示：正式版は v1.0.0、ベータ版は β0.1.0（version に β が付いていなくても付ける） */
-const verText = g => g.beta ? 'β' + String(g.version).replace(/^β/, '') : 'v' + g.version;
+<script>
+/* ちくわくんの絵は共通部品（common/v1/chara.js）。ここでは短い名前で使う */
+const drawChikuwakun = CG.chara.chikuwakun;
+
+/* こんにゃん（ねこ耳のこんにゃく）。(x, y)：足もとのまんなか。pose：'walkL'・'walkR'・'sit'・'sleep'。14×13 ドット */
+function drawKonnyan(ctx, x, y, scale, pose, t) {
+  const s = scale, T = t || 0, ox = Math.round(x), oy = Math.round(y);
+  const walk = pose === 'walkL' || pose === 'walkR', dir = pose === 'walkL' ? -1 : 1;
+  const bob = walk ? (Math.floor(T * 6) % 2 ? -1 : 0) : pose === 'sleep' ? (Math.sin(T * 1.4) > 0 ? 1 : 0) : 0;
+  const d = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(ox + dx * s, oy + (dy + bob) * s, w * s, h * s); };
+  const OUT = '#3E3F46', BODY = '#8D8E96', DARK = '#5E5F68', LIGHT = '#A9AAB2';
+  ctx.save();
+  ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.fillRect(ox - 6 * s, oy, 12 * s, s); ctx.globalAlpha = 1;
+  const sq = pose === 'sleep' ? 2 : 0;  // 寝ているときはつぶれて平たい
+  // 耳
+  d(-6, -13 + sq, 3, 3, OUT); d(-5, -12 + sq, 1, 2, BODY); d(3, -13 + sq, 3, 3, OUT); d(4, -12 + sq, 1, 2, BODY);
+  // 体
+  d(-7, -11 + sq, 14, 11 - sq, OUT); d(-6, -10 + sq, 12, 9 - sq, BODY); d(-5, -9 + sq, 4, 1, LIGHT);
+  d(-4, -3, 1, 1, DARK); d(2, -2, 1, 1, DARK); d(4, -5, 1, 1, DARK); d(-2, -2, 1, 1, DARK);
+  if (pose === 'sleep') {
+    d(-4, -5, 2, 1, DARK); d(2, -5, 2, 1, DARK);
+    for (let i = 0; i < 2; i++) {
+      const ph = (T * 0.4 + i * 0.5) % 1, zx = 6 + i * 2 + Math.round(ph * 2), zy = -14 - Math.round(ph * 6);
+      ctx.globalAlpha = 1 - ph; d(zx, zy, 3, 1, '#DCE6FF'); d(zx + 1, zy + 1, 1, 1, '#DCE6FF'); d(zx, zy + 2, 3, 1, '#DCE6FF'); ctx.globalAlpha = 1;
+    }
+  } else {
+    const px = walk ? (dir > 0 ? 1 : 0) : 0;
+    d(-4, -8, 2, 3, '#FFFFFF'); d(2, -8, 2, 3, '#FFFFFF');
+    d(-4 + px, -7, 1, 2, '#1C1D24'); d(2 + px, -7, 1, 2, '#1C1D24');
+    if (walk) { const st = Math.floor(T * 6) % 2; d(-5 + st, 0, 2, 1, OUT); d(3 - st, 0, 2, 1, OUT); }
+  }
+  ctx.restore();
+}
+
+function ykMain() {
+/* ============================================================
+   設定とデータ
+   ============================================================ */
+/* お知らせ：前のアドレス（workers.dev）で開いたときは、新しいアドレスへ引っ越すよう案内する */
+if (/\.workers\.dev$/.test(location.hostname))
+  document.getElementById('notice-t').innerHTML = 'ここは前のアドレスです。新しいアドレス <b>games.chikuwa-hookah.com</b> へ、セーブデータを引っ越してください（手順はこちら）';
+
+/* ---------- カードを集める（成人向けは出さない。2026-10-26） ---------- */
+const RAW = (window.CHIKUWA_GAMES || []).filter(g => g && !g.adult);
+/* order が同じなら正式版を先に */
+const ALL = RAW.slice().sort((a, b) => (a.order - b.order) || ((a.beta ? 1 : 0) - (b.beta ? 1 : 0)));
+{
+  /* カードを1件も読み込めなかったときのお知らせ（作りもののデータは使わない） */
+  const n = document.getElementById('load-note');
+  if (window.YK_SOURCE === 'none') { n.textContent = 'カードを読み込めませんでした'; n.hidden = false; }
+}
+
+/* ---------- 屋台の個性 ----------
+   カードに stall: { lantern: '#色', noren: '柄の名前', owner: '店主' } があればそれを使う。
+   無いときはタイトルから決める（毎回同じになる）。
+   のれんの柄：無地・しま・みずたま・こうし・なみ・いちまつ
+   店主：ちくわくん・こんにゃん・だいこん・たまご・はんぺん・きんちゃく
+   ほかに norenColor（のれんの色）・name（のれんに書く短い名前）も書ける */
+const LANTERNS = ['#D2402C', '#E0782E', '#E9B83A', '#F1E6CC', '#E2708A', '#5FA8A0'];
+const NOREN_C = ['#2F4C7A', '#7A3424', '#35553A', '#4A3A6A', '#2B2B38', '#8A5424'];
+const GARA = ['無地', 'しま', 'みずたま', 'こうし', 'なみ', 'いちまつ'];
+const OWNERS = ['ちくわくん', 'こんにゃん', 'だいこん', 'たまご', 'はんぺん', 'きんちゃく'];
+const ROOFS = ['#5A3A28', '#46505A', '#6A3226', '#3E4A3A', '#4A3A52'];
+function fnv(str) { let h = 0x811c9dc5; for (const ch of String(str)) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; }
+function hexMix(a, b, k) {
+  const p = h => { h = h.replace('#', ''); if (h.length === 3) h = [...h].map(x => x + x).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  const A = p(a), B = p(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(',') + ')';
+}
+/* のれんの名前を省略しないゲーム（2026-11-11 Chikuwa1014 の指示）。題名をそのまま出す */
+const NOREN_FULL = ['つくれ！おでん横丁', 'うごかせ！ちくわくん'];
+function shortName(g) {
+  if (g.stall && g.stall.name) return g.stall.name;
+  if (NOREN_FULL.includes(g.title)) return g.title;
+  let s = String(g.title).replace(/[（(][^）)]*[）)]/g, '').trim();
+  const parts = s.split(/[！!？?]/).map(x => x.trim()).filter(Boolean);
+  if (parts.length > 1) s = parts[parts.length - 1];
+  return s || g.title;
+}
+function stallOf(g) {
+  const st = g.stall || {}, h = fnv(g.title || g.href || g.order);
+  const lantern = /^#[0-9a-f]{3,6}$/i.test(st.lantern || '') ? st.lantern : LANTERNS[h % LANTERNS.length];
+  const norenC = /^#[0-9a-f]{3,6}$/i.test(st.norenColor || '') ? st.norenColor : NOREN_C[(h >>> 5) % NOREN_C.length];
+  return {
+    lantern, lanternL: hexMix(lantern, '#FFFFFF', 0.4), lanternD: hexMix(lantern, '#000000', 0.28), lanternOff: hexMix(lantern, '#1B2140', 0.62),
+    gara: GARA.includes(st.noren) ? st.noren : GARA[(h >>> 9) % GARA.length],
+    norenC, norenL: hexMix(norenC, '#F5E6C4', 0.3), norenD: hexMix(norenC, '#000000', 0.3),
+    owner: OWNERS.includes(st.owner) ? st.owner : OWNERS[(h >>> 13) % OWNERS.length],
+    lanternOffD: hexMix(lantern, '#0E1020', 0.72),
+    roof: ROOFS[(h >>> 17) % ROOFS.length], roofD: hexMix(ROOFS[(h >>> 17) % ROOFS.length], '#000000', 0.3), roofL: hexMix(ROOFS[(h >>> 17) % ROOFS.length], '#FFFFFF', 0.25),
+    ph: (h % 997) / 997 * Math.PI * 2
+  };
+}
+
+/* ---------- 鍵（限定公開） ---------- */
 //ゆるい限定公開なんだゾ…
 /* 限定公開：card.js の lock にパスワードの SHA-256（16進）を書いたカードは、合うまで鍵つきで表示する。
    合ったらその端末に覚える（localStorage）。ゆるい限定公開なので、ゲームの URL を直接開けば遊べる */
 const lockIcon = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.6"/></svg>';
+const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const unlockKey = g => 'chikuwa-unlock:' + g.href;
 const isUnlocked = g => { try { return localStorage.getItem(unlockKey(g)) === g.lock; } catch (e) { return false; } };
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-function addCard(g, grid, before) {
-  /* 開発に公開（dev: true）：ぼかして「開発中」。リンクもパスワード欄も出さない */
-  const dev = !!g.dev;
-  const locked = !dev && g.lock && !isUnlocked(g);
-  const a = document.createElement(locked || dev ? 'div' : 'a');
-  a.className = (g.beta ? 'card is-beta' : 'card') + (locked ? ' is-locked' : '') + (dev ? ' is-dev' : '');
-  if (!locked && !dev) a.href = g.href;
-  const mark = dev ? `<div class="devmark"><span>開発中</span></div>` : locked ? `<div class="lockmark"><span>${lockIcon}限定公開</span></div>` : '';
-  const head = `
-    <div class="thumb"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="${g.beta ? 'ver beta' : 'ver'}">${esc(verText(g))}</span>${mark}</div>`;
-  a.innerHTML = dev ? head + `
-    <div class="body">
-      <span class="kicker">${esc(g.kicker)}</span>
-      <h3>${esc(g.title)}<small>${esc(g.sub)}</small></h3>
-      <p class="desc">開発中のゲームです。公開されるまでお待ちください。</p>
-      <div class="play"><span>準備中</span><span class="btn">開発中</span></div>
-    </div>` : locked ? head + `
-    <div class="body">
-      <span class="kicker">${esc(g.kicker)}</span>
-      <h3>${esc(g.title)}<small>${esc(g.sub)}</small></h3>
-      <p class="desc">パスワードを知っている人だけが遊べるゲームです。</p>
-      <form class="unlock" autocomplete="off">
-        <input type="password" id="unlock-${esc(g.href.replace(/\W+/g, '-'))}" aria-label="${esc(g.title)} のパスワード" placeholder="パスワード">
-        <button type="submit">ひらく</button>
-        <p class="unlock-msg" aria-live="polite"></p>
-      </form>
-    </div>` : head + `
-    <div class="body">
-      <span class="kicker">${esc(g.kicker)}</span>
-      <h3>${esc(g.title)}<small>${esc(g.sub)}</small></h3>
-      <p class="desc">${esc(g.desc)}</p>
-      <ul class="tags">${g.tags.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
-      <div class="play"><span>更新 ${esc(g.updated)}</span><span class="btn">${g.beta ? '試す' : '遊ぶ'} ${arrow}</span></div>
-    </div>`;
-  grid.insertBefore(a, before || null);
-  const c = a.querySelector('canvas');
-  const th = { ctx: c.getContext('2d'), draw: g.draw };
-  thumbs.push(th);
-  if (locked) {
-    const form = a.querySelector('form'), input = form.querySelector('input'), msg = form.querySelector('.unlock-msg');
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+/* 版数の表示：正式版は v1.0.0、ベータ版は β0.1.0（version に β が付いていなくても付ける） */
+const verText = g => g.beta ? 'β' + String(g.version).replace(/^β/, '') : 'v' + g.version;
+
+/* ---------- 下ごしらえ（1本ごとのサムネイル用の小さなキャンバス） ---------- */
+ALL.forEach(g => {
+  g._roji = !g.dev && !!g.lock;   /* 鍵付きは裏路地へ（開発中が優先） */
+  g._st = stallOf(g);
+  g._short = shortName(g);
+  g._id = 'mise-' + ((String(g.href || '').replace(/^https?:\/\/[^/]+/, '').replace(/\W+/g, '-').replace(/^-+|-+$/g, '')) || 'x') + '-' + g.order;
+  g._url = g.href || '';
+  g._cv = document.createElement('canvas'); g._cv.width = 160; g._cv.height = 90; g._cx = g._cv.getContext('2d');
+  g._mos = document.createElement('canvas'); g._mos.width = 32; g._mos.height = 18; g._mx = g._mos.getContext('2d');
+  g._t = -1;
+});
+/* 屋台の状態：'open'（遊べる）・'dev'（開発中）・'lock'（鍵付き）。localStorage は renderAll のときだけ読む */
+const calcMode = g => g.dev ? 'dev' : (g.lock && !isUnlocked(g)) ? 'lock' : 'open';
+ALL.forEach(g => g._m = calcMode(g));
+const mode = g => g._m;
+const SEISHIKI = ALL.filter(g => !g.beta && !g._roji);
+const BETAS = ALL.filter(g => g.beta && !g._roji);
+const ROJI = ALL.filter(g => g._roji);
+
+function drawThumb(g, t) {
+  if (g._t === t) return;
+  g._t = t;
+  try { if (typeof g.draw === 'function') g.draw(g._cx, t); else { g._cx.fillStyle = '#3A2A22'; g._cx.fillRect(0, 0, 160, 90); } } catch (e) {}
+  if (mode(g) !== 'open') { g._mx.imageSmoothingEnabled = true; g._mx.drawImage(g._cv, 0, 0, 32, 18); }
+}
+
+/* ============================================================
+   品書き（一覧）
+   ============================================================ */
+const listThumbs = [];
+const thumbIO = 'IntersectionObserver' in window ? new IntersectionObserver(es => { es.forEach(e => { const th = listThumbs.find(x => x.cv === e.target); if (th) th.vis = e.isIntersecting; }); request(); }, { rootMargin: '120px' }) : null;
+
+function itemHTML(g) {
+  const m = mode(g);
+  const shirushi = m === 'dev' ? '<div class="shirushi"><span>開発中</span></div>' : m === 'lock' ? `<div class="shirushi kagi"><span>${lockIcon}限定公開</span></div>` : '';
+  const e = `<div class="shina-e"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="nefuda${g.beta ? ' beta' : ''}">${esc(verText(g))}</span>${shirushi}</div>`;
+  const head = t => `<div class="shina-h"><p class="shina-k">${esc(g.kicker)}</p><h3>${t}</h3>${g.sub ? `<p class="shina-sub">${esc(g.sub)}</p>` : ''}</div>`;
+  if (m === 'dev') return e + head(esc(g.title)) + `
+    <p class="shina-d">開発中のゲームです。公開されるまでお待ちください。</p>
+    <div class="shina-f"><span class="shina-u">準備中</span><span class="kifuda is-off" aria-hidden="true">開発中</span></div>`;
+  if (m === 'lock') return e + head(esc(g.title)) + `
+    <p class="shina-d">パスワードを知っている人だけが遊べるゲームです。</p>
+    <form class="akeru" autocomplete="off">
+      <input type="password" id="unlock-${esc(g.href.replace(/\W+/g, '-'))}" aria-label="${esc(g.title)} のパスワード" placeholder="パスワード">
+      <button type="submit" class="kifuda">ひらく</button>
+      <p class="akeru-msg" aria-live="polite"></p>
+    </form>`;
+  return e + head(`<a href="${esc(g._url)}">${esc(g.title)}</a>`) + `
+    <p class="shina-d">${esc(g.desc)}</p>
+    <ul class="shina-tags" aria-label="タグ">${(g.tags || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+    <div class="shina-f"><span class="shina-u">更新 ${esc(g.updated)}</span><span class="kifuda" aria-hidden="true">${g.beta ? '試す' : '遊ぶ'} ${arrow}</span></div>`;
+}
+function addItem(g, list) {
+  const li = document.createElement('li');
+  const m = mode(g);
+  li.className = 'shina is-' + m + (g.beta ? ' is-beta' : '');
+  li.id = g._id; li.tabIndex = -1;
+  li.innerHTML = itemHTML(g);
+  list.appendChild(li);
+  const cv = li.querySelector('canvas');
+  const th = { g, cv, ctx: cv.getContext('2d'), vis: !thumbIO };
+  listThumbs.push(th); if (thumbIO) thumbIO.observe(cv);
+  if (m === 'lock') {
+    const form = li.querySelector('form'), input = form.querySelector('input'), msg = form.querySelector('.akeru-msg');
+    form.addEventListener('submit', async ev => {
+      ev.preventDefault();
       let h = '';
-      try { h = await sha256(input.value.trim()); } catch (err) { msg.textContent = 'このブラウザでは確認できません'; msg.className = 'unlock-msg ng'; return; }
-      if (h !== g.lock) { msg.textContent = 'パスワードがちがいます'; msg.className = 'unlock-msg ng'; input.select(); return; }
+      try { h = await sha256(input.value.trim()); } catch (err) { msg.textContent = 'このブラウザでは確認できません'; msg.className = 'akeru-msg ng'; return; }
+      if (h !== g.lock) { msg.textContent = 'パスワードがちがいます'; msg.className = 'akeru-msg ng'; input.select(); return; }
       try { localStorage.setItem(unlockKey(g), g.lock); } catch (err) {}
-      thumbs.splice(thumbs.indexOf(th), 1);
       g.lock = null;                 /* この表示中は鍵を外す（保存できないブラウザでも開ける） */
-      addCard(g, grid, a); a.remove();
-      if (still) drawAll(0);
+      renderAll();
+      const a = document.querySelector('#' + g._id + ' h3 a'); if (a) a.focus();
+      document.getElementById('sr-live').textContent = '「' + g.title + '」の屋台がひらきました';
     });
   }
 }
-/* お知らせ：前のアドレス（workers.dev）で開いたときは、新しいアドレスへ引っ越すよう案内する */
-if (/\.workers\.dev$/.test(location.hostname))
-  document.getElementById('notice-t').innerHTML = 'ここは前のアドレスです。新しいアドレス <b>games.chikuwa-hookah.com</b> へ、セーブデータを引っ越してください（手順はこちら）';
-
-const grid = document.getElementById('grid');
-GAMES.forEach(g => addCard(g, grid));
-if (BETAS.length) {
-  const bg = document.getElementById('beta-grid');
-  BETAS.forEach(g => addCard(g, bg));
-  document.getElementById('beta-count').textContent = BETAS.length + ' 本';
-  document.getElementById('beta-sec').hidden = false;
+function renderLists() {
+  listThumbs.length = 0; if (thumbIO) thumbIO.disconnect();
+  const fill = (id, arr) => { const el = document.getElementById(id); el.innerHTML = ''; arr.forEach(g => addItem(g, el)); };
+  fill('list-seishiki', SEISHIKI); fill('list-beta', BETAS); fill('list-roji', ROJI);
+  document.getElementById('b-beta').hidden = !BETAS.length;
+  document.getElementById('b-roji').hidden = !ROJI.length;
+  /* タイトル数はベータ版を含めない。最終更新はベータ版も含める */
+  document.getElementById('count').textContent = SEISHIKI.length;
+  document.getElementById('seishiki-count').textContent = SEISHIKI.length + ' 軒';
+  document.getElementById('beta-count').textContent = BETAS.length + ' 軒';
+  document.getElementById('roji-count').textContent = ROJI.length + ' 軒';
+  const latest = ALL.map(g => g.updated).filter(Boolean).sort().pop();
+  document.getElementById('updated').textContent = latest ? '最終更新 ' + latest : '';
+  const mk = document.getElementById('mokuji');
+  mk.innerHTML = [['b-seishiki', '正式版', SEISHIKI.length], ['b-beta', 'Beta', BETAS.length], ['b-roji', '裏路地', ROJI.length]]
+    .filter(x => x[2]).map(([id, name, n]) => `<a href="#${id}"><span class="ya" aria-hidden="true">↓</span>${name}<b>${n}</b></a>`).join('');
 }
-/* タイトル数はベータ版を含めない。最終更新はベータ版も含める */
-document.getElementById('count').textContent = GAMES.length;
-const latest = ALL.map(g => g.updated).sort().pop();
-document.getElementById('updated').textContent = '最終更新 ' + latest;
 
-
-/* ---------- アニメーション（動きを減らす設定では静止画） ---------- */
-const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const start = performance.now();
-function drawAll(t) { for (const th of thumbs) { try { th.draw(th.ctx, t); } catch (e) {} } }
-function loop(now) {
-  const t = (now - start) / 1000;
-  drawAll(t);
-  if (!still) requestAnimationFrame(loop);
+/* 屋台から一覧へ移動（鍵付きはパスワード欄、開発中はその品へ） */
+function jumpTo(g) {
+  const el = document.getElementById(g._id); if (!el) return;
+  el.scrollIntoView({ behavior: STILL ? 'auto' : 'smooth', block: 'center' });
+  const input = el.querySelector('input');
+  (input || el).focus({ preventScroll: true });
+  el.classList.remove('is-called'); void el.offsetWidth; el.classList.add('is-called');
+  setTimeout(() => el.classList.remove('is-called'), 1900);
 }
-requestAnimationFrame(loop);
-})();
+
+/* ============================================================
+   横丁の絵
+   1ドット＝3px（P）。座標はドット単位。G は地面の高さ
+   ============================================================ */
+const P = 3, HA = 128, G = 110, SW = 62, GAP = 12, PITCH = SW + GAP, ENTRY = 74, ALLEY_W = 46, END_W = 64;
+const sceneEl = document.getElementById('scene'), cv = document.getElementById('scene-cv'), scroller = document.getElementById('scroller'), street = document.getElementById('street');
+const SC = { ctx: cv.getContext('2d'), w: 0, dpr: 1, vis: true, sky: null };
+document.documentElement.style.setProperty('--scene-h', HA * P + 'px');
+let stalls = [], alleyX = 0, endX = 0, WORLD = 0, walker = { from: 20, to: 200 };
+
+const LINES = [
+  { pose: 'front', text: 'いらっしゃい！ ここは<b>おでん横丁</b>だよ。' },
+  { pose: 'happy', text: '開いたら、すぐ遊べるよ。気になるのれんを押してみて。' },
+  { pose: 'front', text: 'インストールもログインも、いらないんだ。' },
+  { pose: 'front', text: 'よこにスワイプすると、奥の屋台も見えるよ。' },
+  { pose: 'happy', text: '遊んだ記録は、きみのブラウザにしまっておくね。' },
+  { pose: 'sad', text: 'いちばん奥の裏路地は、合言葉がいるんだって……', roji: true }
+].filter(l => !l.roji || ROJI.length);
+const annai = { idx: 0, manual: false, tapAt: -1e9, bubble: null };
+
+function renderScene() {
+  stalls = []; let x = ENTRY;
+  SEISHIKI.concat(BETAS).forEach(g => { stalls.push({ g, x, roji: false }); x += PITCH; });
+  alleyX = 0;
+  if (ROJI.length) { alleyX = x; x += ALLEY_W; ROJI.forEach(g => { stalls.push({ g, x, roji: true }); x += PITCH; }); }
+  endX = x; WORLD = x + END_W;
+  walker = { from: 18, to: (alleyX || endX) - 12 };
+  street.style.width = WORLD * P + 'px';
+
+  const px = n => n * P + 'px';
+  let html = '';
+  // 入口の看板・案内役
+  html += `<span class="e-moji kanban" aria-hidden="true" style="left:${px(1)};top:${px(3)};width:${px(72)};height:${px(12)}">おでん横丁</span>`;
+  html += `<p class="fukidashi" id="fukidashi" style="left:16px;bottom:${(HA - (G - 12)) * P}px;--tail:${34 * P - 16 - 8}px"></p>`;
+  html += `<button type="button" class="annai" id="annai" aria-label="ちくわくんに話しかける" style="left:${px(34 - 10)};top:${px(G - 10)};width:${px(20)};height:${px(26)}"></button>`;
+  stalls.forEach((s, i) => {
+    const g = s.g, m = mode(g), name = esc(g._short), len = [...g._short].length;
+    const lc = len <= 4 ? 'l1' : len <= 6 ? 'l2' : len <= 8 ? 'l3' : 'l4';
+    const left = s.x * P - 6, top = (G - 92) * P, w = SW * P + 12, h = 92 * P;
+    const cls = 'yatai' + (s.roji ? ' is-roji' : '');
+    const noren = `<span class="yatai-noren ${lc}" style="left:${3 * P + 6}px;top:${43 * P}px;width:${56 * P}px;height:${13 * P}px">${name}</span>`;
+    if (m === 'open') {
+      html += `<a class="${cls}" data-i="${i}" href="${esc(g._url)}" aria-label="${esc(g.title)}（${esc(g.kicker)}）の屋台。${g.beta ? '試す' : '遊ぶ'}" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">${noren}</a>`;
+    } else if (m === 'dev') {
+      html += `<a class="${cls} is-dev" data-i="${i}" href="#${g._id}" aria-label="${esc(g.title)}（開発中）。下の一覧へ移動" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">
+        <span class="yatai-chalk" style="top:${44 * P}px">${name}</span>
+        <span class="yatai-fuda" style="top:${52 * P}px">開発中<small>しこみ中</small></span></a>`;
+    } else {
+      html += `<a class="${cls} is-lock" data-i="${i}" href="#${g._id}" aria-label="${esc(g.title)}（裏路地・鍵付き）。下の一覧のパスワード欄へ移動" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">${noren}
+        <span class="yatai-kagi" style="right:${6 * P + 6}px;top:${70 * P}px">${lockIcon}合言葉</span></a>`;
+    }
+  });
+  if (alleyX) html += `<span class="e-moji roji" aria-hidden="true" style="left:${px(alleyX + 9)};top:${px(G - 70)};width:${px(26)};height:${px(9)}">裏路地</span>`;
+  html += `<span class="e-moji owari" aria-hidden="true" style="left:${px(endX + 38)};top:${px(G - 44)};width:${px(20)};height:${px(12)}">この先<br>行き止まり</span>`;
+  street.innerHTML = html;
+
+  annai.bubble = document.getElementById('fukidashi');
+  setLine(annai.idx, false);
+  document.getElementById('annai').addEventListener('click', () => {
+    annai.manual = true; annai.tapAt = performance.now();
+    annai.bubble.setAttribute('aria-live', 'polite');
+    setLine((annai.idx + 1) % LINES.length, true);
+    request(); setTimeout(request, 1300);
+  });
+  street.querySelectorAll('.yatai').forEach(a => {
+    const s = stalls[+a.dataset.i];
+    const on = () => { s.hot = true; a.classList.add('is-hot'); request(); }, off = () => { s.hot = false; a.classList.remove('is-hot'); request(); };
+    a.addEventListener('pointerenter', on); a.addEventListener('pointerleave', off);
+    a.addEventListener('focus', on); a.addEventListener('blur', off);
+    if (mode(s.g) !== 'open') a.addEventListener('click', e => { e.preventDefault(); jumpTo(s.g); });
+  });
+  updateNav();
+}
+function setLine(i, fade) {
+  annai.idx = i;
+  const b = annai.bubble; if (!b) return;
+  if (fade && !STILL) { b.classList.add('is-fade'); setTimeout(() => { b.innerHTML = LINES[i].text; b.classList.remove('is-fade'); }, 180); }
+  else b.innerHTML = LINES[i].text;
+}
+
+function sizeScene() {
+  SC.w = sceneEl.clientWidth; SC.dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(SC.w * SC.dpr); cv.height = Math.round(HA * P * SC.dpr);
+  cv.style.width = SC.w + 'px'; cv.style.height = HA * P + 'px';
+  SC.sky = null; updateNav(); request();
+}
+
+const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+const GARLAND = ['#E8483A', '#F6EBD0', '#F2B23A', '#E8483A', '#9FD3C7'].map(col => [col, hexMix(col, '#000000', 0.25)]);
+const h01 = n => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+
+function glow(c, x, y, r, a) {
+  const gr = c.createRadialGradient(x, y, 1, x, y, r);
+  gr.addColorStop(0, 'rgba(255,190,100,' + a + ')'); gr.addColorStop(1, 'rgba(255,190,100,0)');
+  c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
+}
+function drawChochin(c, cx, top, st, lit, sw, t) {
+  const x = cx + sw;
+  R(c, cx, top, 1, 2, '#2A1A10');
+  if (lit) glow(c, x + 0.5, top + 7, 15, (0.34 + Math.sin(t * 6 + st.ph) * 0.03).toFixed(3));
+  const col = lit ? st.lantern : st.lanternOff, colD = lit ? st.lanternD : (st.lanternOffD || st.lanternOff), colL = lit ? st.lanternL : st.lanternOff;
+  R(c, x - 2, top + 2, 5, 1, '#1E1410');
+  R(c, x - 2, top + 3, 5, 1, col); R(c, x - 3, top + 4, 7, 5, col); R(c, x - 2, top + 9, 5, 1, col);
+  R(c, x - 3, top + 5, 7, 1, colD); R(c, x - 3, top + 7, 7, 1, colD);
+  R(c, x - 3, top + 4, 1, 5, colL); R(c, x, top + 6, 1, 1, colD);
+  R(c, x - 2, top + 10, 5, 1, '#1E1410'); R(c, x, top + 11, 1, 2, '#E9B83A');
+}
+function drawNoren(c, x, y, st, t, hot) {
+  const W = 18, H = 13;
+  for (let p = 0; p < 3; p++) {
+    const px = x + p * 19, base = hot ? (p - 1) * 3 : Math.sin(t * 1.3 + st.ph + p * 0.7) * 1.3;
+    for (let r = 0; r < H; r++) {
+      const f = r / (H - 1), rx = px + Math.round(base * f * f), ry = y + r;
+      R(c, rx, ry, W, 1, (r === 0 || r === H - 1) ? st.norenD : st.norenC);
+      if (r === 0 || r === H - 1) continue;
+      c.fillStyle = st.norenL;
+      switch (st.gara) {
+        case 'しま': for (let q = 2; q < W; q += 4) c.fillRect(rx + q, ry, 1, 1); break;
+        case 'みずたま': { const band = Math.floor((r - 1) / 4), rr = (r - 1) % 4; if (rr === 1 || rr === 2) for (let q = (band % 2) * 3 + 1; q < W - 1; q += 6) c.fillRect(rx + q, ry, 2, 1); break; }
+        case 'こうし': if ((r - 1) % 4 === 3) c.fillRect(rx, ry, W, 1); else for (let q = 2; q < W; q += 5) c.fillRect(rx + q, ry, 1, 1); break;
+        case 'なみ': for (let q = 0; q < W; q++) { const wy = Math.round(Math.sin((q + p * W) * 0.7) * 1.2); if (r === 4 + wy || r === 9 + wy) c.fillRect(rx + q, ry, 1, 1); } break;
+        case 'いちまつ': for (let q = 0; q < W; q += 3) if ((Math.floor(q / 3) + Math.floor((r - 1) / 3)) % 2 === 0) c.fillRect(rx + q, ry, 3, 1); break;
+        default: if (r === 2) c.fillRect(rx, ry, W, 1);
+      }
+    }
+  }
+}
+/* 店主（のれんの下からのぞく顔）。eyeY は目の高さ */
+function drawOwner(c, kind, cx, eyeY, t, ph, hot) {
+  const pal = {
+    'ちくわくん': ['#4A2810', '#F3DDB2', '#C9772E'], 'こんにゃん': ['#3E3F46', '#8D8E96', null], 'だいこん': ['#9C8A66', '#EBDDB8', null],
+    'たまご': ['#6E4220', '#C98A44', null], 'はんぺん': ['#A79F8A', '#F7F3E6', null], 'きんちゃく': ['#6E4220', '#D9A04A', '#B5651F']
+  }[kind] || ['#3E3F46', '#8D8E96', null];
+  const y = eyeY - (hot ? 1 : 0);
+  if (kind === 'こんにゃん') { R(c, cx - 6, y - 10, 3, 3, pal[0]); R(c, cx + 3, y - 10, 3, 3, pal[0]); }
+  R(c, cx - 6, y - 8, 12, 15, pal[0]); R(c, cx - 5, y - 7, 10, 14, pal[1]);
+  if (pal[2]) R(c, cx - 5, y - 7, 10, 4, pal[2]);
+  const E = '#2A1A10';
+  if (hot) { R(c, cx - 4, y + 1, 1, 1, E); R(c, cx - 3, y, 1, 1, E); R(c, cx - 2, y + 1, 1, 1, E); R(c, cx + 2, y + 1, 1, 1, E); R(c, cx + 3, y, 1, 1, E); R(c, cx + 4, y + 1, 1, 1, E); }
+  else if (((t + ph) % 4.2) < 0.14) { R(c, cx - 3, y + 1, 2, 1, E); R(c, cx + 2, y + 1, 2, 1, E); }
+  else { R(c, cx - 3, y, 1, 2, E); R(c, cx + 3, y, 1, 2, E); }
+  R(c, cx - 5, y + 3, 2, 1, '#EE9A86'); R(c, cx + 4, y + 3, 2, 1, '#EE9A86');
+}
+
+function drawStall(c, s, t, toArt, toCss) {
+  const g = s.g, st = g._st, x0 = s.x, m = mode(g), lit = m === 'open', hot = !!s.hot;
+  // 柱
+  R(c, x0 + 1, G - 84, 3, 84, '#4A2A16'); R(c, x0 + 58, G - 84, 3, 84, '#4A2A16');
+  // 店主（のれんのうしろ）
+  if (m === 'open') drawOwner(c, st.owner, x0 + 22, G - 35, t, st.ph, hot);
+  // 屋根
+  R(c, x0 - 2, G - 92, 66, 6, st.roof);
+  c.fillStyle = st.roofD; for (let q = x0; q < x0 + 64; q += 3) c.fillRect(q, G - 91, 1, 5);
+  R(c, x0 - 2, G - 92, 66, 1, st.roofL);
+  R(c, x0 - 4, G - 86, 70, 2, '#2A1A10'); R(c, x0 + 1, G - 84, 60, 1, 'rgba(0,0,0,.35)');
+  // 看板の枠（中にサムネイル）
+  R(c, x0 + 2, G - 84, 58, 34, '#2A1A10'); R(c, x0 + 3, G - 83, 56, 32, '#8A5A32'); R(c, x0 + 4, G - 82, 54, 30, '#120E0C');
+  R(c, x0 + 3, G - 83, 1, 1, '#E9C88A'); R(c, x0 + 58, G - 83, 1, 1, '#E9C88A'); R(c, x0 + 3, G - 52, 1, 1, '#E9C88A'); R(c, x0 + 58, G - 52, 1, 1, '#E9C88A');
+  if (m === 'dev') {
+    // 雨戸を閉めた屋台
+    R(c, x0 + 2, G - 50, 58, 50, '#7A5232');
+    for (let r = G - 50; r < G; r += 5) { R(c, x0 + 2, r, 58, 1, '#5E3E24'); R(c, x0 + 2, r + 1, 58, 1, '#93673F'); }
+    R(c, x0 + 2, G - 3, 58, 3, '#3A2112');
+  } else {
+    // のれん
+    R(c, x0 + 1, G - 50, 60, 1, '#2A1A10'); R(c, x0, G - 51, 2, 3, '#2A1A10'); R(c, x0 + 60, G - 51, 2, 3, '#2A1A10');
+    drawNoren(c, x0 + 3, G - 49, st, t, hot);
+    // 台
+    R(c, x0 - 1, G - 30, 64, 3, '#B07040'); R(c, x0 - 1, G - 30, 64, 1, '#D08F55');
+    R(c, x0, G - 27, 62, 27, '#6B3F25');
+    c.fillStyle = '#5A341E'; for (let q = x0 + 7; q < x0 + 62; q += 8) c.fillRect(q, G - 27, 1, 27);
+    R(c, x0, G - 3, 62, 3, '#3A2112');
+    // 品書きの札
+    R(c, x0 + 4, G - 25, 24, 1, '#2A1A10');
+    for (let k = 0; k < 4; k++) { R(c, x0 + 5 + k * 6, G - 24, 4, 10, '#F1E2C0'); R(c, x0 + 6 + k * 6, G - 22, 2, 1, '#5E4128'); R(c, x0 + 6 + k * 6, G - 20, 2, 1, '#5E4128'); R(c, x0 + 6 + k * 6, G - 17, 1, 1, '#B8261A'); }
+    // おでん鍋と湯気
+    R(c, x0 + 40, G - 35, 17, 5, '#2B2626'); R(c, x0 + 39, G - 36, 19, 1, '#77706A');
+    R(c, x0 + 42, G - 38, 5, 2, '#EDE3C8'); R(c, x0 + 48, G - 39, 4, 3, '#C98A44'); R(c, x0 + 53, G - 38, 3, 2, '#8D8E96'); R(c, x0 + 50, G - 45, 1, 6, '#D9B98A');
+    if (lit) for (let i = 0; i < 4; i++) {
+      const ph = (t * 0.45 + i / 4 + st.ph) % 1, sz = 1 + Math.floor(ph * 3);
+      c.globalAlpha = 0.55 * (1 - ph);
+      R(c, x0 + 46 + i * 2 + Math.round(Math.sin(ph * 6 + i) * 2), G - 38 - Math.round(ph * 22), sz, sz, '#FFF8EB');
+      c.globalAlpha = 1;
+    }
+  }
+  if (s.roji) { c.fillStyle = m === 'lock' ? 'rgba(12,12,32,.52)' : 'rgba(12,12,32,.22)'; c.fillRect(x0 - 4, G - 92, SW + 8, 92); }
+  // サムネイル（1px＝1px でくっきり）
+  toCss();
+  const tx = (x0 + 4) * P + 1, ty = (G - 82) * P;
+  c.imageSmoothingEnabled = false;
+  if (m === 'open') c.drawImage(g._cv, tx, ty, 160, 90);
+  else { c.drawImage(g._mos, tx, ty, 160, 90); c.fillStyle = 'rgba(14,16,36,.45)'; c.fillRect(tx, ty, 160, 90); }
+  toArt();
+  // ちょうちん（左右）
+  const sw = STILL ? 0 : Math.round(Math.sin(t * 1.4 + st.ph) * 0.8);
+  if (s.roji && m === 'lock') {
+    const dim = { ...st, lantern: '#7A5AA8', lanternL: '#9C82C4', lanternD: '#56407A', lanternOff: '#4A3A6A' };
+    drawChochin(c, x0, G - 86, dim, true, sw, t); drawChochin(c, x0 + 62, G - 86, dim, false, -sw, t);
+  } else {
+    drawChochin(c, x0, G - 86, st, lit, sw, t); drawChochin(c, x0 + 62, G - 86, st, lit, -sw, t);
+  }
+}
+
+function drawScene(t) {
+  const c = SC.ctx, dpr = SC.dpr, k = P * dpr, sl = scroller.scrollLeft, sx = Math.round(sl * dpr);
+  const cam = sl / P, VW = SC.w / P, L = Math.floor(cam) - 2, Rr = Math.ceil(cam + VW) + 2;
+  const toArt = () => c.setTransform(k, 0, 0, k, -sx, 0), toCss = () => c.setTransform(dpr, 0, 0, dpr, -sx, 0);
+  c.imageSmoothingEnabled = false;
+  toArt();
+  // 空（夕方から夜へ）
+  if (!SC.sky) { const gr = c.createLinearGradient(0, 0, 0, G); gr.addColorStop(0, '#141831'); gr.addColorStop(.45, '#2C2B57'); gr.addColorStop(.8, '#7A4560'); gr.addColorStop(1, '#D9844F'); SC.sky = gr; }
+  c.fillStyle = SC.sky; c.fillRect(L, 0, Rr - L, G);
+  const layer = p => Math.round(cam * (1 - p));
+  // 星
+  { const off = layer(0.1), TS = 40;
+    for (let j = Math.floor((L - off) / TS); j <= Math.floor((Rr - off) / TS); j++) for (let i = 0; i < 3; i++) {
+      const n = j * 3 + i, x = j * TS + Math.floor(h01(n) * TS) + off, y = 2 + Math.floor(h01(n + 99) * 40), tw = Math.sin(t * (1 + h01(n + 7) * 2) + n);
+      if (tw > 0.86) { R(c, x - 1, y, 3, 1, '#FFF6D8'); R(c, x, y - 1, 1, 3, '#FFF6D8'); } else R(c, x, y, 1, 1, tw > 0 ? '#D9D3EC' : '#8C86B0');
+    } }
+  // 月（画面に対して止まって見える）
+  { const mx = Math.round(cam + VW - 24), my = 9;
+    glow(c, mx, my, 14, 0.12);
+    c.fillStyle = '#F7E7B0';
+    for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (dx * dx + dy * dy <= 25 && (dx - 3) * (dx - 3) + (dy + 1) * (dy + 1) > 18) c.fillRect(mx + dx, my + dy, 1, 1); }
+  // 遠くの家並み
+  { const off = layer(0.4), TS = 22;
+    for (let j = Math.floor((L - off) / TS) - 1; j <= Math.floor((Rr - off) / TS); j++) {
+      const x = j * TS + off, h = 26 + Math.floor(h01(j * 5 + 1) * 46), top = G - h;
+      R(c, x, top, TS, h, '#28223F'); R(c, x - 1, top - 2, TS + 2, 2, '#1E1934');
+      if (h01(j * 9 + 3) > 0.6) { R(c, x + 8, top - 8, 2, 6, '#1E1934'); R(c, x + 5, top - 8, 8, 1, '#1E1934'); }
+      for (let wy = top + 5; wy < G - 8; wy += 9) for (let wx = x + 4; wx < x + TS - 4; wx += 8) {
+        const hv = h01(wx * 3.1 + wy * 7.7);
+        if (hv > 0.55) R(c, wx, wy, 3, 3, (hv > 0.97 && Math.sin(t * 0.7 + wx) > 0.6) ? '#7A6A5A' : '#FFD27A');
+      }
+    } }
+  // 裏路地の暗さ
+  if (alleyX) { for (let i = 0; i < 8; i++) { c.fillStyle = `rgba(8,8,22,${(0.07 * (i + 1)).toFixed(2)})`; c.fillRect(alleyX - 8 + i, 0, 1, G); } c.fillStyle = 'rgba(8,8,22,.58)'; c.fillRect(alleyX, 0, Math.max(0, Rr - alleyX), G); }
+  // 頭の上のちょうちん飾り
+  { const gEnd = alleyX || endX, a = Math.max(L, ENTRY), b = Math.min(Rr, gEnd);
+    for (let x = a; x < b; x++) {
+      const u = ((x - ENTRY) % 60) / 60, y = 3 + Math.round(5 * Math.sin(Math.PI * u));
+      R(c, x, y, 1, 1, '#1E1410');
+      if ((x - ENTRY) % 6 === 3) { const k = Math.floor((x - ENTRY) / 6) % GARLAND.length; R(c, x - 1, y + 1, 3, 4, GARLAND[k][0]); R(c, x - 1, y + 2, 3, 1, GARLAND[k][1]); }
+    } }
+  // 地面（石だたみ）
+  R(c, L, G, Rr - L, HA - G, '#3A2A22'); R(c, L, G, Rr - L, 1, '#5C4232'); R(c, L, G + 1, Rr - L, 1, '#4A3528');
+  c.fillStyle = '#2E211A';
+  [G + 7, G + 13].forEach(y => c.fillRect(L, y, Rr - L, 1));
+  for (let x = L - (L % 10); x < Rr; x += 10) { c.fillRect(x, G + 2, 1, 5); c.fillRect(x + 5, G + 8, 1, 5); c.fillRect(x + 2, G + 14, 1, 6); }
+  if (alleyX) { c.fillStyle = 'rgba(8,8,22,.45)'; c.fillRect(alleyX, G, Math.max(0, Rr - alleyX), HA - G); }
+  // ちょうちんの明かりの溜まり
+  for (const s of stalls) {
+    if (s.x + SW + 30 < L || s.x - 30 > Rr || mode(s.g) !== 'open') continue;
+    c.save(); c.translate(s.x + 31, G + 4); c.scale(1, 0.3);
+    const gr = c.createRadialGradient(0, 0, 2, 0, 0, 42); gr.addColorStop(0, s.roji ? 'rgba(200,170,255,.16)' : 'rgba(255,196,107,.26)'); gr.addColorStop(1, 'rgba(255,196,107,0)');
+    c.fillStyle = gr; c.fillRect(-42, -42, 84, 84); c.restore();
+  }
+  // 入口の看板
+  if (L < ENTRY) {
+    R(c, 3, 3, 3, G - 3, '#4A2A16'); R(c, 67, 3, 3, G - 3, '#4A2A16');
+    R(c, 0, 2, 73, 14, '#2A1A10'); R(c, 1, 3, 71, 12, '#7A4A26'); R(c, 1, 3, 71, 1, '#A8683A');
+    c.fillStyle = '#6B3F25'; for (let q = 4; q < 70; q += 9) c.fillRect(q, 6, 5, 1);
+    const sw = STILL ? 0 : Math.round(Math.sin(t * 1.2) * 0.8), st0 = { lantern: '#D2402C', lanternL: '#E87A68', lanternD: '#9E2A1C', lanternOff: '#5A2A2A', ph: 0 };
+    drawChochin(c, 11, 15, st0, true, sw, t); drawChochin(c, 62, 15, st0, true, -sw, t);
+  }
+  // 屋台
+  for (const s of stalls) if (s.x + SW + 8 >= L && s.x - 8 <= Rr) drawStall(c, s, t, toArt, toCss);
+  // 裏路地の入口
+  if (alleyX && alleyX + ALLEY_W >= L && alleyX <= Rr) {
+    const a = alleyX;
+    R(c, a + 2, G - 74, 10, 74, '#2E2640'); R(c, a + 34, G - 74, 10, 74, '#2E2640'); R(c, a + 11, G - 74, 1, 74, '#1E1830'); R(c, a + 34, G - 74, 1, 74, '#1E1830');
+    R(c, a, G - 76, 46, 3, '#1E1410');
+    R(c, a + 8, G - 71, 28, 11, '#1E1410'); R(c, a + 9, G - 70, 26, 9, '#6B4A2E');
+    R(c, a + 4, G - 50, 6, 8, '#BDB08F'); R(c, a + 4, G - 47, 6, 1, '#9E2A1C'); R(c, a + 36, G - 44, 5, 7, '#8FA0B4');
+    const on = STILL || ((t * 0.7) % 5) > 0.1;
+    R(c, a + 22, G - 60, 1, 6, '#1E1410');
+    if (on) glow(c, a + 23, G - 52, 16, 0.3);
+    R(c, a + 21, G - 54, 3, 3, on ? '#FFE9A8' : '#6A6450');
+    R(c, a + 13, G + 6, 18, 2, '#2C3657'); R(c, a + 16, G + 6, 6, 1, '#5A6A9A');
+  }
+  // 行き止まり（こんにゃんが寝ている）
+  if (endX + END_W >= L && endX <= Rr) {
+    const e = endX, dark = !!alleyX;
+    R(c, e + 4, G - 58, 56, 2, '#1E1410'); R(c, e + 4, G - 56, 56, 56, dark ? '#3A2A30' : '#5A3A28');
+    c.fillStyle = dark ? '#2E2026' : '#4A2E1E'; for (let q = e + 10; q < e + 60; q += 7) c.fillRect(q, G - 56, 1, 56);
+    R(c, e + 38, G - 45, 20, 14, '#2A1A10'); R(c, e + 39, G - 44, 18, 12, '#D9CBA8');
+    R(c, e + 14, G - 12, 22, 12, '#8A5A32'); R(c, e + 14, G - 12, 22, 1, '#B07A4A'); R(c, e + 14, G - 6, 22, 1, '#5E3E24');
+    drawKonnyan(c, e + 25, G - 12, 1, 'sleep', t);
+  }
+  // 通りを歩くこんにゃん
+  { const span = walker.to - walker.from, pos = STILL ? 30 : (t * 7) % (span * 2), x = walker.from + (pos < span ? pos : span * 2 - pos);
+    if (x > L - 10 && x < Rr + 10) drawKonnyan(c, x, G + 10, 1, STILL ? 'sit' : (pos < span ? 'walkR' : 'walkL'), t); }
+  // 案内役のちくわくん
+  if (L < ENTRY) {
+    const happy = performance.now() - annai.tapAt < 1200;
+    drawChikuwakun(c, 34, G + 14, 1, happy ? 'happy' : LINES[annai.idx].pose, t);
+  }
+  c.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/* 横スクロールのボタンと案内 */
+const navL = document.getElementById('nav-l'), navR = document.getElementById('nav-r'), hint = document.getElementById('scene-hint');
+function updateNav() {
+  const max = scroller.scrollWidth - scroller.clientWidth;
+  navL.disabled = scroller.scrollLeft <= 2; navR.disabled = scroller.scrollLeft >= max - 2;
+  if (max <= 2) hint.classList.add('is-gone');
+}
+navL.addEventListener('click', () => scroller.scrollBy({ left: -scroller.clientWidth * 0.8, behavior: STILL ? 'auto' : 'smooth' }));
+navR.addEventListener('click', () => scroller.scrollBy({ left: scroller.clientWidth * 0.8, behavior: STILL ? 'auto' : 'smooth' }));
+scroller.addEventListener('scroll', () => { if (scroller.scrollLeft > 40) hint.classList.add('is-gone'); updateNav(); request(); }, { passive: true });
+
+/* ============================================================
+   描画の流れ（rAF は1本。見えている所だけ描く。動きを減らす設定では止める）
+   ============================================================ */
+const STILL = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const T_STILL = 1.5, start = performance.now();
+let raf = 0;
+function request() { if (!raf) raf = requestAnimationFrame(frame); }
+function frame(now) {
+  raf = 0;
+  const t = STILL ? T_STILL : (now - start) / 1000;
+  const sl = scroller.scrollLeft;
+  if (SC.vis) for (const s of stalls) if (s.x * P - 8 < sl + SC.w && (s.x + SW) * P + 8 > sl) drawThumb(s.g, t);
+  let anyList = false;
+  for (const th of listThumbs) if (th.vis) {
+    anyList = true; drawThumb(th.g, t);
+    th.ctx.imageSmoothingEnabled = false;
+    if (mode(th.g) === 'open') th.ctx.drawImage(th.g._cv, 0, 0); else th.ctx.drawImage(th.g._mos, 0, 0, 160, 90);
+  }
+  if (SC.vis) drawScene(t);
+  // ふきだしの切り替え（自動は約5秒ごと。押したあとは押したときだけ）
+  if (!STILL && !annai.manual && SC.vis) { const i = Math.floor(t / 5.2) % LINES.length; if (i !== annai.idx) setLine(i, true); }
+  if (!STILL && (SC.vis || anyList)) request();
+}
+
+function renderAll() { ALL.forEach(g => g._m = calcMode(g)); renderScene(); renderLists(); request(); }
+
+/* 画面の外にあるときは描画を休む */
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(es => { SC.vis = es[0].isIntersecting; request(); }).observe(sceneEl);
+}
+if ('ResizeObserver' in window) new ResizeObserver(sizeScene).observe(sceneEl); else addEventListener('resize', sizeScene);
+
+renderAll();
+sizeScene();
+
+/* チェック用の入口（dev/check-cards.cjs が使う）。画面に出したカードと、一覧のサムネイル */
+window.YK_ALL = ALL;
+window.YK_THUMBS = listThumbs.map(th => ({
+  canvas: th.cv, game: th.g,
+  mode: mode(th.g),
+  /* 一覧のキャンバスを t = 0 で描き直す */
+  redraw0() { th.g._t = -1; drawThumb(th.g, 0); th.ctx.imageSmoothingEnabled = false; if (mode(th.g) === 'open') th.ctx.drawImage(th.g._cv, 0, 0); else th.ctx.drawImage(th.g._mos, 0, 0, 160, 90); }
+}));
+document.documentElement.dataset.ykReady = '1';
+}
+
+/* 画面を作る。号口のカードが1件も無いときは 'none'（「カードを読み込めませんでした」を出す） */
+window.YK_SOURCE = (window.CHIKUWA_GAMES || []).some(g => g && !g.beta) ? 'live' : 'none';
+ykMain();
 </script>
 </body>
 </html>
