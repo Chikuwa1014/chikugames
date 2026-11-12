@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://games.chikuwa-hookah.com/sitemap.xml
