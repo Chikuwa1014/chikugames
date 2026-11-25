@@ -312,7 +312,7 @@ iPhone の Safari は `user-scalable=no` を無視するので、viewport だけ
 
 ## モデルの使い分け（2026-11-11 開発者の指示。プロジェクトのルール）
 
-- マネージャー（コーディネーター）：Fable 5.2（`claude-fable-5-2`）。
+- マネージャー（コーディネーター）：Opus 5.5（`claude-opus-5-5`）。2026-11-25 に Fable 5.2 から変更（開発者の指示）。
 - 実行役（計画・レビュー・最終チェック、モックなどのアーティファクト生成）：Opus 5.5（`claude-opus-5-5`）。モックは `mock-maker` に任せる。
 - 実装（開発スレッドの既定）：Sonnet 5.5（`.claude/settings.json`）。小さな修正は `small-fix` に任せる（Sonnet 5.5）。
 - ドキュメント管理・校正・検索・軽い調査：Haiku 5.5（`search` に任せる）。
